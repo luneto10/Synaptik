@@ -1,0 +1,17 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Docker Compose All",
+            "type": "shell",
+            "command": "docker compose up -d",
+            "problemMatcher": []
+        },
+        {
+            "label": "Docker Stop All",
+            "type": "shell",
+            "command": "docker compose down",
+            "problemMatcher": []
+        }
+    ]
+}

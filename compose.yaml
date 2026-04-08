@@ -15,11 +15,29 @@ services:
             context: ./backend
             target: dev
         working_dir: /app
+        env_file:
+            - .env
         environment:
             - DATABASE_URL=postgres://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
         volumes:
-          - ./backend:/app
+            - ./backend:/app
+        ports:
+            - "8080:8080"
         depends_on:
             - db
+
+    frontend:
+        build:
+            context: ./frontend
+            target: dev
+        env_file:
+            - .env
+        ports:
+            - "3000:3000"
+        volumes:
+            - ./frontend:/app
+            - /app/node_modules
+        depends_on:
+            - backend
 volumes:
     pgdata:
