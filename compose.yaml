@@ -10,6 +10,7 @@ services:
             - "5432:5432"
         volumes:
             - pgdata:/var/lib/postgresql/data
+
     backend:
         build:
             context: ./backend
@@ -30,8 +31,12 @@ services:
         build:
             context: ./frontend
             target: dev
+        working_dir: /app
+        command: npm run dev -- --hostname 0.0.0.0 --webpack
         env_file:
             - .env
+        environment:
+            - WATCHPACK_POLLING=true
         ports:
             - "3000:3000"
         volumes:
@@ -39,5 +44,6 @@ services:
             - /app/node_modules
         depends_on:
             - backend
+
 volumes:
     pgdata:
