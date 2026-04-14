@@ -1,26 +1,28 @@
 import { useCallback } from "react";
 import { useReactFlow } from "@xyflow/react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useDiagramStore } from "../store/diagramStore";
-import { type SaveDiagramRequest } from "../api/diagram.api";
+import {
+    saveDiagram,
+    loadDiagramById,
+    type DiagramPayload,
+} from "../api/diagram.api";
 import { LAYOUT } from "../constants";
 import type { TableNode, RelationEdge } from "../types/flow.types";
 
-export function useDiagramActions() {
+export function useDiagramActions(diagramId?: string) {
     const { fitView } = useReactFlow();
     const loadDiagram = useDiagramStore((s) => s.loadDiagram);
 
-    const { mutate: save, isPending } = useMutation({
-        mutationFn: async (payload: SaveDiagramRequest) => {
-            console.log("Payload →", JSON.stringify(payload, null, 2));
-            return { sql: "" };
-        },
-        onSuccess: () => console.log("Mock save — backend not connected yet"),
-    });
+    const { mutate: save, isPending } = useMutation<
+        { id: string },
+        Error,
+        DiagramPayload
+    >({ mutationFn: saveDiagram });
 
     const handleSave = useCallback(() => {
-        const { nodes: n, edges: e } = useDiagramStore.getState();
-        save({ tables: n.map((node) => node.data), edges: e });
+        const { nodes, edges } = useDiagramStore.getState();
+        save({ nodes, edges });
     }, [save]);
 
     const handleLoadExample = useCallback(async () => {
@@ -33,7 +35,6 @@ export function useDiagramActions() {
     }, [loadDiagram, fitView]);
 
     // Reads fresh node positions from the store instead of closing over them,
-    // so the callback never goes stale between renders.
     const handleAutoLayout = useCallback(() => {
         const { nodes, onNodesChange } = useDiagramStore.getState();
         const changes = nodes.map((n, i) => ({

@@ -1,14 +1,13 @@
 import axios from "axios";
-import { DbTable } from "../types/db.types";
-import { RelationEdge } from "../types/flow.types";
+import type { TableNode, RelationEdge } from "../types/flow.types";
 
-export interface SaveDiagramRequest {
-    tables: DbTable[];
+export interface DiagramPayload {
+    nodes: TableNode[];
     edges: RelationEdge[];
 }
 
 export interface SaveDiagramResponse {
-    sql: string;
+    id: string;
 }
 
 export const diagramApi = axios.create({
@@ -17,11 +16,17 @@ export const diagramApi = axios.create({
 });
 
 export async function saveDiagram(
-    request: SaveDiagramRequest,
+    payload: DiagramPayload,
 ): Promise<SaveDiagramResponse> {
+    console.log("Payload →", JSON.stringify(payload, null, 2));
     const { data } = await diagramApi.post<SaveDiagramResponse>(
         "/diagram",
-        request,
+        payload,
     );
+    return data;
+}
+
+export async function loadDiagramById(id: string): Promise<DiagramPayload> {
+    const { data } = await diagramApi.get<DiagramPayload>(`/diagram/${id}`);
     return data;
 }
