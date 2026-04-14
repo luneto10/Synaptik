@@ -20,16 +20,19 @@ interface RelationTypeDialogProps {
     onCancel: () => void;
 }
 
-const OPTIONS: { value: RelationshipType; label: string; description: string }[] =
-    [
-        { value: "one-to-one", label: "1 : 1", description: "One to One" },
-        { value: "one-to-many", label: "1 : N", description: "One to Many" },
-        {
-            value: "many-to-many",
-            label: "N : M",
-            description: "Many to Many",
-        },
-    ];
+const OPTIONS: {
+    value: RelationshipType;
+    label: string;
+    description: string;
+}[] = [
+    { value: "one-to-one", label: "1 : 1", description: "One to One" },
+    { value: "one-to-many", label: "1 : N", description: "One to Many" },
+    {
+        value: "many-to-many",
+        label: "N : M",
+        description: "Many to Many",
+    },
+];
 
 export default function RelationTypeDialog({
     open,
@@ -50,7 +53,9 @@ export default function RelationTypeDialog({
                 <ToggleGroup
                     type="single"
                     value={selected}
-                    onValueChange={(v) => v && setSelected(v as RelationshipType)}
+                    onValueChange={(v) =>
+                        v && setSelected(v as RelationshipType)
+                    }
                     className="flex flex-col gap-2 w-full"
                 >
                     {OPTIONS.map((opt) => (
@@ -70,11 +75,7 @@ export default function RelationTypeDialog({
                 </ToggleGroup>
 
                 <DialogFooter>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={onCancel}
-                    >
+                    <Button variant="outline" size="sm" onClick={onCancel}>
                         Cancel
                     </Button>
                     <Button

@@ -1,11 +1,11 @@
 "use client";
 
+import { cn } from "@/lib/utils";
 import {
     Tooltip,
     TooltipContent,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import {
@@ -65,67 +65,77 @@ export default function LeftToolbox({
     onRedo,
 }: LeftToolboxProps) {
     return (
-        <div className="w-12 border-r border-border bg-card flex flex-col items-center py-3 gap-1 shrink-0">
-            <ToggleGroup
-                type="single"
-                value={activeTool}
-                onValueChange={(v) => v && onToolChange(v as DiagramTool)}
-                className="flex flex-col gap-1"
-            >
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 z-10
+                        flex flex-col items-center gap-1 p-1.5 rounded-xl
+                        bg-card/95 backdrop-blur-sm border border-border shadow-lg">
+            <div className="flex flex-col gap-0.5">
                 {TOOLS.map((tool) => (
                     <Tooltip key={tool.value}>
                         <TooltipTrigger asChild>
-                            <ToggleGroupItem
-                                value={tool.value}
-                                aria-label={tool.label}
-                                className="w-9 h-9 p-0 data-[state=on]:bg-indigo-500/20 data-[state=on]:text-indigo-400"
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => onToolChange(tool.value)}
+                                className={cn(
+                                    "w-9 h-9 p-0 rounded-lg transition-colors",
+                                    activeTool === tool.value
+                                        ? "bg-indigo-500/20 text-indigo-400 ring-1 ring-indigo-500/60 hover:bg-indigo-500/30"
+                                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                                )}
                             >
                                 {tool.icon}
-                            </ToggleGroupItem>
+                            </Button>
                         </TooltipTrigger>
-                        <TooltipContent side="right">
-                            <span>
-                                {tool.label}{" "}
-                                <kbd className="ml-1 text-[10px] bg-muted px-1 rounded text-black">
-                                    {tool.shortcut}
-                                </kbd>
-                            </span>
+                        <TooltipContent side="right" className="flex items-center gap-1.5">
+                            {tool.label}
+                            <kbd className="text-[10px] bg-background/20 text-background px-1.5 py-0.5 rounded font-mono border border-background/30">
+                                {tool.shortcut}
+                            </kbd>
                         </TooltipContent>
                     </Tooltip>
                 ))}
-            </ToggleGroup>
-
-            <div className="mt-auto flex flex-col gap-1">
-                <Separator className="my-1" />
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="w-9 h-9"
-                            onClick={onUndo}
-                            disabled={!onUndo}
-                        >
-                            <Undo2 className="w-4 h-4" />
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="right">Undo</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="w-9 h-9"
-                            onClick={onRedo}
-                            disabled={!onRedo}
-                        >
-                            <Redo2 className="w-4 h-4" />
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="right">Redo</TooltipContent>
-                </Tooltip>
             </div>
+
+            <Separator className="w-6 my-0.5" />
+
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="w-9 h-9 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                        onClick={onUndo}
+                        disabled={!onUndo}
+                    >
+                        <Undo2 className="w-4 h-4" />
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="flex items-center gap-1.5">
+                    Undo
+                    <kbd className="text-[10px] bg-background/20 text-background px-1.5 py-0.5 rounded font-mono border border-background/30">
+                        Ctrl+Z
+                    </kbd>
+                </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="w-9 h-9 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                        onClick={onRedo}
+                        disabled={!onRedo}
+                    >
+                        <Redo2 className="w-4 h-4" />
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="flex items-center gap-1.5">
+                    Redo
+                    <kbd className="text-[10px] bg-background/20 text-background px-1.5 py-0.5 rounded font-mono border border-background/30">
+                        Ctrl+Shift+Z
+                    </kbd>
+                </TooltipContent>
+            </Tooltip>
         </div>
     );
 }

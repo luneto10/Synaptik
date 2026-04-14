@@ -11,14 +11,7 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-    BrainCircuit,
-    Save,
-    Loader2,
-    Sun,
-    Moon,
-    Wand2,
-} from "lucide-react";
+import { BrainCircuit, Save, Loader2, Sun, Moon, Wand2 } from "lucide-react";
 
 interface FlowToolbarProps {
     nodeCount: number;

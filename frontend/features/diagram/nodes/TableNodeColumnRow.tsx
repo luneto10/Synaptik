@@ -54,44 +54,44 @@ export default function TableNodeColumnRow({
     );
 
     return (
-        <div className="group relative flex items-center border-b border-border/50 last:border-0 hover:bg-muted/50 transition-colors">
-            {/* ── Target handle (left edge) ── */}
+        <div className="group relative flex items-center border-b border-border/40 last:border-0 hover:bg-muted/40 transition-colors">
+            {/* ── Target handle (left) — faint by default, full on hover ── */}
             <Handle
                 type="target"
                 position={Position.Left}
                 id={`${column.id}-target`}
-                className="w-2.5! h-2.5! bg-indigo-500! border-2! border-card! rounded-full! opacity-0! group-hover:!opacity-100! transition-opacity!"
+                className="w-2.5! h-2.5! bg-indigo-500! border-2! border-card! rounded-full! opacity-20! group-hover:!opacity-100! transition-opacity! cursor-crosshair!"
                 style={{ top: "50%" }}
             />
 
-            {/* Badges — fixed width */}
+            {/* Badges */}
             <div className="w-10 px-2 shrink-0">
                 <ColumnBadges column={column} />
             </div>
 
-            {/* Name — grows */}
+            {/* Name */}
             <div className="flex-1 px-1 py-1.5 min-w-0">
                 <Input
                     value={column.name}
                     onChange={(e) =>
                         onUpdate({ ...column, name: e.target.value })
                     }
-                    className="h-7 text-sm border-0 bg-transparent p-0 font-mono text-foreground
+                    className="h-7 text-sm border-0 bg-transparent shadow-none p-0 font-mono text-foreground
                                focus-visible:ring-0 focus-visible:ring-offset-0
                                focus-visible:bg-indigo-500/10 focus-visible:rounded focus-visible:px-1
                                w-full"
                 />
             </div>
 
-            {/* Type — fixed width */}
-            <div className="w-24 px-1 py-1.5 shrink-0">
+            {/* Type */}
+            <div className="w-24 px-1 py-1.5 shrink-0 flex items-center justify-center">
                 <Select
                     value={column.type}
                     onValueChange={(v) =>
                         onUpdate({ ...column, type: v as ColumnType })
                     }
                 >
-                    <SelectTrigger className="h-7 text-sm border-0 bg-transparent p-0 focus:ring-0 text-muted-foreground gap-1 w-full">
+                    <SelectTrigger className="h-7 text-sm border-0 bg-transparent shadow-none p-0 focus:ring-0 focus:ring-offset-0 text-muted-foreground gap-1 w-full [&>svg]:opacity-50">
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -108,7 +108,7 @@ export default function TableNodeColumnRow({
                 </Select>
             </div>
 
-            {/* Actions — fixed width, only on hover */}
+            {/* Actions */}
             <div className="w-14 px-1 shrink-0">
                 <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                     <ColumnSettingsPopover
@@ -136,12 +136,12 @@ export default function TableNodeColumnRow({
                 </div>
             </div>
 
-            {/* ── Source handle (right edge) ── */}
+            {/* ── Source handle (right) — faint by default, full on hover ── */}
             <Handle
                 type="source"
                 position={Position.Right}
                 id={`${column.id}-source`}
-                className="w-2.5! h-2.5! bg-indigo-500! border-2! border-card! rounded-full! opacity-0! group-hover:!opacity-100! transition-opacity!"
+                className="w-2.5! h-2.5! bg-indigo-500! border-2! border-card! rounded-full! opacity-20! group-hover:!opacity-100! transition-opacity! cursor-crosshair!"
                 style={{ top: "50%" }}
             />
         </div>

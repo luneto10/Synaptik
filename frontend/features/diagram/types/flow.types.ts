@@ -11,6 +11,7 @@ export interface RelationEdgeData extends Record<string, unknown> {
     sourceColumnId: string;
     targetColumnId: string;
     relationshipType: "one-to-one" | "one-to-many" | "many-to-many";
+    autoCreatedColumnId?: string;
 }
 
 export type RelationEdge = Edge<RelationEdgeData>;

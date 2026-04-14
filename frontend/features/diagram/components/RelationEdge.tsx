@@ -19,27 +19,45 @@ import { Trash2 } from "lucide-react";
 import type { RelationEdge as RelationEdgeType, RelationEdgeData } from "../types/flow.types";
 import { useDiagramStore } from "../store/diagramStore";
 
-// ── SVG marker defs (rendered once via FlowCanvas) ───────────────────────────
+// ── SVG marker defs (rendered once, injected into FlowCanvas via <EdgeMarkerDefs />) ───
 
 export function EdgeMarkerDefs() {
     return (
         <svg style={{ position: "absolute", width: 0, height: 0, overflow: "hidden" }}>
             <defs>
-                {/* ── One (single vertical bar) ── */}
-                <marker id="edge-one" markerWidth="6" markerHeight="12" refX="5" refY="6" orient="auto">
-                    <line x1="5" y1="0" x2="5" y2="12" stroke="#6366f1" strokeWidth="2" />
+                {/*
+                 * Naming convention:
+                 *   me-*  → markerEnd  (orient="auto",               tip points toward target)
+                 *   ms-*  → markerStart (orient="auto-start-reverse", tip points toward source)
+                 *
+                 * Shapes drawn left-to-right; at refX the line "arrives".
+                 */}
+
+                {/* ── ONE: single vertical bar ── */}
+                <marker id="me-one" orient="auto" refX="9" refY="5" markerWidth="12" markerHeight="10">
+                    <line x1="9" y1="0" x2="9" y2="10" stroke="#6366f1" strokeWidth="2" />
+                </marker>
+                <marker id="ms-one" orient="auto-start-reverse" refX="9" refY="5" markerWidth="12" markerHeight="10">
+                    <line x1="9" y1="0" x2="9" y2="10" stroke="#6366f1" strokeWidth="2" />
                 </marker>
 
-                {/* ── Many (crow's foot) ── */}
-                <marker id="edge-many" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
-                    <path d="M10,0 L2,6 L10,12" fill="none" stroke="#6366f1" strokeWidth="1.8" />
+                {/* ── MANY: crow's foot (three prongs) ── */}
+                {/*
+                 * The path "arrives" from the right at x=10.
+                 * Three lines fan out to the left: top-left, straight-left, bottom-left.
+                 */}
+                <marker id="me-many" orient="auto" refX="10" refY="6" markerWidth="14" markerHeight="12">
+                    <line x1="10" y1="0" x2="3" y2="6"  stroke="#6366f1" strokeWidth="1.6" strokeLinecap="round" />
+                    <line x1="10" y1="6" x2="3" y2="6"  stroke="#6366f1" strokeWidth="1.6" strokeLinecap="round" />
+                    <line x1="10" y1="12" x2="3" y2="6" stroke="#6366f1" strokeWidth="1.6" strokeLinecap="round" />
+                    {/* vertical stop bar */}
                     <line x1="10" y1="0" x2="10" y2="12" stroke="#6366f1" strokeWidth="1.8" />
                 </marker>
-
-                {/* ── One-only start (double bar = exactly one) ── */}
-                <marker id="edge-one-only" markerWidth="8" markerHeight="12" refX="6" refY="6" orient="auto-start-reverse">
-                    <line x1="4" y1="0" x2="4" y2="12" stroke="#6366f1" strokeWidth="2" />
-                    <line x1="7" y1="0" x2="7" y2="12" stroke="#6366f1" strokeWidth="2" />
+                <marker id="ms-many" orient="auto-start-reverse" refX="10" refY="6" markerWidth="14" markerHeight="12">
+                    <line x1="10" y1="0" x2="3" y2="6"  stroke="#6366f1" strokeWidth="1.6" strokeLinecap="round" />
+                    <line x1="10" y1="6" x2="3" y2="6"  stroke="#6366f1" strokeWidth="1.6" strokeLinecap="round" />
+                    <line x1="10" y1="12" x2="3" y2="6" stroke="#6366f1" strokeWidth="1.6" strokeLinecap="round" />
+                    <line x1="10" y1="0" x2="10" y2="12" stroke="#6366f1" strokeWidth="1.8" />
                 </marker>
             </defs>
         </svg>
@@ -54,11 +72,12 @@ const LABEL: Record<string, string> = {
     "many-to-many": "N : M",
 };
 
-// ── Marker IDs per relationship end ──────────────────────────────────────────
+// ── Marker pairs per relationship type ───────────────────────────────────────
+
 const MARKERS: Record<string, [string, string]> = {
-    "one-to-one":   ["url(#edge-one-only)", "url(#edge-one-only)"],
-    "one-to-many":  ["url(#edge-one-only)", "url(#edge-many)"],
-    "many-to-many": ["url(#edge-many)",     "url(#edge-many)"],
+    "one-to-one":   ["url(#ms-one)",  "url(#me-one)"],
+    "one-to-many":  ["url(#ms-one)",  "url(#me-many)"],
+    "many-to-many": ["url(#ms-many)", "url(#me-many)"],
 };
 
 // ── Edge component ────────────────────────────────────────────────────────────
@@ -106,7 +125,6 @@ export default function RelationEdge({
                 style={{
                     stroke: color,
                     strokeWidth: selected ? 2.5 : 1.8,
-                    strokeDasharray: relType === "many-to-many" ? "6 3" : undefined,
                 }}
                 markerStart={markerStart}
                 markerEnd={markerEnd}

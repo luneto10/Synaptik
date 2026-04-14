@@ -20,9 +20,15 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     );
 
     return (
-        <ThemeProvider attribute="class" defaultTheme="dark" disableTransitionOnChange>
+        <ThemeProvider
+            attribute="class"
+            defaultTheme="dark"
+            disableTransitionOnChange
+        >
             <QueryClientProvider client={queryClient}>
-                <TooltipProvider delayDuration={300}>{children}</TooltipProvider>
+                <TooltipProvider delayDuration={300}>
+                    {children}
+                </TooltipProvider>
                 <ReactQueryDevtools initialIsOpen={false} />
             </QueryClientProvider>
         </ThemeProvider>
