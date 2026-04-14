@@ -52,7 +52,7 @@ function TableNodeColumnRow({
             nameInputRef.current.select();
             onFocusConsumed?.();
         }
-    }, [autoFocus]);
+    }, [autoFocus, onFocusConsumed]);
 
     const handleCls =
         "w-2.5! h-2.5! bg-indigo-500! border-2! border-card! rounded-full! opacity-20! group-hover:!opacity-100! transition-opacity! cursor-crosshair!";

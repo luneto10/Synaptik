@@ -28,20 +28,24 @@ export default function NewTableDialog({
 
     useEffect(() => {
         if (open) {
-            setName("");
             requestAnimationFrame(() => inputRef.current?.focus());
         }
     }, [open]);
+
+    const handleOpenChange = (nextOpen: boolean) => {
+        if (!nextOpen) setName("");
+        onOpenChange(nextOpen);
+    };
 
     const handleCreate = () => {
         const trimmed = name.trim();
         addTable(trimmed || "new_table");
         setName("");
-        onOpenChange(false);
+        handleOpenChange(false);
     };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent className="sm:max-w-xs">
                 <DialogHeader>
                     <DialogTitle className="text-sm">new table</DialogTitle>
@@ -52,7 +56,7 @@ export default function NewTableDialog({
                     placeholder="table_name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    onKeyDown={(e) => onInputCommit(e, { onCommit: handleCreate, onCancel: () => onOpenChange(false) })}
+                    onKeyDown={(e) => onInputCommit(e, { onCommit: handleCreate, onCancel: () => handleOpenChange(false) })}
                     className="font-mono text-sm"
                 />
 
@@ -60,7 +64,7 @@ export default function NewTableDialog({
                     <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => onOpenChange(false)}
+                        onClick={() => handleOpenChange(false)}
                     >
                         cancel
                     </Button>

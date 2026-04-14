@@ -1,4 +1,4 @@
-import type { TableNode, RelationEdge, RelationEdgeData, RelationshipType } from "../types/flow.types";
+import type { TableNode, RelationEdge, RelationEdgeData } from "../types/flow.types";
 import type { DbColumn } from "../types/db.types";
 import { handleIds } from "../utils/handleIds";
 
