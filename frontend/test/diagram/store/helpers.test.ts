@@ -30,8 +30,9 @@ const makeNode = (id: string, name: string, columns: DbColumn[]): TableNode =>
     }) as TableNode;
 
 describe("helpers", () => {
-    it("defaultFkColumnName lowercases and appends _id", () => {
-        expect(defaultFkColumnName("Users")).toBe("users_id");
+    it("defaultFkColumnName singularizes and appends _id", () => {
+        expect(defaultFkColumnName("Users")).toBe("user_id");
+        expect(defaultFkColumnName("Categories")).toBe("category_id");
     });
 
     it("patchNode updates only the matching node", () => {

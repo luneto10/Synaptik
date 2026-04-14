@@ -16,10 +16,10 @@ export default defineConfig({
             reporter: ["text", "html"],
             include: [
                 "features/diagram/store/helpers.ts",
-                    "features/diagram/store/nodeActions.ts",
-                    "features/diagram/store/edgeActions.ts",
+                "features/diagram/store/nodeActions.ts",
+                "features/diagram/store/edgeActions.ts",
                 "features/diagram/utils/*.ts",
-                    "features/diagram/hooks/useConnectMode.ts",
+                "features/diagram/hooks/useConnectMode.ts",
                 "features/diagram/components/edges/ConnectionDialog.tsx",
                 "features/diagram/nodes/ColumnBadges.tsx",
             ],

@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { getHandleSide, handleIds } from "../../../features/diagram/utils/handleIds";
+import {
+    getHandleSide,
+    handleIds,
+} from "../../../features/diagram/utils/handleIds";
 
 describe("handleIds", () => {
     it("builds all source/target handle IDs from a column ID", () => {

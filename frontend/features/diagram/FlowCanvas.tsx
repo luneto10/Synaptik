@@ -11,7 +11,9 @@ import {
     ControlButton,
     ReactFlowProvider,
     type EdgeTypes,
+    type NodeChange,
 } from "@xyflow/react";
+import { useStore } from "zustand";
 import { useDiagramStore } from "./store/diagramStore";
 import { nodeTypes } from "./nodes";
 import FlowToolbar from "./components/canvas/FlowToolbar";
@@ -47,11 +49,16 @@ const DEFAULT_EDGE_OPTIONS = {
 
 function DiagramCanvas() {
     const containerRef = useRef<HTMLDivElement>(null);
+    const historyPausedRef = useRef(false);
 
     const nodes = useDiagramStore((s) => s.nodes);
     const edges = useDiagramStore((s) => s.edges);
     const onNodesChange = useDiagramStore((s) => s.onNodesChange);
     const onEdgesChange = useDiagramStore((s) => s.onEdgesChange);
+    const undo = useStore(useDiagramStore.temporal, (s) => s.undo);
+    const redo = useStore(useDiagramStore.temporal, (s) => s.redo);
+    const pause = useStore(useDiagramStore.temporal, (s) => s.pause);
+    const resume = useStore(useDiagramStore.temporal, (s) => s.resume);
 
     const [activeTool, setActiveTool] = useState<DiagramTool>("select");
     const [tableDialogOpen, setTableDialogOpen] = useState(false);
@@ -87,19 +94,78 @@ function DiagramCanvas() {
         if (!open) setActiveTool("select");
     }, []);
 
-    const handleCancelConn    = useCallback(() => setPendingConn(null), [setPendingConn]);
-    const handleToggleMinimap = useCallback(() => setShowMinimap((v) => !v), []);
+    const handleCancelConn = useCallback(
+        () => setPendingConn(null),
+        [setPendingConn],
+    );
+    const handleToggleMinimap = useCallback(
+        () => setShowMinimap((v) => !v),
+        [],
+    );
+    const handleNodesChange = useCallback(
+        (changes: NodeChange[]) => {
+            const isDragging = changes.some(
+                (c) => c.type === "position" && c.dragging === true,
+            );
+            const isDropped = changes.some(
+                (c) => c.type === "position" && c.dragging === false,
+            );
+            const isResizing = changes.some(
+                (c) =>
+                    c.type === "dimensions" &&
+                    "resizing" in c &&
+                    c.resizing === true,
+            );
+            const isResizeEnd = changes.some(
+                (c) =>
+                    c.type === "dimensions" &&
+                    "resizing" in c &&
+                    c.resizing === false,
+            );
 
+            if (isDragging || isResizing) {
+                if (!historyPausedRef.current) {
+                    pause();
+                    historyPausedRef.current = true;
+                }
+                onNodesChange?.(changes);
+                return;
+            }
+
+            if (isDropped || isResizeEnd) {
+                // Apply final geometry first; then resume so this frame is committed once.
+                onNodesChange?.(changes);
+                if (historyPausedRef.current) {
+                    resume();
+                    historyPausedRef.current = false;
+                }
+                return;
+            }
+
+            if (historyPausedRef.current) {
+                resume();
+                historyPausedRef.current = false;
+            }
+
+            onNodesChange?.(changes);
+        },
+        [onNodesChange, pause, resume],
+    );
     const { handleUndo, handleRedo } = useKeyboardShortcuts({
         handleToolChange,
         setTableDialogOpen,
         setPendingConnectSource,
+        undo,
+        redo,
     });
 
     // Refocus the canvas whenever a dialog closes so keyboard shortcuts work.
     useEffect(() => {
         if (!tableDialogOpen && !pendingConn) {
-            const id = setTimeout(() => containerRef.current?.focus(), REFLOW_DELAY_MS);
+            const id = setTimeout(
+                () => containerRef.current?.focus(),
+                REFLOW_DELAY_MS,
+            );
             return () => clearTimeout(id);
         }
     }, [tableDialogOpen, pendingConn]);
@@ -140,7 +206,7 @@ function DiagramCanvas() {
                 <ReactFlow
                     nodes={displayNodes}
                     edges={edges}
-                    onNodesChange={onNodesChange}
+                    onNodesChange={handleNodesChange}
                     onEdgesChange={onEdgesChange}
                     onConnect={handleConnect}
                     onConnectStart={handleConnectStart}

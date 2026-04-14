@@ -48,7 +48,10 @@ export function useConnectMode(activeTool: DiagramTool) {
         const sourceId = draggingFromNodeId.current;
         draggingFromNodeId.current = null;
 
-        if (didConnect.current) { didConnect.current = false; return; }
+        if (didConnect.current) {
+            didConnect.current = false;
+            return;
+        }
         if (!sourceId) return;
 
         const el = event.target as Element;

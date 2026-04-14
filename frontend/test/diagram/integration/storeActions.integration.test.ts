@@ -31,6 +31,20 @@ const conn = (source: string, target: string): Connection => ({
 
 describe("diagram store actions integration", () => {
     beforeEach(() => {
+        const history = useDiagramStore.temporal.getState() as {
+            clear?: () => void;
+            pastStates?: unknown[];
+            futureStates?: unknown[];
+            resume?: () => void;
+            unpause?: () => void;
+            setTracking?: (tracking: boolean) => void;
+        };
+        history.clear?.();
+        if (history.pastStates) history.pastStates = [];
+        if (history.futureStates) history.futureStates = [];
+        history.resume?.();
+        history.unpause?.();
+        history.setTracking?.(true);
         useDiagramStore.setState({ nodes: [], edges: [] });
     });
 
@@ -43,11 +57,17 @@ describe("diagram store actions integration", () => {
             edges: [],
         });
 
-        useDiagramStore.getState().addEdgeWithType(conn("users", "orders"), "user_id", "one-to-many");
+        useDiagramStore
+            .getState()
+            .addEdgeWithType(conn("users", "orders"), "user_id", "one-to-many");
 
         const afterCreate = useDiagramStore.getState();
         expect(afterCreate.edges.length).toBe(1);
-        expect(afterCreate.nodes.find((n) => n.id === "orders")?.data.columns.some((c) => c.name === "user_id")).toBe(true);
+        expect(
+            afterCreate.nodes
+                .find((n) => n.id === "orders")
+                ?.data.columns.some((c) => c.name === "user_id"),
+        ).toBe(true);
 
         const edgeId = afterCreate.edges[0]?.id;
         expect(edgeId).toBeTruthy();
@@ -55,7 +75,11 @@ describe("diagram store actions integration", () => {
 
         const afterDelete = useDiagramStore.getState();
         expect(afterDelete.edges.length).toBe(0);
-        expect(afterDelete.nodes.find((n) => n.id === "orders")?.data.columns.some((c) => c.name === "user_id")).toBe(false);
+        expect(
+            afterDelete.nodes
+                .find((n) => n.id === "orders")
+                ?.data.columns.some((c) => c.name === "user_id"),
+        ).toBe(false);
     });
 
     it("createJunctionTable then deleting one junction edge cascades to direct M:N", () => {
@@ -70,16 +94,24 @@ describe("diagram store actions integration", () => {
         useDiagramStore.getState().createJunctionTable("users", "roles");
         const withJunction = useDiagramStore.getState();
 
-        const junction = withJunction.nodes.find((n) => n.id !== "users" && n.id !== "roles");
+        const junction = withJunction.nodes.find(
+            (n) => n.id !== "users" && n.id !== "roles",
+        );
         expect(junction).toBeTruthy();
-        const junctionEdges = withJunction.edges.filter((e) => e.data?.junctionTableId === junction?.id);
+        const junctionEdges = withJunction.edges.filter(
+            (e) => e.data?.junctionTableId === junction?.id,
+        );
         expect(junctionEdges.length).toBe(2);
 
         useDiagramStore.getState().deleteEdge(junctionEdges[0]!.id);
 
         const finalState = useDiagramStore.getState();
-        expect(finalState.nodes.find((n) => n.id === junction?.id)).toBeUndefined();
-        const mnEdge = finalState.edges.find((e) => e.data?.relationshipType === "many-to-many");
+        expect(
+            finalState.nodes.find((n) => n.id === junction?.id),
+        ).toBeUndefined();
+        const mnEdge = finalState.edges.find(
+            (e) => e.data?.relationshipType === "many-to-many",
+        );
         expect(mnEdge).toBeTruthy();
         expect(mnEdge?.source).toBe("users");
         expect(mnEdge?.target).toBe("roles");
@@ -88,7 +120,7 @@ describe("diagram store actions integration", () => {
     it("retargetFkColumn rewires edge source and updates FK metadata", () => {
         const fkCol: DbColumn = {
             id: "fk-user-id",
-            name: "users_id",
+            name: "user_id",
             type: "uuid",
             isPrimaryKey: false,
             isForeignKey: true,
@@ -122,14 +154,16 @@ describe("diagram store actions integration", () => {
             ],
         });
 
-        useDiagramStore.getState().retargetFkColumn("orders", "fk-user-id", "products");
+        useDiagramStore
+            .getState()
+            .retargetFkColumn("orders", "fk-user-id", "products");
         const state = useDiagramStore.getState();
 
         const updatedFk = state.nodes
             .find((n) => n.id === "orders")
             ?.data.columns.find((c) => c.id === "fk-user-id");
 
-        expect(updatedFk?.name).toBe("products_id");
+        expect(updatedFk?.name).toBe("product_id");
         expect(updatedFk?.references?.tableId).toBe("products");
 
         const edge = state.edges.find((e) => e.target === "orders");
@@ -144,7 +178,9 @@ describe("diagram store actions integration", () => {
         });
 
         useDiagramStore.getState().addColumn("users", "col-a");
-        let users = useDiagramStore.getState().nodes.find((n) => n.id === "users");
+        let users = useDiagramStore
+            .getState()
+            .nodes.find((n) => n.id === "users");
         expect(users?.data.columns.some((c) => c.id === "col-a")).toBe(true);
 
         useDiagramStore.getState().updateColumn("users", {
@@ -157,7 +193,9 @@ describe("diagram store actions integration", () => {
             isUnique: true,
         });
         users = useDiagramStore.getState().nodes.find((n) => n.id === "users");
-        expect(users?.data.columns.find((c) => c.id === "col-a")?.name).toBe("email");
+        expect(users?.data.columns.find((c) => c.id === "col-a")?.name).toBe(
+            "email",
+        );
 
         useDiagramStore.getState().renameTable("users", "AppUsers");
         users = useDiagramStore.getState().nodes.find((n) => n.id === "users");
@@ -192,15 +230,21 @@ describe("diagram store actions integration", () => {
         });
 
         useDiagramStore.getState().flipEdgeEnd("edge-users-orders", "source");
-        let edge = useDiagramStore.getState().edges.find((e) => e.id === "edge-users-orders");
+        let edge = useDiagramStore
+            .getState()
+            .edges.find((e) => e.id === "edge-users-orders");
         expect(edge?.sourceHandle).toBe("pk-users-source-left");
 
         useDiagramStore.getState().flipEdgeEnd("edge-users-orders", "target");
-        edge = useDiagramStore.getState().edges.find((e) => e.id === "edge-users-orders");
+        edge = useDiagramStore
+            .getState()
+            .edges.find((e) => e.id === "edge-users-orders");
         expect(edge?.targetHandle).toBe("pk-orders-target-right");
 
         useDiagramStore.getState().flipColumnHandleSide("users", "pk-users");
-        edge = useDiagramStore.getState().edges.find((e) => e.id === "edge-users-orders");
+        edge = useDiagramStore
+            .getState()
+            .edges.find((e) => e.id === "edge-users-orders");
         expect(edge?.sourceHandle).toBe("pk-users-source");
     });
 
@@ -214,6 +258,74 @@ describe("diagram store actions integration", () => {
         expect(useDiagramStore.getState().nodes.length).toBe(2);
 
         useDiagramStore.getState().deleteTable("users");
-        expect(useDiagramStore.getState().nodes.some((n) => n.id === "users")).toBe(false);
+        expect(
+            useDiagramStore.getState().nodes.some((n) => n.id === "users"),
+        ).toBe(false);
+    });
+
+    it("inserts FK columns below key block", () => {
+        const firstFk: DbColumn = {
+            id: "fk-a",
+            name: "account_id",
+            type: "uuid",
+            isPrimaryKey: false,
+            isForeignKey: true,
+            isNullable: false,
+            isUnique: false,
+            references: { tableId: "accounts", columnId: "pk-accounts" },
+        };
+        useDiagramStore.setState({
+            nodes: [
+                node("users", "Users", [pk("pk-users")]),
+                node("orders", "Orders", [
+                    pk("pk-orders"),
+                    firstFk,
+                    {
+                        id: "col-note",
+                        name: "note",
+                        type: "text",
+                        isPrimaryKey: false,
+                        isForeignKey: false,
+                        isNullable: true,
+                        isUnique: false,
+                    },
+                ]),
+            ],
+            edges: [],
+        });
+
+        useDiagramStore
+            .getState()
+            .addEdgeWithType(conn("users", "orders"), "user_id", "one-to-many");
+
+        const orders = useDiagramStore
+            .getState()
+            .nodes.find((n) => n.id === "orders");
+        const names = orders?.data.columns.map((c) => c.name) ?? [];
+        expect(names).toEqual(["id", "account_id", "user_id", "note"]);
+    });
+
+    it("undo/redo restores load example and table creation", () => {
+        const history = useDiagramStore.temporal.getState();
+
+        useDiagramStore.getState().addTable("Users");
+        expect(useDiagramStore.getState().nodes.length).toBe(1);
+        const createdTableId = useDiagramStore.getState().nodes[0]?.id;
+        history.undo();
+        expect(useDiagramStore.getState().nodes.length).toBe(0);
+        history.redo();
+        expect(useDiagramStore.getState().nodes.length).toBe(1);
+
+        useDiagramStore.getState().loadDiagram(
+            [node("orders", "Orders", [pk("pk-orders")])],
+            [],
+        );
+        expect(useDiagramStore.getState().nodes.length).toBe(1);
+        expect(useDiagramStore.getState().nodes[0]?.id).toBe("orders");
+        history.undo();
+        expect(useDiagramStore.getState().nodes[0]?.id).toBe(createdTableId);
+        expect(useDiagramStore.getState().nodes[0]?.data.name).toBe("Users");
+        history.redo();
+        expect(useDiagramStore.getState().nodes[0]?.id).toBe("orders");
     });
 });

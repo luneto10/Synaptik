@@ -1,5 +1,6 @@
 import type { RelationshipType } from "./types/flow.types";
 
+export const HISTORY_LIMIT = 50;
 /** Padding applied when fitting the view to diagram content. */
 export const FIT_VIEW_PADDING = 0.3;
 
@@ -28,15 +29,19 @@ export const LAYOUT = {
 
 /** Diagram color palette (indigo-500 family). */
 export const DIAGRAM_COLORS = {
-    edge:         "#6366f1",
+    edge: "#6366f1",
     edgeSelected: "#818cf8",
-    minimap:      "#6366f1",
+    minimap: "#6366f1",
 } as const;
 
 /** Edge rendering constants. */
 export const EDGE_STYLE = {
-    borderRadius:        10,
-    strokeWidth:         1.8,
+    borderRadius: 10,
+    baseOffset: 28,
+    laneStep: 18,
+    obstacleStep: 26,
+    obstacleYPadding: 36,
+    strokeWidth: 1.8,
     strokeWidthSelected: 2.5,
 } as const;
 
@@ -46,4 +51,3 @@ export const RELATION_LABELS: Record<RelationshipType, string> = {
     "one-to-many": "1 : N",
     "many-to-many": "N : M",
 };
-

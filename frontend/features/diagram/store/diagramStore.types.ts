@@ -1,5 +1,9 @@
 import type { Connection, EdgeChange, NodeChange } from "@xyflow/react";
-import type { TableNode, RelationEdge, RelationshipType } from "../types/flow.types";
+import type {
+    TableNode,
+    RelationEdge,
+    RelationshipType,
+} from "../types/flow.types";
 import type { DbColumn } from "../types/db.types";
 
 export interface DiagramState {
@@ -11,7 +15,11 @@ export interface DiagramState {
      * Creates an edge between two tables, auto-creating a FK column
      * in the target table pointing at the source table's PK.
      */
-    addEdgeWithType: (connection: Connection, fkName: string, type: RelationshipType) => void;
+    addEdgeWithType: (
+        connection: Connection,
+        fkName: string,
+        type: RelationshipType,
+    ) => void;
     setEdgeRelationType: (edgeId: string, type: RelationshipType) => void;
     /** Deletes the edge and removes the auto-created FK column from its node. */
     deleteEdge: (edgeId: string) => void;
@@ -34,7 +42,13 @@ export interface DiagramState {
      * renames the column to {newTable}_id, updates its references,
      * and swaps the connecting edge to start from the new table's PK.
      */
-    retargetFkColumn: (nodeId: string, columnId: string, newRefTableId: string) => void;
+    retargetFkColumn: (
+        nodeId: string,
+        columnId: string,
+        newRefTableId: string,
+    ) => void;
+    /** Recomputes edge handle sides from current node positions (left/right flow). */
+    normalizeEdgeHandleDirections: () => void;
 }
 
 /** Zustand setter typed for immer middleware (mutate draft directly). */

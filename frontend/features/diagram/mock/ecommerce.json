@@ -1,346 +1,346 @@
 {
-  "nodes": [
-    {
-      "id": "tbl-categories",
-      "type": "tableNode",
-      "position": { "x": 80, "y": 80 },
-      "data": {
-        "id": "tbl-categories",
-        "name": "categories",
-        "columns": [
-          {
-            "id": "col-cat-id",
-            "name": "id",
-            "type": "uuid",
-            "isPrimaryKey": true,
-            "isForeignKey": false,
-            "isNullable": false,
-            "isUnique": true
-          },
-          {
-            "id": "col-cat-name",
-            "name": "name",
-            "type": "varchar",
-            "isPrimaryKey": false,
-            "isForeignKey": false,
-            "isNullable": false,
-            "isUnique": false
-          },
-          {
-            "id": "col-cat-slug",
-            "name": "slug",
-            "type": "varchar",
-            "isPrimaryKey": false,
-            "isForeignKey": false,
-            "isNullable": false,
-            "isUnique": true
-          }
-        ]
-      }
-    },
-    {
-      "id": "tbl-users",
-      "type": "tableNode",
-      "position": { "x": 80, "y": 380 },
-      "data": {
-        "id": "tbl-users",
-        "name": "users",
-        "columns": [
-          {
-            "id": "col-usr-id",
-            "name": "id",
-            "type": "uuid",
-            "isPrimaryKey": true,
-            "isForeignKey": false,
-            "isNullable": false,
-            "isUnique": true
-          },
-          {
-            "id": "col-usr-email",
-            "name": "email",
-            "type": "varchar",
-            "isPrimaryKey": false,
-            "isForeignKey": false,
-            "isNullable": false,
-            "isUnique": true
-          },
-          {
-            "id": "col-usr-name",
-            "name": "name",
-            "type": "varchar",
-            "isPrimaryKey": false,
-            "isForeignKey": false,
-            "isNullable": false,
-            "isUnique": false
-          },
-          {
-            "id": "col-usr-created-at",
-            "name": "created_at",
-            "type": "timestamp",
-            "isPrimaryKey": false,
-            "isForeignKey": false,
-            "isNullable": false,
-            "isUnique": false
-          }
-        ]
-      }
-    },
-    {
-      "id": "tbl-products",
-      "type": "tableNode",
-      "position": { "x": 1130, "y": 80 },
-      "data": {
-        "id": "tbl-products",
-        "name": "products",
-        "columns": [
-          {
-            "id": "col-prd-id",
-            "name": "id",
-            "type": "uuid",
-            "isPrimaryKey": true,
-            "isForeignKey": false,
-            "isNullable": false,
-            "isUnique": true
-          },
-          {
-            "id": "col-prd-name",
-            "name": "name",
-            "type": "varchar",
-            "isPrimaryKey": false,
-            "isForeignKey": false,
-            "isNullable": false,
-            "isUnique": false
-          },
-          {
-            "id": "col-prd-price",
-            "name": "price",
-            "type": "float",
-            "isPrimaryKey": false,
-            "isForeignKey": false,
-            "isNullable": false,
-            "isUnique": false
-          },
-          {
-            "id": "col-prd-description",
-            "name": "description",
-            "type": "text",
-            "isPrimaryKey": false,
-            "isForeignKey": false,
-            "isNullable": true,
-            "isUnique": false
-          },
-          {
-            "id": "col-prd-category-id",
-            "name": "category_id",
-            "type": "uuid",
-            "isPrimaryKey": false,
-            "isForeignKey": true,
-            "isNullable": false,
-            "isUnique": false,
-            "references": {
-              "tableId": "tbl-categories",
-              "columnId": "col-cat-id"
+    "nodes": [
+        {
+            "id": "tbl-categories",
+            "type": "tableNode",
+            "position": { "x": 80, "y": 80 },
+            "data": {
+                "id": "tbl-categories",
+                "name": "categories",
+                "columns": [
+                    {
+                        "id": "col-cat-id",
+                        "name": "id",
+                        "type": "uuid",
+                        "isPrimaryKey": true,
+                        "isForeignKey": false,
+                        "isNullable": false,
+                        "isUnique": true
+                    },
+                    {
+                        "id": "col-cat-name",
+                        "name": "name",
+                        "type": "varchar",
+                        "isPrimaryKey": false,
+                        "isForeignKey": false,
+                        "isNullable": false,
+                        "isUnique": false
+                    },
+                    {
+                        "id": "col-cat-slug",
+                        "name": "slug",
+                        "type": "varchar",
+                        "isPrimaryKey": false,
+                        "isForeignKey": false,
+                        "isNullable": false,
+                        "isUnique": true
+                    }
+                ]
             }
-          },
-          {
-            "id": "col-prd-stock",
-            "name": "stock",
-            "type": "int",
-            "isPrimaryKey": false,
-            "isForeignKey": false,
-            "isNullable": false,
-            "isUnique": false
-          }
-        ]
-      }
-    },
-    {
-      "id": "tbl-orders",
-      "type": "tableNode",
-      "position": { "x": 430, "y": 380 },
-      "data": {
-        "id": "tbl-orders",
-        "name": "orders",
-        "columns": [
-          {
-            "id": "col-ord-id",
-            "name": "id",
-            "type": "uuid",
-            "isPrimaryKey": true,
-            "isForeignKey": false,
-            "isNullable": false,
-            "isUnique": true
-          },
-          {
-            "id": "col-ord-user-id",
-            "name": "user_id",
-            "type": "uuid",
-            "isPrimaryKey": false,
-            "isForeignKey": true,
-            "isNullable": false,
-            "isUnique": false,
-            "references": {
-              "tableId": "tbl-users",
-              "columnId": "col-usr-id"
+        },
+        {
+            "id": "tbl-users",
+            "type": "tableNode",
+            "position": { "x": 80, "y": 380 },
+            "data": {
+                "id": "tbl-users",
+                "name": "users",
+                "columns": [
+                    {
+                        "id": "col-usr-id",
+                        "name": "id",
+                        "type": "uuid",
+                        "isPrimaryKey": true,
+                        "isForeignKey": false,
+                        "isNullable": false,
+                        "isUnique": true
+                    },
+                    {
+                        "id": "col-usr-email",
+                        "name": "email",
+                        "type": "varchar",
+                        "isPrimaryKey": false,
+                        "isForeignKey": false,
+                        "isNullable": false,
+                        "isUnique": true
+                    },
+                    {
+                        "id": "col-usr-name",
+                        "name": "name",
+                        "type": "varchar",
+                        "isPrimaryKey": false,
+                        "isForeignKey": false,
+                        "isNullable": false,
+                        "isUnique": false
+                    },
+                    {
+                        "id": "col-usr-created-at",
+                        "name": "created_at",
+                        "type": "timestamp",
+                        "isPrimaryKey": false,
+                        "isForeignKey": false,
+                        "isNullable": false,
+                        "isUnique": false
+                    }
+                ]
             }
-          },
-          {
-            "id": "col-ord-total",
-            "name": "total",
-            "type": "float",
-            "isPrimaryKey": false,
-            "isForeignKey": false,
-            "isNullable": false,
-            "isUnique": false
-          },
-          {
-            "id": "col-ord-status",
-            "name": "status",
-            "type": "varchar",
-            "isPrimaryKey": false,
-            "isForeignKey": false,
-            "isNullable": false,
-            "isUnique": false
-          },
-          {
-            "id": "col-ord-created-at",
-            "name": "created_at",
-            "type": "timestamp",
-            "isPrimaryKey": false,
-            "isForeignKey": false,
-            "isNullable": false,
-            "isUnique": false
-          }
-        ]
-      }
-    },
-    {
-      "id": "tbl-order-items",
-      "type": "tableNode",
-      "position": { "x": 780, "y": 250 },
-      "data": {
-        "id": "tbl-order-items",
-        "name": "order_items",
-        "columns": [
-          {
-            "id": "col-oi-id",
-            "name": "id",
-            "type": "uuid",
-            "isPrimaryKey": true,
-            "isForeignKey": false,
-            "isNullable": false,
-            "isUnique": true
-          },
-          {
-            "id": "col-oi-order-id",
-            "name": "order_id",
-            "type": "uuid",
-            "isPrimaryKey": false,
-            "isForeignKey": true,
-            "isNullable": false,
-            "isUnique": false,
-            "references": {
-              "tableId": "tbl-orders",
-              "columnId": "col-ord-id"
+        },
+        {
+            "id": "tbl-products",
+            "type": "tableNode",
+            "position": { "x": 1130, "y": 80 },
+            "data": {
+                "id": "tbl-products",
+                "name": "products",
+                "columns": [
+                    {
+                        "id": "col-prd-id",
+                        "name": "id",
+                        "type": "uuid",
+                        "isPrimaryKey": true,
+                        "isForeignKey": false,
+                        "isNullable": false,
+                        "isUnique": true
+                    },
+                    {
+                        "id": "col-prd-name",
+                        "name": "name",
+                        "type": "varchar",
+                        "isPrimaryKey": false,
+                        "isForeignKey": false,
+                        "isNullable": false,
+                        "isUnique": false
+                    },
+                    {
+                        "id": "col-prd-price",
+                        "name": "price",
+                        "type": "float",
+                        "isPrimaryKey": false,
+                        "isForeignKey": false,
+                        "isNullable": false,
+                        "isUnique": false
+                    },
+                    {
+                        "id": "col-prd-description",
+                        "name": "description",
+                        "type": "text",
+                        "isPrimaryKey": false,
+                        "isForeignKey": false,
+                        "isNullable": true,
+                        "isUnique": false
+                    },
+                    {
+                        "id": "col-prd-category-id",
+                        "name": "category_id",
+                        "type": "uuid",
+                        "isPrimaryKey": false,
+                        "isForeignKey": true,
+                        "isNullable": false,
+                        "isUnique": false,
+                        "references": {
+                            "tableId": "tbl-categories",
+                            "columnId": "col-cat-id"
+                        }
+                    },
+                    {
+                        "id": "col-prd-stock",
+                        "name": "stock",
+                        "type": "int",
+                        "isPrimaryKey": false,
+                        "isForeignKey": false,
+                        "isNullable": false,
+                        "isUnique": false
+                    }
+                ]
             }
-          },
-          {
-            "id": "col-oi-product-id",
-            "name": "product_id",
-            "type": "uuid",
-            "isPrimaryKey": false,
-            "isForeignKey": true,
-            "isNullable": false,
-            "isUnique": false,
-            "references": {
-              "tableId": "tbl-products",
-              "columnId": "col-prd-id"
+        },
+        {
+            "id": "tbl-orders",
+            "type": "tableNode",
+            "position": { "x": 430, "y": 380 },
+            "data": {
+                "id": "tbl-orders",
+                "name": "orders",
+                "columns": [
+                    {
+                        "id": "col-ord-id",
+                        "name": "id",
+                        "type": "uuid",
+                        "isPrimaryKey": true,
+                        "isForeignKey": false,
+                        "isNullable": false,
+                        "isUnique": true
+                    },
+                    {
+                        "id": "col-ord-user-id",
+                        "name": "user_id",
+                        "type": "uuid",
+                        "isPrimaryKey": false,
+                        "isForeignKey": true,
+                        "isNullable": false,
+                        "isUnique": false,
+                        "references": {
+                            "tableId": "tbl-users",
+                            "columnId": "col-usr-id"
+                        }
+                    },
+                    {
+                        "id": "col-ord-total",
+                        "name": "total",
+                        "type": "float",
+                        "isPrimaryKey": false,
+                        "isForeignKey": false,
+                        "isNullable": false,
+                        "isUnique": false
+                    },
+                    {
+                        "id": "col-ord-status",
+                        "name": "status",
+                        "type": "varchar",
+                        "isPrimaryKey": false,
+                        "isForeignKey": false,
+                        "isNullable": false,
+                        "isUnique": false
+                    },
+                    {
+                        "id": "col-ord-created-at",
+                        "name": "created_at",
+                        "type": "timestamp",
+                        "isPrimaryKey": false,
+                        "isForeignKey": false,
+                        "isNullable": false,
+                        "isUnique": false
+                    }
+                ]
             }
-          },
-          {
-            "id": "col-oi-quantity",
-            "name": "quantity",
-            "type": "int",
-            "isPrimaryKey": false,
-            "isForeignKey": false,
-            "isNullable": false,
-            "isUnique": false
-          },
-          {
-            "id": "col-oi-price",
-            "name": "price",
-            "type": "float",
-            "isPrimaryKey": false,
-            "isForeignKey": false,
-            "isNullable": false,
-            "isUnique": false
-          }
-        ]
-      }
-    }
-  ],
-  "edges": [
-    {
-      "id": "edge-cat-prod",
-      "source": "tbl-categories",
-      "target": "tbl-products",
-      "sourceHandle": "col-cat-id-source",
-      "targetHandle": "col-prd-category-id-target",
-      "type": "relation",
-      "data": {
-        "sourceColumnId": "col-cat-id",
-        "targetColumnId": "col-prd-category-id",
-        "relationshipType": "one-to-many",
-        "autoCreatedColumnId": "col-prd-category-id",
-        "autoCreatedColumnNodeId": "tbl-products"
-      }
-    },
-    {
-      "id": "edge-usr-ord",
-      "source": "tbl-users",
-      "target": "tbl-orders",
-      "sourceHandle": "col-usr-id-source",
-      "targetHandle": "col-ord-user-id-target",
-      "type": "relation",
-      "data": {
-        "sourceColumnId": "col-usr-id",
-        "targetColumnId": "col-ord-user-id",
-        "relationshipType": "one-to-many",
-        "autoCreatedColumnId": "col-ord-user-id",
-        "autoCreatedColumnNodeId": "tbl-orders"
-      }
-    },
-    {
-      "id": "edge-ord-oi",
-      "source": "tbl-orders",
-      "target": "tbl-order-items",
-      "sourceHandle": "col-ord-id-source",
-      "targetHandle": "col-oi-order-id-target",
-      "type": "relation",
-      "data": {
-        "sourceColumnId": "col-ord-id",
-        "targetColumnId": "col-oi-order-id",
-        "relationshipType": "one-to-many",
-        "autoCreatedColumnId": "col-oi-order-id",
-        "autoCreatedColumnNodeId": "tbl-order-items",
-        "junctionTableId": "tbl-order-items"
-      }
-    },
-    {
-      "id": "edge-prd-oi",
-      "source": "tbl-products",
-      "target": "tbl-order-items",
-      "sourceHandle": "col-prd-id-source-left",
-      "targetHandle": "col-oi-product-id-target-right",
-      "type": "relation",
-      "data": {
-        "sourceColumnId": "col-prd-id",
-        "targetColumnId": "col-oi-product-id",
-        "relationshipType": "one-to-many",
-        "autoCreatedColumnId": "col-oi-product-id",
-        "autoCreatedColumnNodeId": "tbl-order-items",
-        "junctionTableId": "tbl-order-items"
-      }
-    }
-  ]
+        },
+        {
+            "id": "tbl-order_product",
+            "type": "tableNode",
+            "position": { "x": 780, "y": 250 },
+            "data": {
+                "id": "tbl-order_product",
+                "name": "order_product",
+                "columns": [
+                    {
+                        "id": "col-oi-id",
+                        "name": "id",
+                        "type": "uuid",
+                        "isPrimaryKey": true,
+                        "isForeignKey": false,
+                        "isNullable": false,
+                        "isUnique": true
+                    },
+                    {
+                        "id": "col-oi-order-id",
+                        "name": "order_id",
+                        "type": "uuid",
+                        "isPrimaryKey": false,
+                        "isForeignKey": true,
+                        "isNullable": false,
+                        "isUnique": false,
+                        "references": {
+                            "tableId": "tbl-orders",
+                            "columnId": "col-ord-id"
+                        }
+                    },
+                    {
+                        "id": "col-oi-product-id",
+                        "name": "product_id",
+                        "type": "uuid",
+                        "isPrimaryKey": false,
+                        "isForeignKey": true,
+                        "isNullable": false,
+                        "isUnique": false,
+                        "references": {
+                            "tableId": "tbl-products",
+                            "columnId": "col-prd-id"
+                        }
+                    },
+                    {
+                        "id": "col-oi-quantity",
+                        "name": "quantity",
+                        "type": "int",
+                        "isPrimaryKey": false,
+                        "isForeignKey": false,
+                        "isNullable": false,
+                        "isUnique": false
+                    },
+                    {
+                        "id": "col-oi-price",
+                        "name": "price",
+                        "type": "float",
+                        "isPrimaryKey": false,
+                        "isForeignKey": false,
+                        "isNullable": false,
+                        "isUnique": false
+                    }
+                ]
+            }
+        }
+    ],
+    "edges": [
+        {
+            "id": "edge-cat-prod",
+            "source": "tbl-categories",
+            "target": "tbl-products",
+            "sourceHandle": "col-cat-id-source",
+            "targetHandle": "col-prd-category-id-target",
+            "type": "relation",
+            "data": {
+                "sourceColumnId": "col-cat-id",
+                "targetColumnId": "col-prd-category-id",
+                "relationshipType": "one-to-many",
+                "autoCreatedColumnId": "col-prd-category-id",
+                "autoCreatedColumnNodeId": "tbl-products"
+            }
+        },
+        {
+            "id": "edge-usr-ord",
+            "source": "tbl-users",
+            "target": "tbl-orders",
+            "sourceHandle": "col-usr-id-source",
+            "targetHandle": "col-ord-user-id-target",
+            "type": "relation",
+            "data": {
+                "sourceColumnId": "col-usr-id",
+                "targetColumnId": "col-ord-user-id",
+                "relationshipType": "one-to-many",
+                "autoCreatedColumnId": "col-ord-user-id",
+                "autoCreatedColumnNodeId": "tbl-orders"
+            }
+        },
+        {
+            "id": "edge-ord-oi",
+            "source": "tbl-orders",
+            "target": "tbl-order_product",
+            "sourceHandle": "col-ord-id-source",
+            "targetHandle": "col-oi-order-id-target",
+            "type": "relation",
+            "data": {
+                "sourceColumnId": "col-ord-id",
+                "targetColumnId": "col-oi-order-id",
+                "relationshipType": "one-to-many",
+                "autoCreatedColumnId": "col-oi-order-id",
+                "autoCreatedColumnNodeId": "tbl-order_product",
+                "junctionTableId": "tbl-order_product"
+            }
+        },
+        {
+            "id": "edge-prd-oi",
+            "source": "tbl-products",
+            "target": "tbl-order_product",
+            "sourceHandle": "col-prd-id-source-left",
+            "targetHandle": "col-oi-product-id-target-right",
+            "type": "relation",
+            "data": {
+                "sourceColumnId": "col-prd-id",
+                "targetColumnId": "col-oi-product-id",
+                "relationshipType": "one-to-many",
+                "autoCreatedColumnId": "col-oi-product-id",
+                "autoCreatedColumnNodeId": "tbl-order_product",
+                "junctionTableId": "tbl-order_product"
+            }
+        }
+    ]
 }

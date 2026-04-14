@@ -1,6 +1,7 @@
 import type { TableNode, RelationEdge, RelationEdgeData } from "../types/flow.types";
 import type { DbColumn } from "../types/db.types";
 import { handleIds } from "../utils/handleIds";
+import pluralize from "pluralize";
 
 // ── Node patchers ─────────────────────────────────────────────────────────────
 
@@ -39,8 +40,32 @@ export function stripAutoCol(
 // ── Naming helpers ────────────────────────────────────────────────────────────
 
 /** Canonical FK column name derived from the referenced table name. */
+export const singularizeTableName = (tableName: string) => {
+    return pluralize.singular(tableName.trim().toLowerCase());
+};
+
+/** Canonical FK column name derived from singular referenced table name. */
 export const defaultFkColumnName = (tableName: string) =>
-    `${tableName.toLowerCase()}_id`;
+    `${singularizeTableName(tableName)}_id`;
+
+/**
+ * Inserts a new FK column right after the PK/FK block.
+ * Order becomes: PK(s), FK(s), then user-defined non-key columns.
+ */
+export function insertForeignKeyColumn(
+    columns: DbColumn[],
+    fkColumn: DbColumn,
+): DbColumn[] {
+    const insertAt = columns.findIndex(
+        (c) => !c.isPrimaryKey && !c.isForeignKey,
+    );
+    if (insertAt === -1) return [...columns, fkColumn];
+    return [
+        ...columns.slice(0, insertAt),
+        fkColumn,
+        ...columns.slice(insertAt),
+    ];
+}
 
 // ── Column builders ───────────────────────────────────────────────────────────
 

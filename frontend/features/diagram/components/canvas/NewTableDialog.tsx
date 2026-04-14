@@ -56,7 +56,12 @@ export default function NewTableDialog({
                     placeholder="table_name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    onKeyDown={(e) => onInputCommit(e, { onCommit: handleCreate, onCancel: () => handleOpenChange(false) })}
+                    onKeyDown={(e) =>
+                        onInputCommit(e, {
+                            onCommit: handleCreate,
+                            onCancel: () => handleOpenChange(false),
+                        })
+                    }
                     className="font-mono text-sm"
                 />
 

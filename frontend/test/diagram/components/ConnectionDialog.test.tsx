@@ -55,7 +55,7 @@ describe("ConnectionDialog", () => {
 
         expect(screen.getAllByText("Users").length).toBeGreaterThan(0);
         expect(screen.getAllByText("Orders").length).toBeGreaterThan(0);
-        expect(screen.getAllByPlaceholderText("users_id").length).toBeGreaterThan(0);
+        expect(screen.getAllByPlaceholderText("user_id").length).toBeGreaterThan(0);
     });
 
     it("allows editing the FK name input", () => {
@@ -68,7 +68,7 @@ describe("ConnectionDialog", () => {
             />,
         );
 
-        const input = screen.getAllByPlaceholderText("users_id")[0];
+        const input = screen.getAllByPlaceholderText("user_id")[0];
         fireEvent.change(input, { target: { value: "customer_id" } });
         expect((input as HTMLInputElement).value).toBe("customer_id");
     });

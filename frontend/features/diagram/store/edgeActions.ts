@@ -1,11 +1,31 @@
 import { applyEdgeChanges, type Connection, type EdgeChange } from "@xyflow/react";
 import type { RelationEdge, RelationshipType } from "../types/flow.types";
 import type { TableNode } from "../types/flow.types";
-import { makeEdge, makeFkCol, makeMnEdge, patchColumns, stripAutoCol, cascadeJunction, defaultFkColumnName } from "./helpers";
+import { makeEdge, makeFkCol, makeMnEdge, patchColumns, stripAutoCol, cascadeJunction, defaultFkColumnName, insertForeignKeyColumn } from "./helpers";
 import type { SetState } from "./diagramStore.types";
-import { handleIds, getHandleSide } from "../utils/handleIds";
+import { handleIds, getHandleSide, sourceColumnIdFromHandle, targetColumnIdFromHandle } from "../utils/handleIds";
 
 export function createEdgeActions(set: SetState) {
+    const normalizeEdgeHandles = (nodes: TableNode[], edges: RelationEdge[]): RelationEdge[] => {
+        const byId = new Map(nodes.map((n) => [n.id, n]));
+        return edges.map((e) => {
+            const sourceNode = byId.get(e.source);
+            const targetNode = byId.get(e.target);
+            if (!sourceNode || !targetNode) return e;
+
+            const sourceColId = e.data?.sourceColumnId ?? sourceColumnIdFromHandle(e.sourceHandle);
+            const targetColId = e.data?.targetColumnId ?? targetColumnIdFromHandle(e.targetHandle);
+            if (!sourceColId || !targetColId) return e;
+
+            const sourceOnLeft = sourceNode.position.x <= targetNode.position.x;
+            return {
+                ...e,
+                sourceHandle: sourceOnLeft ? handleIds(sourceColId).sourceRight : handleIds(sourceColId).sourceLeft,
+                targetHandle: sourceOnLeft ? handleIds(targetColId).targetLeft : handleIds(targetColId).targetRight,
+            };
+        });
+    };
+
     return {
         onEdgesChange: (changes: EdgeChange[]) =>
             set((draft) => {
@@ -78,7 +98,10 @@ export function createEdgeActions(set: SetState) {
                     { sourceColumnId: pkCol.id, targetColumnId: fkColId, relationshipType: type, autoCreatedColumnId: fkColId },
                 );
 
-                targetNode.data.columns.push(fkCol);
+                targetNode.data.columns = insertForeignKeyColumn(
+                    targetNode.data.columns,
+                    fkCol,
+                );
                 draft.edges.push(edge);
             }),
 
@@ -176,6 +199,11 @@ export function createEdgeActions(set: SetState) {
 
                 if (oldEdge) draft.edges = draft.edges.filter((e) => e.id !== oldEdge.id) as RelationEdge[];
                 draft.edges.push(newEdge);
+            }),
+
+        normalizeEdgeHandleDirections: () =>
+            set((draft) => {
+                draft.edges = normalizeEdgeHandles(draft.nodes as TableNode[], draft.edges as RelationEdge[]);
             }),
     };
 }

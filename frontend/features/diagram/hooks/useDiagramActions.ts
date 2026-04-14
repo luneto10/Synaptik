@@ -28,20 +28,32 @@ export function useDiagramActions() {
             example.nodes as TableNode[],
             example.edges as RelationEdge[],
         );
-        setTimeout(() => fitView({ padding: FIT_VIEW_PADDING }), REFLOW_DELAY_MS);
+        setTimeout(
+            () => fitView({ padding: FIT_VIEW_PADDING }),
+            REFLOW_DELAY_MS,
+        );
     }, [loadDiagram, fitView]);
 
     const handleAutoLayout = useCallback(() => {
-        const { nodes, edges, onNodesChange } = useDiagramStore.getState();
+        const { nodes, edges, onNodesChange, normalizeEdgeHandleDirections } =
+            useDiagramStore.getState();
 
         const g = new dagre.graphlib.Graph();
         g.setDefaultEdgeLabel(() => ({}));
-        g.setGraph({ rankdir: "LR", nodesep: LAYOUT.DAGRE_NODE_SEP, ranksep: LAYOUT.DAGRE_RANK_SEP });
+        g.setGraph({
+            rankdir: "LR",
+            nodesep: LAYOUT.DAGRE_NODE_SEP,
+            ranksep: LAYOUT.DAGRE_RANK_SEP,
+        });
 
         for (const n of nodes) {
             g.setNode(n.id, {
-                width:  (n as TableNode & { measured?: { width?: number } }).measured?.width  ?? LAYOUT.DEFAULT_NODE_WIDTH,
-                height: (n as TableNode & { measured?: { height?: number } }).measured?.height ?? LAYOUT.DEFAULT_NODE_HEIGHT,
+                width:
+                    (n as TableNode & { measured?: { width?: number } })
+                        .measured?.width ?? LAYOUT.DEFAULT_NODE_WIDTH,
+                height:
+                    (n as TableNode & { measured?: { height?: number } })
+                        .measured?.height ?? LAYOUT.DEFAULT_NODE_HEIGHT,
             });
         }
         for (const e of edges) g.setEdge(e.source, e.target);
@@ -50,11 +62,19 @@ export function useDiagramActions() {
 
         const changes = nodes.map((n) => {
             const { x, y, width, height } = g.node(n.id);
-            return { id: n.id, type: "position" as const, position: { x: x - width / 2, y: y - height / 2 } };
+            return {
+                id: n.id,
+                type: "position" as const,
+                position: { x: x - width / 2, y: y - height / 2 },
+            };
         });
 
         onNodesChange(changes);
-        setTimeout(() => fitView({ padding: FIT_VIEW_PADDING }), REFLOW_DELAY_MS);
+        normalizeEdgeHandleDirections();
+        setTimeout(
+            () => fitView({ padding: FIT_VIEW_PADDING }),
+            REFLOW_DELAY_MS,
+        );
     }, [fitView]);
 
     return { isPending, handleSave, handleLoadExample, handleAutoLayout };

@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useEffect, useRef } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { Handle, Position } from "@xyflow/react";
 import { Input } from "@/components/ui/input";
 import {
@@ -45,6 +45,11 @@ function TableNodeColumnRow({
     onRemove,
 }: Props) {
     const nameInputRef = useRef<HTMLInputElement>(null);
+    const [draftName, setDraftName] = useState(column.name);
+
+    useEffect(() => {
+        setDraftName(column.name);
+    }, [column.id, column.name]);
 
     useEffect(() => {
         if (autoFocus && nameInputRef.current) {
@@ -56,6 +61,19 @@ function TableNodeColumnRow({
 
     const handleCls =
         "w-2.5! h-2.5! bg-indigo-500! border-2! border-card! rounded-full! opacity-20! group-hover:!opacity-100! transition-opacity! cursor-crosshair!";
+
+    const commitName = () => {
+        const next = draftName.trim();
+        if (!next || next === column.name) {
+            setDraftName(column.name);
+            return;
+        }
+        onUpdate({ ...column, name: next });
+    };
+
+    const cancelName = () => {
+        setDraftName(column.name);
+    };
 
     return (
         <div className="group relative flex items-center border-b border-border/40 last:border-0 hover:bg-muted/40 transition-colors">
@@ -73,12 +91,20 @@ function TableNodeColumnRow({
             <div className="flex-1 px-1 py-1.5 min-w-0">
                 <Input
                     ref={nameInputRef}
-                    value={column.name}
-                    onChange={(e) =>
-                        onUpdate({ ...column, name: e.target.value })
-                    }
+                    value={draftName}
+                    onChange={(e) => setDraftName(e.target.value)}
+                    onBlur={commitName}
                     onKeyDown={(e) => {
-                        onInputCommit(e, { onCommit: () => e.currentTarget.blur(), onCancel: () => e.currentTarget.blur() });
+                        onInputCommit(e, {
+                            onCommit: () => {
+                                commitName();
+                                e.currentTarget.blur();
+                            },
+                            onCancel: () => {
+                                cancelName();
+                                e.currentTarget.blur();
+                            },
+                        });
                         e.stopPropagation(); // prevent canvas shortcuts firing
                     }}
                     className="h-7 text-sm border-0 bg-transparent! dark:bg-transparent! shadow-none p-0 font-mono text-foreground

@@ -16,6 +16,16 @@ export const handleIds = (colId: string) => ({
     targetRight: `${colId}-target-right`,
 });
 
+export function sourceColumnIdFromHandle(handleId: string | null | undefined): string | undefined {
+    if (!handleId) return undefined;
+    return handleId.replace(/-source(-left)?$/, "");
+}
+
+export function targetColumnIdFromHandle(handleId: string | null | undefined): string | undefined {
+    if (!handleId) return undefined;
+    return handleId.replace(/-target(-right)?$/, "");
+}
+
 /** Derives the visual side ("left" | "right") from a handle ID string. */
 export function getHandleSide(
     handleId: string | null | undefined,
