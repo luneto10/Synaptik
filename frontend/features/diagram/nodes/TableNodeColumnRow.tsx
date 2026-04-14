@@ -1,5 +1,7 @@
 "use client";
 
+import { useMemo } from "react";
+import { Handle, Position } from "@xyflow/react";
 import { Input } from "@/components/ui/input";
 import {
     Select,
@@ -14,10 +16,11 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { TableCell, TableRow } from "@/components/ui/table";
-import { Trash2, KeyRound, Link, CircleDot } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import type { DbColumn, ColumnType } from "../types/db.types";
-import { Toggle } from "@/components/ui/toggle";
+import { useDiagramStore } from "../store/diagramStore";
+import ColumnBadges from "./ColumnBadges";
+import ColumnSettingsPopover from "./ColumnSettingsPopover";
 
 const COLUMN_TYPES: ColumnType[] = [
     "uuid",
@@ -31,138 +34,116 @@ const COLUMN_TYPES: ColumnType[] = [
     "float",
 ];
 
-interface TableNodeColumnRowProps {
+interface Props {
+    nodeId: string;
     column: DbColumn;
     onUpdate: (column: DbColumn) => void;
     onRemove: () => void;
 }
 
 export default function TableNodeColumnRow({
+    nodeId,
     column,
     onUpdate,
     onRemove,
-}: TableNodeColumnRowProps) {
-    return (
-        <TableRow className="group hover:bg-slate-50">
-            {/* ── Badges ── */}
-            <TableCell className="px-2 py-1 w-10">
-                <ColumnBadges column={column} />
-            </TableCell>
+}: Props) {
+    const nodes = useDiagramStore((s) => s.nodes);
+    const otherNodes = useMemo(
+        () => nodes.filter((n) => n.id !== nodeId),
+        [nodes, nodeId],
+    );
 
-            {/* ── Name ── */}
-            <TableCell className="px-2 py-1">
+    return (
+        <div className="group relative flex items-center border-b border-border/50 last:border-0 hover:bg-muted/50 transition-colors">
+            {/* ── Target handle (left edge) ── */}
+            <Handle
+                type="target"
+                position={Position.Left}
+                id={`${column.id}-target`}
+                className="w-2.5! h-2.5! bg-indigo-500! border-2! border-card! rounded-full! opacity-0! group-hover:!opacity-100! transition-opacity!"
+                style={{ top: "50%" }}
+            />
+
+            {/* Badges — fixed width */}
+            <div className="w-10 px-2 shrink-0">
+                <ColumnBadges column={column} />
+            </div>
+
+            {/* Name — grows */}
+            <div className="flex-1 px-1 py-1.5 min-w-0">
                 <Input
                     value={column.name}
                     onChange={(e) =>
                         onUpdate({ ...column, name: e.target.value })
                     }
-                    className="h-6 text-xs border-0 bg-transparent p-0
-                         focus-visible:ring-0 focus-visible:ring-offset-0
-                         focus-visible:bg-indigo-50 focus-visible:rounded
-                         focus-visible:px-1 font-mono"
+                    className="h-7 text-sm border-0 bg-transparent p-0 font-mono text-foreground
+                               focus-visible:ring-0 focus-visible:ring-offset-0
+                               focus-visible:bg-indigo-500/10 focus-visible:rounded focus-visible:px-1
+                               w-full"
                 />
-            </TableCell>
+            </div>
 
-            {/* ── Type ── */}
-            <TableCell className="px-2 py-1">
+            {/* Type — fixed width */}
+            <div className="w-24 px-1 py-1.5 shrink-0">
                 <Select
                     value={column.type}
                     onValueChange={(v) =>
                         onUpdate({ ...column, type: v as ColumnType })
                     }
                 >
-                    <SelectTrigger
-                        className="h-6 text-xs border-0 bg-transparent p-0
-                           focus:ring-0 text-slate-500 gap-1 w-24"
-                    >
+                    <SelectTrigger className="h-7 text-sm border-0 bg-transparent p-0 focus:ring-0 text-muted-foreground gap-1 w-full">
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                         {COLUMN_TYPES.map((t) => (
-                            <SelectItem key={t} value={t} className="text-xs">
+                            <SelectItem
+                                key={t}
+                                value={t}
+                                className="text-sm font-mono"
+                            >
                                 {t}
                             </SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
-            </TableCell>
+            </div>
 
-            {/* ── Nullable ── */}
-            <TableCell className="px-2 py-1 w-8 text-center">
-                <NullableToggle column={column} onUpdate={onUpdate} />
-            </TableCell>
+            {/* Actions — fixed width, only on hover */}
+            <div className="w-14 px-1 shrink-0">
+                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <ColumnSettingsPopover
+                        column={column}
+                        otherNodes={otherNodes}
+                        onUpdate={onUpdate}
+                    />
+                    {!column.isPrimaryKey && (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={onRemove}
+                                    className="h-5 w-5 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                >
+                                    <Trash2 className="w-3 h-3" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">
+                                Delete column
+                            </TooltipContent>
+                        </Tooltip>
+                    )}
+                </div>
+            </div>
 
-            {/* ── Remove ── */}
-            <TableCell className="px-1 py-1 w-6">
-                {!column.isPrimaryKey && (
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={onRemove}
-                        className="h-5 w-5 opacity-0 group-hover:opacity-100
-                           text-slate-300 hover:text-red-500 hover:bg-red-50
-                           transition-opacity"
-                    >
-                        <Trash2 className="w-3 h-3" />
-                    </Button>
-                )}
-            </TableCell>
-        </TableRow>
-    );
-}
-
-function ColumnBadges({ column }: { column: DbColumn }) {
-    return (
-        <div className="flex gap-0.5">
-            {column.isPrimaryKey && (
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <KeyRound className="w-3 h-3 text-amber-500" />
-                    </TooltipTrigger>
-                    <TooltipContent side="top">Primary key</TooltipContent>
-                </Tooltip>
-            )}
-            {column.isForeignKey && (
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Link className="w-3 h-3 text-violet-500" />
-                    </TooltipTrigger>
-                    <TooltipContent side="top">Foreign key</TooltipContent>
-                </Tooltip>
-            )}
-            {column.isUnique && !column.isPrimaryKey && (
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <CircleDot className="w-3 h-3 text-sky-400" />
-                    </TooltipTrigger>
-                    <TooltipContent side="top">Unique</TooltipContent>
-                </Tooltip>
-            )}
+            {/* ── Source handle (right edge) ── */}
+            <Handle
+                type="source"
+                position={Position.Right}
+                id={`${column.id}-source`}
+                className="w-2.5! h-2.5! bg-indigo-500! border-2! border-card! rounded-full! opacity-0! group-hover:!opacity-100! transition-opacity!"
+                style={{ top: "50%" }}
+            />
         </div>
-    );
-}
-
-// ── Nullable toggle ───────────────────────────────────────────────────────────
-
-function NullableToggle({
-    column,
-    onUpdate,
-}: {
-    column: DbColumn;
-    onUpdate: (column: DbColumn) => void;
-}) {
-    return (
-        <Toggle
-            size="sm"
-            pressed={column.isNullable}
-            onPressedChange={(pressed) =>
-                onUpdate({ ...column, isNullable: pressed })
-            }
-            className="h-5 w-5 p-0 text-[10px] font-bold data-[state=on]:bg-emerald-100
-                   data-[state=on]:text-emerald-700 data-[state=on]:border-emerald-300
-                   border border-slate-200 text-slate-400"
-        >
-            N
-        </Toggle>
     );
 }

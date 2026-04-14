@@ -29,7 +29,7 @@ export default function TableNodeHeader({
     };
 
     return (
-        <div className="bg-indigo-600 rounded-t-xl px-3 py-2 flex items-center justify-between gap-2">
+        <div className="bg-indigo-600 rounded-t-xl px-3 py-2.5 flex items-center justify-between gap-2">
             {/* ── Name / Edit input ── */}
             {editing ? (
                 <Input
@@ -39,8 +39,8 @@ export default function TableNodeHeader({
                     onBlur={commit}
                     onKeyDown={(e) => e.key === "Enter" && commit()}
                     className="bg-transparent border-0 border-b border-indigo-300 rounded-none
-                     text-white text-sm font-semibold outline-none p-0 h-auto
-                     focus-visible:ring-0 focus-visible:ring-offset-0 w-full"
+                     text-white text-base font-bold outline-none p-0 h-auto
+                     focus-visible:ring-0 focus-visible:ring-offset-0 w-full font-mono"
                 />
             ) : (
                 <Button
@@ -48,7 +48,7 @@ export default function TableNodeHeader({
                     size="sm"
                     onDoubleClick={() => setEditing(true)}
                     title="Double-click to rename"
-                    className="text-white font-semibold text-sm p-0 h-auto
+                    className="text-white font-bold text-base p-0 h-auto font-mono
                      hover:bg-transparent hover:text-indigo-100
                      truncate max-w-full"
                 >
@@ -59,7 +59,7 @@ export default function TableNodeHeader({
             {/* ── Column count badge ── */}
             <Badge
                 variant="secondary"
-                className="bg-indigo-500 text-indigo-100 hover:bg-indigo-500 text-xs shrink-0"
+                className="bg-indigo-500/70 text-indigo-100 hover:bg-indigo-500/70 text-xs shrink-0"
             >
                 {columnCount} col{columnCount !== 1 ? "s" : ""}
             </Badge>

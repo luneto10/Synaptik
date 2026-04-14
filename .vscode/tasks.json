@@ -3,6 +3,12 @@
     "tasks": [
         {
             "label": "Docker Compose All",
+            "dependsOn": ["Docker Start", "Docker Install Frontend Deps"],
+            "dependsOrder": "sequence",
+            "problemMatcher": []
+        },
+        {
+            "label": "Docker Start",
             "type": "shell",
             "command": "docker compose up -d",
             "problemMatcher": []
@@ -11,6 +17,35 @@
             "label": "Docker Stop All",
             "type": "shell",
             "command": "docker compose down",
+            "problemMatcher": []
+        },
+        {
+            "label": "Docker Rebuild Frontend",
+            "type": "shell",
+            "command": "docker compose build --no-cache frontend",
+            "problemMatcher": []
+        },
+        {
+            "label": "Docker Rebuild All",
+            "type": "shell",
+            "command": "docker compose build --no-cache",
+            "problemMatcher": []
+        },
+        {
+            "label": "Docker Install Frontend Deps",
+            "type": "shell",
+            "command": "docker compose exec frontend npm install",
+            "problemMatcher": []
+        },
+        {
+            "label": "Docker Compose Up Fresh",
+            "dependsOn": [
+                "Docker Stop All",
+                "Docker Rebuild All",
+                "Docker Start",
+                "Docker Install Frontend Deps"
+            ],
+            "dependsOrder": "sequence",
             "problemMatcher": []
         }
     ]
