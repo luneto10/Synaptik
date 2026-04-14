@@ -1,23 +1,22 @@
 import { applyNodeChanges, type NodeChange } from "@xyflow/react";
 import { TABLE_NODE_TYPE, type TableNode, type RelationEdge } from "../types/flow.types";
-import type { DbColumn } from "../types/db.types";
 import { LAYOUT } from "../constants";
-import { makePkCol, makeFkCol, makeEdge, makeMnEdge, patchNode, patchColumns, stripAutoCol } from "./helpers";
+import { makePkCol, makeFkCol, makeEdge, makeMnEdge, stripAutoCol } from "./helpers";
 import type { SetState } from "./diagramStore.types";
 
 export function createNodeActions(set: SetState) {
     return {
         onNodesChange: (changes: NodeChange[]) =>
-            set((s) => ({
-                nodes: applyNodeChanges(changes, s.nodes) as TableNode[],
-            })),
+            set((draft) => {
+                draft.nodes = applyNodeChanges(changes, draft.nodes) as TableNode[];
+            }),
 
         addTable: (name: string) =>
-            set((s) => {
+            set((draft) => {
                 const id = crypto.randomUUID();
-                const col = s.nodes.length;
+                const col = draft.nodes.length;
                 const row = Math.floor(col / LAYOUT.COLS);
-                const node: TableNode = {
+                draft.nodes.push({
                     id,
                     type: TABLE_NODE_TYPE,
                     position: {
@@ -25,77 +24,80 @@ export function createNodeActions(set: SetState) {
                         y: LAYOUT.ORIGIN_Y + row * LAYOUT.GAP_Y,
                     },
                     data: { id, name, columns: [makePkCol()] },
-                };
-                return { nodes: [...s.nodes, node] };
+                });
             }),
 
         addColumn: (nodeId: string, columnId?: string) =>
-            set((s) => ({
-                nodes: patchColumns(s.nodes, nodeId, (cols) => [
-                    ...cols,
-                    {
-                        id: columnId ?? crypto.randomUUID(),
-                        name: "column_name",
-                        type: "text",
-                        isPrimaryKey: false,
-                        isForeignKey: false,
-                        isNullable: true,
-                        isUnique: false,
-                    },
-                ]),
-            })),
+            set((draft) => {
+                const node = draft.nodes.find((n) => n.id === nodeId);
+                node?.data.columns.push({
+                    id: columnId ?? crypto.randomUUID(),
+                    name: "column_name",
+                    type: "text",
+                    isPrimaryKey: false,
+                    isForeignKey: false,
+                    isNullable: true,
+                    isUnique: false,
+                });
+            }),
 
-        updateColumn: (nodeId: string, column: DbColumn) =>
-            set((s) => ({
-                nodes: patchColumns(s.nodes, nodeId, (cols) =>
-                    cols.map((c) => (c.id === column.id ? column : c)),
-                ),
-            })),
+        updateColumn: (nodeId: string, column: import("../types/db.types").DbColumn) =>
+            set((draft) => {
+                const node = draft.nodes.find((n) => n.id === nodeId);
+                if (!node) return;
+                const idx = node.data.columns.findIndex((c) => c.id === column.id);
+                if (idx !== -1) node.data.columns[idx] = column;
+            }),
 
         removeColumn: (nodeId: string, columnId: string) =>
-            set((s) => ({
-                nodes: patchColumns(s.nodes, nodeId, (cols) =>
-                    cols.filter((c) => c.id !== columnId),
-                ),
-            })),
+            set((draft) => {
+                const node = draft.nodes.find((n) => n.id === nodeId);
+                if (!node) return;
+                node.data.columns = node.data.columns.filter((c) => c.id !== columnId);
+            }),
 
         renameTable: (nodeId: string, name: string) =>
-            set((s) => ({ nodes: patchNode(s.nodes, nodeId, { name }) })),
+            set((draft) => {
+                const node = draft.nodes.find((n) => n.id === nodeId);
+                if (node) node.data.name = name;
+            }),
 
         deleteTable: (nodeId: string) =>
-            set((s) => {
-                let nodes = s.nodes.filter((n) => n.id !== nodeId);
-                for (const edge of s.edges.filter((e) => e.source === nodeId)) {
-                    nodes = stripAutoCol(
-                        nodes,
+            set((draft) => {
+                for (const edge of draft.edges.filter((e) => e.source === nodeId)) {
+                    draft.nodes = stripAutoCol(
+                        draft.nodes as TableNode[],
                         edge.data?.autoCreatedColumnId,
                         edge.data?.autoCreatedColumnNodeId ?? edge.target,
                     );
                 }
-                const filteredEdges = s.edges.filter(
+                draft.nodes = draft.nodes.filter((n) => n.id !== nodeId) as TableNode[];
+
+                const filteredEdges = draft.edges.filter(
                     (e) => e.source !== nodeId && e.target !== nodeId,
                 );
-                const junctionEdges = s.edges.filter(
+                const junctionEdges = draft.edges.filter(
                     (e) => e.data?.junctionTableId === nodeId,
                 );
                 if (junctionEdges.length > 0) {
-                    const mn = makeMnEdge(s.nodes, junctionEdges);
-                    if (mn) return { nodes, edges: [...filteredEdges, mn] };
+                    const mn = makeMnEdge(draft.nodes as TableNode[], junctionEdges as RelationEdge[]);
+                    draft.edges = mn ? [...filteredEdges, mn] : filteredEdges;
+                } else {
+                    draft.edges = filteredEdges;
                 }
-                return { nodes, edges: filteredEdges };
             }),
 
         createJunctionTable: (sourceNodeId: string, targetNodeId: string) =>
-            set((s) => {
-                const sourceNode = s.nodes.find((n) => n.id === sourceNodeId);
-                const targetNode = s.nodes.find((n) => n.id === targetNodeId);
-                if (!sourceNode || !targetNode) return s;
+            set((draft) => {
+                const sourceNode = draft.nodes.find((n) => n.id === sourceNodeId);
+                const targetNode = draft.nodes.find((n) => n.id === targetNodeId);
+                if (!sourceNode || !targetNode) return;
 
                 const sourcePk = sourceNode.data.columns.find((c) => c.isPrimaryKey);
                 const targetPk = targetNode.data.columns.find((c) => c.isPrimaryKey);
-                if (!sourcePk || !targetPk) return s;
+                if (!sourcePk || !targetPk) return;
 
-                const junctionId   = crypto.randomUUID();
+                const junctionId    = crypto.randomUUID();
                 const fkSourceColId = crypto.randomUUID();
                 const fkTargetColId = crypto.randomUUID();
 
@@ -117,8 +119,6 @@ export function createNodeActions(set: SetState) {
                     },
                 };
 
-                // T1 → junction (right source → left target)
-                // T2 → junction (left  source → right target)  ⟹  T1 ─|──► junction ◄──|─ T2
                 const edgeToSource = makeEdge(
                     sourceNodeId, junctionId,
                     `${sourcePk.id}-source`, `${fkSourceColId}-target`,
@@ -130,17 +130,17 @@ export function createNodeActions(set: SetState) {
                     { sourceColumnId: targetPk.id, targetColumnId: fkTargetColId, relationshipType: "one-to-many", autoCreatedColumnId: fkTargetColId, junctionTableId: junctionId },
                 );
 
-                const updatedNodes = s.nodes.map((n) =>
-                    n.id !== targetNodeId ? n
-                        : { ...n, position: { x: junctionX + LAYOUT.JUNCTION_GAP, y: junctionY } },
-                );
+                const tgt = draft.nodes.find((n) => n.id === targetNodeId);
+                if (tgt) tgt.position = { x: junctionX + LAYOUT.JUNCTION_GAP, y: junctionY };
 
-                return {
-                    nodes: [...updatedNodes, junctionNode],
-                    edges: [...s.edges, edgeToSource, edgeToTarget],
-                };
+                draft.nodes.push(junctionNode);
+                draft.edges.push(edgeToSource, edgeToTarget);
             }),
 
-        loadDiagram: (nodes: TableNode[], edges: RelationEdge[]) => set(() => ({ nodes, edges })),
+        loadDiagram: (nodes: TableNode[], edges: RelationEdge[]) =>
+            set((draft) => {
+                draft.nodes = nodes;
+                draft.edges = edges;
+            }),
     };
 }

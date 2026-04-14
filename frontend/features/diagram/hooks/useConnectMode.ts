@@ -6,7 +6,14 @@ import type {
 } from "@xyflow/react";
 import { useDiagramStore } from "../store/diagramStore";
 import type { RelationshipType } from "../types/flow.types";
-import type { DiagramTool } from "../components/LeftToolbox";
+import type { DiagramTool } from "../components/canvas/LeftToolbox";
+
+const makePendingConn = (source: string, target: string): Connection => ({
+    source,
+    target,
+    sourceHandle: null,
+    targetHandle: null,
+});
 
 export function useConnectMode(activeTool: DiagramTool) {
     const nodes = useDiagramStore((s) => s.nodes);
@@ -49,12 +56,7 @@ export function useConnectMode(activeTool: DiagramTool) {
         const targetId = nodeEl?.getAttribute("data-id");
 
         if (targetId && targetId !== sourceId) {
-            setPendingConn({
-                source: sourceId,
-                target: targetId,
-                sourceHandle: null,
-                targetHandle: null,
-            });
+            setPendingConn(makePendingConn(sourceId, targetId));
         }
     }, []);
 
@@ -71,12 +73,7 @@ export function useConnectMode(activeTool: DiagramTool) {
                 setPendingConnectSource(null);
                 return;
             }
-            setPendingConn({
-                source: pendingConnectSource,
-                target: node.id,
-                sourceHandle: null,
-                targetHandle: null,
-            });
+            setPendingConn(makePendingConn(pendingConnectSource, node.id));
             setPendingConnectSource(null);
         },
         [activeTool, pendingConnectSource],

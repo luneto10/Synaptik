@@ -9,7 +9,6 @@ import {
     Fingerprint,
     CaseSensitive,
     Hash,
-    Binary,
     ToggleLeft,
     Clock,
     Braces,
@@ -20,6 +19,7 @@ import {
     type LucideIcon,
 } from "lucide-react";
 import type { DbColumn, ColumnType } from "../types/db.types";
+import { cn } from "@/lib/utils";
 
 // ── Type → icon map (different types may share the same icon) ─────────────────
 
@@ -43,9 +43,7 @@ const WIDE_ICONS = new Set<LucideIcon>([CaseSensitive]);
 
 function TypeIcon({ type }: { type: ColumnType }) {
     const Icon = TYPE_ICONS[type];
-    const cls = WIDE_ICONS.has(Icon)
-        ? "w-4 h-3 shrink-0 text-foreground/40"
-        : `${ICON_CLS} text-foreground/40`;
+    const cls = cn(WIDE_ICONS.has(Icon) ? "w-4 h-3" : ICON_CLS, "text-foreground/40");
     return (
         <Tooltip>
             <TooltipTrigger asChild>
@@ -69,9 +67,7 @@ export default function ColumnBadges({ column }: { column: DbColumn }) {
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <span className="inline-flex">
-                            <KeyRound
-                                className={`${ICON_CLS} text-amber-500`}
-                            />
+                            <KeyRound className={cn(ICON_CLS, "text-amber-500")} />
                         </span>
                     </TooltipTrigger>
                     <TooltipContent side="top">Primary key</TooltipContent>
@@ -82,7 +78,7 @@ export default function ColumnBadges({ column }: { column: DbColumn }) {
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <span className="inline-flex">
-                            <Link2 className={`${ICON_CLS} text-violet-500`} />
+                            <Link2 className={cn(ICON_CLS, "text-violet-500")} />
                         </span>
                     </TooltipTrigger>
                     <TooltipContent side="top">
@@ -100,7 +96,7 @@ export default function ColumnBadges({ column }: { column: DbColumn }) {
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <span className="inline-flex">
-                            <CircleDot className={`${ICON_CLS} text-sky-400`} />
+                            <CircleDot className={cn(ICON_CLS, "text-sky-400")} />
                         </span>
                     </TooltipTrigger>
                     <TooltipContent side="top">Unique</TooltipContent>

@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useDiagramStore } from "../store/diagramStore";
+import { useDiagramStore } from "../../store/diagramStore";
 
 interface NewTableDialogProps {
     open: boolean;

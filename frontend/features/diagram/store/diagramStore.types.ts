@@ -37,5 +37,5 @@ export interface DiagramState {
     retargetFkColumn: (nodeId: string, columnId: string, newRefTableId: string) => void;
 }
 
-/** Zustand setter typed against DiagramState. */
-export type SetState = (fn: (s: DiagramState) => Partial<DiagramState>) => void;
+/** Zustand setter typed for immer middleware (mutate draft directly). */
+export type SetState = (recipe: (draft: DiagramState) => void) => void;

@@ -4,9 +4,10 @@ import { useState, useCallback } from "react";
 import { getSmoothStepPath, EdgeLabelRenderer, BaseEdge, type EdgeProps } from "@xyflow/react";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import type { RelationEdge as RelationEdgeType, RelationEdgeData, RelationshipType } from "../types/flow.types";
-import { useDiagramStore } from "../store/diagramStore";
-import { RELATION_LABELS } from "../constants";
+import type { RelationEdge as RelationEdgeType, RelationEdgeData, RelationshipType } from "../../types/flow.types";
+import { useDiagramStore } from "../../store/diagramStore";
+import { RELATION_LABELS } from "../../constants";
+import { cn } from "@/lib/utils";
 import { JunctionPrompt } from "./JunctionPrompt";
 import { EdgePopoverContent } from "./EdgePopoverContent";
 
@@ -45,7 +46,7 @@ export default function RelationEdge({
     const createJunctionTable  = useDiagramStore((s) => s.createJunctionTable);
     const flipEdgeEnd          = useDiagramStore((s) => s.flipEdgeEnd);
 
-    const [open, setOpen]           = useState(false);
+    const [open, setOpen]               = useState(false);
     const [askJunction, setAskJunction] = useState(false);
 
     const relType: RelationshipType =
@@ -109,11 +110,11 @@ export default function RelationEdge({
                             <button>
                                 <Badge
                                     variant={selected ? "default" : "secondary"}
-                                    className={`
-                                        text-[10px] font-mono px-1.5 py-0 h-5 cursor-pointer
-                                        hover:bg-indigo-500/20 hover:text-indigo-400 transition-colors select-none
-                                        ${selected ? "bg-indigo-500 text-white hover:bg-indigo-600 hover:text-white" : ""}
-                                    `}
+                                    className={cn(
+                                        "text-[10px] font-mono px-1.5 py-0 h-5 cursor-pointer",
+                                        "hover:bg-indigo-500/20 hover:text-indigo-400 transition-colors select-none",
+                                        selected && "bg-indigo-500 text-white hover:bg-indigo-600 hover:text-white",
+                                    )}
                                 >
                                     {RELATION_LABELS[relType]}
                                 </Badge>

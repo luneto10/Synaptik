@@ -1,6 +1,6 @@
-import { useCallback } from "react";
+import { useHotkeys } from "react-hotkeys-hook";
 import { useDiagramStore } from "../store/diagramStore";
-import type { DiagramTool } from "../components/LeftToolbox";
+import type { DiagramTool } from "../components/canvas/LeftToolbox";
 
 interface Options {
     handleToolChange: (tool: DiagramTool) => void;
@@ -8,57 +8,39 @@ interface Options {
     setPendingConnectSource: (id: string | null) => void;
 }
 
+const history = () => useDiagramStore.temporal.getState();
+
+const HOTKEY_OPTIONS = {
+    preventDefault: true,
+    enableOnFormTags: false, 
+} as const;
+
 export function useKeyboardShortcuts({
     handleToolChange,
     setTableDialogOpen,
     setPendingConnectSource,
 }: Options) {
-    const nodes = useDiagramStore((s) => s.nodes);
+    const selectedNodeId = useDiagramStore((s) => s.nodes.find((n) => n.selected)?.id);
 
-    const handleKeyDown = useCallback(
-        (e: React.KeyboardEvent) => {
-            if (
-                e.target instanceof HTMLInputElement ||
-                e.target instanceof HTMLTextAreaElement
-            )
-                return;
+    useHotkeys("ctrl+z", () => history().undo(), HOTKEY_OPTIONS);
+    useHotkeys("ctrl+shift+z", () => history().redo(), HOTKEY_OPTIONS);
 
-            if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === "z") {
-                e.preventDefault();
-                useDiagramStore.temporal.getState().undo();
-                return;
-            }
-            if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "z") {
-                e.preventDefault();
-                useDiagramStore.temporal.getState().redo();
-                return;
-            }
+    useHotkeys("t", () => setTableDialogOpen(true), HOTKEY_OPTIONS);
+    useHotkeys("s", () => handleToolChange("select"), HOTKEY_OPTIONS);
+    useHotkeys("a", () => handleToolChange("areaSelect"), HOTKEY_OPTIONS);
 
-            if (!e.ctrlKey && !e.metaKey && !e.altKey) {
-                const key = e.key.toLowerCase();
-
-                if (key === "t") {
-                    e.preventDefault();
-                    setTableDialogOpen(true);
-                    return;
-                }
-                if (key === "c") {
-                    handleToolChange("connect");
-                    const selected = nodes.find((n) => n.selected);
-                    if (selected) setPendingConnectSource(selected.id);
-                    return;
-                }
-
-                const toolMap: Record<string, DiagramTool> = {
-                    s: "select",
-                    a: "areaSelect",
-                };
-                const tool = toolMap[key];
-                if (tool) handleToolChange(tool);
-            }
+    useHotkeys(
+        "c",
+        () => {
+            handleToolChange("connect");
+            if (selectedNodeId) setPendingConnectSource(selectedNodeId);
         },
-        [handleToolChange, setTableDialogOpen, setPendingConnectSource, nodes],
+        HOTKEY_OPTIONS,
+        [selectedNodeId],
     );
 
-    return { handleKeyDown };
+    return {
+        handleUndo: () => history().undo(),
+        handleRedo: () => history().redo(),
+    };
 }

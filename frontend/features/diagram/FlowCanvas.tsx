@@ -14,24 +14,26 @@ import {
 } from "@xyflow/react";
 import { useDiagramStore } from "./store/diagramStore";
 import { nodeTypes } from "./nodes";
-import FlowToolbar from "./components/FlowToolbar";
-import LeftToolbox, { type DiagramTool } from "./components/LeftToolbox";
-import NewTableDialog from "./components/NewTableDialog";
-import ConnectionDialog from "./components/ConnectionDialog";
-import RelationEdge from "./components/RelationEdge";
-import { EdgeMarkerDefs } from "./components/EdgeMarkerDefs";
+import FlowToolbar from "./components/canvas/FlowToolbar";
+import LeftToolbox, { type DiagramTool } from "./components/canvas/LeftToolbox";
+import NewTableDialog from "./components/canvas/NewTableDialog";
+import ConnectionDialog from "./components/edges/ConnectionDialog";
+import RelationEdge from "./components/edges/RelationEdge";
+import { EdgeMarkerDefs } from "./components/edges/EdgeMarkerDefs";
 import { Map } from "lucide-react";
 import { useDiagramActions } from "./hooks/useDiagramActions";
 import { useConnectMode } from "./hooks/useConnectMode";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import type { RelationshipType } from "./types/flow.types";
+import { FIT_VIEW_PADDING } from "./constants";
+import { cn } from "@/lib/utils";
 
 // ── Module-level constants (stable references, never cause re-renders) ────────
 
 const edgeTypes: EdgeTypes = { relation: RelationEdge as EdgeTypes[string] };
 
 const CONNECTION_LINE_STYLE = { stroke: "#6366f1", strokeWidth: 2 };
-const FIT_VIEW_OPTIONS = { padding: 0.3 };
+const FIT_VIEW_OPTIONS = { padding: FIT_VIEW_PADDING };
 const DEFAULT_EDGE_OPTIONS = {
     type: "relation",
     data: {
@@ -85,20 +87,11 @@ function DiagramCanvas() {
         if (!open) setActiveTool("select");
     }, []);
 
-    const { handleKeyDown } = useKeyboardShortcuts({
+    const { handleUndo, handleRedo } = useKeyboardShortcuts({
         handleToolChange,
         setTableDialogOpen,
         setPendingConnectSource,
     });
-
-    const handleUndo = useCallback(
-        () => useDiagramStore.temporal.getState().undo(),
-        [],
-    );
-    const handleRedo = useCallback(
-        () => useDiagramStore.temporal.getState().redo(),
-        [],
-    );
 
     // Refocus the canvas whenever a dialog closes so keyboard shortcuts work.
     useEffect(() => {
@@ -112,8 +105,7 @@ function DiagramCanvas() {
         <div
             ref={containerRef}
             className="w-screen h-screen flex flex-col overflow-hidden bg-background"
-            onKeyDown={handleKeyDown}
-            tabIndex={0}
+            tabIndex={-1}
         >
             <FlowToolbar
                 nodeCount={nodes.length}
@@ -187,7 +179,7 @@ function DiagramCanvas() {
                         <ControlButton
                             onClick={() => setShowMinimap((v) => !v)}
                             title="Toggle minimap"
-                            className={showMinimap ? "text-indigo-400!" : ""}
+                            className={cn(showMinimap && "text-indigo-400!")}
                         >
                             <Map className="w-3.5 h-3.5" />
                         </ControlButton>

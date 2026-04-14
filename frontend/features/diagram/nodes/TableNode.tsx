@@ -9,6 +9,7 @@ import type { DbColumn } from "../types/db.types";
 import TableNodeHeader from "./TableNodeHeader";
 import TableNodeColumns from "./TableNodeColumns";
 import TableNodeFooter from "./TableNodeFooter";
+import { cn } from "@/lib/utils";
 
 function TableNode({ id, data, selected }: NodeProps<TableNodeType>) {
     const addColumn = useDiagramStore((s) => s.addColumn);
@@ -47,15 +48,12 @@ function TableNode({ id, data, selected }: NodeProps<TableNodeType>) {
             />
 
             <div
-                className={`
-                    bg-card rounded-xl border shadow-md w-full h-full overflow-hidden
-                    transition-shadow duration-150
-                    ${
-                        selected
-                            ? "border-indigo-500 shadow-indigo-500/20 shadow-lg ring-1 ring-indigo-500/30"
-                            : "border-border hover:shadow-lg"
-                    }
-                `}
+                className={cn(
+                    "bg-card rounded-xl border shadow-md w-full h-full overflow-hidden transition-shadow duration-150",
+                    selected
+                        ? "border-indigo-500 shadow-indigo-500/20 shadow-lg ring-1 ring-indigo-500/30"
+                        : "border-border hover:shadow-lg",
+                )}
             >
                 {/* ── Header ── */}
                 <TableNodeHeader

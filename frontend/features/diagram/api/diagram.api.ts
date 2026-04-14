@@ -18,7 +18,6 @@ export const diagramApi = axios.create({
 export async function saveDiagram(
     payload: DiagramPayload,
 ): Promise<SaveDiagramResponse> {
-    console.log("Payload →", JSON.stringify(payload, null, 2));
     const { data } = await diagramApi.post<SaveDiagramResponse>(
         "/diagram",
         payload,

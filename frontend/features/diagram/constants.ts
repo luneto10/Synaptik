@@ -1,5 +1,8 @@
 import type { RelationshipType } from "./types/flow.types";
 
+/** Padding applied when fitting the view to diagram content. */
+export const FIT_VIEW_PADDING = 0.3;
+
 /** Grid layout used when auto-placing new tables and running auto-layout. */
 export const LAYOUT = {
     COLS: 4,
