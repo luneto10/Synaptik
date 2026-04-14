@@ -8,6 +8,8 @@ import TableNodeColumnRow from "./TableNodeColumnRow";
 interface TableNodeColumnsProps {
     nodeId: string;
     columns: DbColumn[];
+    focusColId: string | null;
+    onFocusConsumed: () => void;
     onUpdate: (column: DbColumn) => void;
     onRemove: (columnId: string) => void;
 }
@@ -15,6 +17,8 @@ interface TableNodeColumnsProps {
 export default function TableNodeColumns({
     nodeId,
     columns,
+    focusColId,
+    onFocusConsumed,
     onUpdate,
     onRemove,
 }: TableNodeColumnsProps) {
@@ -23,12 +27,13 @@ export default function TableNodeColumns({
             <Separator />
             <ScrollArea className="max-h-80">
                 <div className="flex flex-col">
-                    {/* ── Column rows ── */}
                     {columns.map((col) => (
                         <TableNodeColumnRow
                             key={col.id}
                             nodeId={nodeId}
                             column={col}
+                            autoFocus={col.id === focusColId}
+                            onFocusConsumed={onFocusConsumed}
                             onUpdate={onUpdate}
                             onRemove={() => onRemove(col.id)}
                         />

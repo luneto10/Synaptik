@@ -11,7 +11,7 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { BrainCircuit, Save, Loader2, Sun, Moon, Wand2 } from "lucide-react";
+import { BrainCircuit, Save, Loader2, Sun, Moon, Wand2, FlaskConical } from "lucide-react";
 
 interface FlowToolbarProps {
     nodeCount: number;
@@ -19,6 +19,7 @@ interface FlowToolbarProps {
     isPending: boolean;
     onSave: () => void;
     onAutoLayout: () => void;
+    onLoadExample: () => void;
 }
 
 export default function FlowToolbar({
@@ -27,6 +28,7 @@ export default function FlowToolbar({
     isPending,
     onSave,
     onAutoLayout,
+    onLoadExample,
 }: FlowToolbarProps) {
     const { theme, setTheme } = useTheme();
     const [projectName, setProjectName] = useState("untitled");
@@ -90,6 +92,21 @@ export default function FlowToolbar({
                 <TooltipContent>Auto layout</TooltipContent>
             </Tooltip>
 
+            {/* ── Load example ── */}
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                        onClick={onLoadExample}
+                    >
+                        <FlaskConical className="w-4 h-4" />
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent>Load e-commerce example</TooltipContent>
+            </Tooltip>
+
             {/* ── Right cluster ── */}
             <div className="ml-auto flex items-center gap-2">
                 <Badge variant="secondary" className="text-xs font-normal">
@@ -128,7 +145,7 @@ export default function FlowToolbar({
                     size="sm"
                     className="h-8 text-xs bg-indigo-600 hover:bg-indigo-700 text-white gap-1"
                     onClick={onSave}
-                    disabled={isPending || true}
+                    disabled={isPending}
                 >
                     {isPending ? (
                         <Loader2 className="w-3 h-3 animate-spin" />

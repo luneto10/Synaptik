@@ -5,27 +5,82 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { KeyRound, Link2, CircleDot } from "lucide-react";
-import type { DbColumn } from "../types/db.types";
+import {
+    Fingerprint,
+    CaseSensitive,
+    Hash,
+    Binary,
+    ToggleLeft,
+    Clock,
+    Braces,
+    Divide,
+    KeyRound,
+    Link2,
+    CircleDot,
+    type LucideIcon,
+} from "lucide-react";
+import type { DbColumn, ColumnType } from "../types/db.types";
+
+// ── Type → icon map (different types may share the same icon) ─────────────────
+
+const TYPE_ICONS: Record<ColumnType, LucideIcon> = {
+    uuid:      Fingerprint,
+    text:      CaseSensitive,
+    varchar:   CaseSensitive,
+    int:       Hash,
+    bigint:    Hash,
+    boolean:   ToggleLeft,
+    timestamp: Clock,
+    jsonb:     Braces,
+    float:     Divide,
+};
+
+// ── Badge helpers ─────────────────────────────────────────────────────────────
+
+export const ICON_CLS = "w-3 h-3 shrink-0";
+
+const WIDE_ICONS = new Set<LucideIcon>([CaseSensitive]);
+
+function TypeIcon({ type }: { type: ColumnType }) {
+    const Icon = TYPE_ICONS[type];
+    const cls = WIDE_ICONS.has(Icon)
+        ? "w-4 h-3 shrink-0 text-foreground/40"
+        : `${ICON_CLS} text-foreground/40`;
+    return (
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <span className="inline-flex">
+                    <Icon className={cls} />
+                </span>
+            </TooltipTrigger>
+            <TooltipContent side="top">{type}</TooltipContent>
+        </Tooltip>
+    );
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
 
 export default function ColumnBadges({ column }: { column: DbColumn }) {
     return (
         <div className="flex gap-0.5 items-center">
+            <TypeIcon type={column.type} />
+
             {column.isPrimaryKey && (
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <span className="inline-flex">
-                            <KeyRound className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                            <KeyRound className={`${ICON_CLS} text-amber-500`} />
                         </span>
                     </TooltipTrigger>
                     <TooltipContent side="top">Primary key</TooltipContent>
                 </Tooltip>
             )}
+
             {column.isForeignKey && (
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <span className="inline-flex">
-                            <Link2 className="w-3.5 h-3.5 text-violet-500 shrink-0" />
+                            <Link2 className={`${ICON_CLS} text-violet-500`} />
                         </span>
                     </TooltipTrigger>
                     <TooltipContent side="top">
@@ -38,11 +93,12 @@ export default function ColumnBadges({ column }: { column: DbColumn }) {
                     </TooltipContent>
                 </Tooltip>
             )}
+
             {column.isUnique && !column.isPrimaryKey && (
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <span className="inline-flex">
-                            <CircleDot className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                            <CircleDot className={`${ICON_CLS} text-sky-400`} />
                         </span>
                     </TooltipTrigger>
                     <TooltipContent side="top">Unique</TooltipContent>

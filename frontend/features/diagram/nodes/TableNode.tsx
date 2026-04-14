@@ -1,6 +1,6 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useCallback, useState } from "react";
 import { NodeResizer } from "@xyflow/react";
 import type { NodeProps } from "@xyflow/react";
 import { useDiagramStore } from "../store/diagramStore";
@@ -14,14 +14,25 @@ function TableNode({ id, data, selected }: NodeProps<TableNodeType>) {
     const updateColumn = useDiagramStore((s) => s.updateColumn);
     const removeColumn = useDiagramStore((s) => s.removeColumn);
 
+    // Track the column that should receive focus right after being added
+    const [focusColId, setFocusColId] = useState<string | null>(null);
+
+    const handleAddColumn = useCallback(() => {
+        const newId = crypto.randomUUID();
+        addColumn(id, newId);
+        setFocusColId(newId);
+    }, [id, addColumn]);
+
+    const handleFocusConsumed = useCallback(() => setFocusColId(null), []);
+
     return (
         <>
             <NodeResizer
                 minWidth={280}
                 minHeight={120}
                 isVisible={selected}
-                lineClassName="!border-indigo-400"
-                handleClassName="!bg-indigo-500 !border-white !rounded-sm"
+                lineClassName="border-indigo-400!"
+                handleClassName="bg-indigo-500! border-white! rounded-sm!"
             />
 
             <div
@@ -46,12 +57,14 @@ function TableNode({ id, data, selected }: NodeProps<TableNodeType>) {
                 <TableNodeColumns
                     nodeId={id}
                     columns={data.columns}
+                    focusColId={focusColId}
+                    onFocusConsumed={handleFocusConsumed}
                     onUpdate={(col) => updateColumn(id, col)}
                     onRemove={(colId) => removeColumn(id, colId)}
                 />
 
                 {/* ── Footer ── */}
-                <TableNodeFooter onAddColumn={() => addColumn(id)} />
+                <TableNodeFooter onAddColumn={handleAddColumn} />
             </div>
         </>
     );

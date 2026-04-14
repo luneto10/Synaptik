@@ -9,6 +9,19 @@ export type ColumnType =
     | "jsonb"
     | "float";
 
+/** Ordered list used to populate type-picker dropdowns. */
+export const COLUMN_TYPES: ColumnType[] = [
+    "uuid",
+    "text",
+    "varchar",
+    "int",
+    "bigint",
+    "boolean",
+    "timestamp",
+    "jsonb",
+    "float",
+];
+
 export interface DbColumn {
     id: string;
     name: string;

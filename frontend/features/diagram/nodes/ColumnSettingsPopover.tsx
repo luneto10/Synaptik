@@ -24,18 +24,27 @@ import { Separator } from "@/components/ui/separator";
 import { Settings2 } from "lucide-react";
 import type { DbColumn } from "../types/db.types";
 import type { TableNode } from "../types/flow.types";
+import { useDiagramStore } from "../store/diagramStore";
+import { useMemo } from "react";
 
 interface ColumnSettingsPopoverProps {
+    nodeId: string;
     column: DbColumn;
-    otherNodes: TableNode[];
     onUpdate: (column: DbColumn) => void;
 }
 
 export default function ColumnSettingsPopover({
+    nodeId,
     column,
-    otherNodes,
     onUpdate,
 }: ColumnSettingsPopoverProps) {
+    const nodes = useDiagramStore((s) => s.nodes);
+
+    const otherNodes = useMemo(
+        () => nodes.filter((n): n is TableNode => n.id !== nodeId),
+        [nodes, nodeId],
+    );
+
     const refNode = otherNodes.find((n) => n.id === column.references?.tableId);
 
     return (
@@ -130,9 +139,7 @@ export default function ColumnSettingsPopover({
                                         ...column,
                                         references: {
                                             tableId,
-                                            columnId:
-                                                column.references?.columnId ??
-                                                "",
+                                            columnId: column.references?.columnId ?? "",
                                         },
                                     })
                                 }
@@ -165,9 +172,7 @@ export default function ColumnSettingsPopover({
                                         onUpdate({
                                             ...column,
                                             references: {
-                                                tableId:
-                                                    column.references
-                                                        ?.tableId ?? "",
+                                                tableId: column.references?.tableId ?? "",
                                                 columnId,
                                             },
                                         })

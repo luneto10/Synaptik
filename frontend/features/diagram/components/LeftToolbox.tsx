@@ -65,9 +65,11 @@ export default function LeftToolbox({
     onRedo,
 }: LeftToolboxProps) {
     return (
-        <div className="absolute left-3 top-1/2 -translate-y-1/2 z-10
+        <div
+            className="absolute left-3 top-1/2 -translate-y-1/2 z-10
                         flex flex-col items-center gap-1 p-1.5 rounded-xl
-                        bg-card/95 backdrop-blur-sm border border-border shadow-lg">
+                        bg-card/95 backdrop-blur-sm border border-border shadow-lg"
+        >
             <div className="flex flex-col gap-0.5">
                 {TOOLS.map((tool) => (
                     <Tooltip key={tool.value}>
@@ -86,7 +88,10 @@ export default function LeftToolbox({
                                 {tool.icon}
                             </Button>
                         </TooltipTrigger>
-                        <TooltipContent side="right" className="flex items-center gap-1.5">
+                        <TooltipContent
+                            side="right"
+                            className="flex items-center gap-1.5"
+                        >
                             {tool.label}
                             <kbd className="text-[10px] bg-background/20 text-background px-1.5 py-0.5 rounded font-mono border border-background/30">
                                 {tool.shortcut}
@@ -110,11 +115,11 @@ export default function LeftToolbox({
                         <Undo2 className="w-4 h-4" />
                     </Button>
                 </TooltipTrigger>
-                <TooltipContent side="right" className="flex items-center gap-1.5">
+                <TooltipContent
+                    side="right"
+                    className="flex items-center gap-1.5"
+                >
                     Undo
-                    <kbd className="text-[10px] bg-background/20 text-background px-1.5 py-0.5 rounded font-mono border border-background/30">
-                        Ctrl+Z
-                    </kbd>
                 </TooltipContent>
             </Tooltip>
             <Tooltip>
@@ -129,11 +134,11 @@ export default function LeftToolbox({
                         <Redo2 className="w-4 h-4" />
                     </Button>
                 </TooltipTrigger>
-                <TooltipContent side="right" className="flex items-center gap-1.5">
+                <TooltipContent
+                    side="right"
+                    className="flex items-center gap-1.5"
+                >
                     Redo
-                    <kbd className="text-[10px] bg-background/20 text-background px-1.5 py-0.5 rounded font-mono border border-background/30">
-                        Ctrl+Shift+Z
-                    </kbd>
                 </TooltipContent>
             </Tooltip>
         </div>

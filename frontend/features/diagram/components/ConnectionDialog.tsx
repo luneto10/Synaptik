@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
     Dialog,
     DialogContent,
@@ -17,10 +17,9 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { ArrowRight, TableProperties, KeyRound } from "lucide-react";
 import type { Connection } from "@xyflow/react";
-import type { RelationEdgeData } from "../types/flow.types";
+import type { RelationshipType } from "../types/flow.types";
 import { useDiagramStore } from "../store/diagramStore";
-
-type RelationshipType = RelationEdgeData["relationshipType"];
+import { RELATION_LABELS } from "../constants";
 
 interface ConnectionDialogProps {
     open: boolean;
@@ -33,14 +32,10 @@ interface ConnectionDialogProps {
     onCancel: () => void;
 }
 
-const RELATION_OPTIONS: {
-    value: RelationshipType;
-    label: string;
-    hint: string;
-}[] = [
-    { value: "one-to-one",   label: "1 : 1", hint: "One to One" },
-    { value: "one-to-many",  label: "1 : N", hint: "One to Many" },
-    { value: "many-to-many", label: "N : M", hint: "Many to Many" },
+const RELATION_OPTIONS: { value: RelationshipType; hint: string }[] = [
+    { value: "one-to-one", hint: "One to One" },
+    { value: "one-to-many", hint: "One to Many" },
+    { value: "many-to-many", hint: "Many to Many" },
 ];
 
 export default function ConnectionDialog({
@@ -51,24 +46,12 @@ export default function ConnectionDialog({
 }: ConnectionDialogProps) {
     const nodes = useDiagramStore((s) => s.nodes);
 
-    const sourceNode = useMemo(
-        () => nodes.find((n) => n.id === connection?.source),
-        [nodes, connection?.source],
-    );
-    const targetNode = useMemo(
-        () => nodes.find((n) => n.id === connection?.target),
-        [nodes, connection?.target],
-    );
-
-    const sourcePk = useMemo(
-        () => sourceNode?.data.columns.find((c) => c.isPrimaryKey),
-        [sourceNode],
-    );
-
-    const defaultFkName = useMemo(
-        () => sourceNode ? `${sourceNode.data.name.toLowerCase()}_id` : "",
-        [sourceNode],
-    );
+    const sourceNode = nodes.find((n) => n.id === connection?.source);
+    const targetNode = nodes.find((n) => n.id === connection?.target);
+    const sourcePk = sourceNode?.data.columns.find((c) => c.isPrimaryKey);
+    const defaultFkName = sourceNode
+        ? `${sourceNode.data.name.toLowerCase()}_id`
+        : "";
 
     const [relType, setRelType] = useState<RelationshipType>("one-to-many");
     const [fkName, setFkName] = useState(defaultFkName);
@@ -86,7 +69,11 @@ export default function ConnectionDialog({
     const isMany = relType === "many-to-many";
 
     const handleConfirm = () => {
-        onConfirm(relType, fkName.trim() || defaultFkName, isMany && createJunction);
+        onConfirm(
+            relType,
+            fkName.trim() || defaultFkName,
+            isMany && createJunction,
+        );
     };
 
     if (!sourceNode || !targetNode) return null;
@@ -120,7 +107,9 @@ export default function ConnectionDialog({
                     <ToggleGroup
                         type="single"
                         value={relType}
-                        onValueChange={(v) => v && setRelType(v as RelationshipType)}
+                        onValueChange={(v) =>
+                            v && setRelType(v as RelationshipType)
+                        }
                         className="grid grid-cols-3 gap-1"
                     >
                         {RELATION_OPTIONS.map((opt) => (
@@ -130,7 +119,7 @@ export default function ConnectionDialog({
                                 className="flex flex-col h-14 data-[state=on]:bg-indigo-500/20 data-[state=on]:text-indigo-400 data-[state=on]:border-indigo-500 border rounded-lg"
                             >
                                 <span className="font-mono font-bold text-sm">
-                                    {opt.label}
+                                    {RELATION_LABELS[opt.value]}
                                 </span>
                                 <span className="text-[10px] text-muted-foreground">
                                     {opt.hint}
@@ -147,13 +136,17 @@ export default function ConnectionDialog({
                     <div className="space-y-1.5">
                         <Label className="text-xs text-muted-foreground">
                             Foreign key column name
-                            <span className="ml-1 text-muted-foreground/60">(in {targetNode.data.name})</span>
+                            <span className="ml-1 text-muted-foreground/60">
+                                (in {targetNode.data.name})
+                            </span>
                         </Label>
                         <div className="flex items-center gap-2">
                             {sourcePk && (
                                 <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted rounded px-2 py-1 shrink-0">
                                     <KeyRound className="w-3 h-3 text-amber-500" />
-                                    <span className="font-mono">{sourcePk.name}</span>
+                                    <span className="font-mono">
+                                        {sourcePk.name}
+                                    </span>
                                     <ArrowRight className="w-3 h-3" />
                                 </div>
                             )}
@@ -165,9 +158,18 @@ export default function ConnectionDialog({
                             />
                         </div>
                         <p className="text-[10px] text-muted-foreground">
-                            A <Badge variant="secondary" className="text-[9px] px-1 py-0 h-4 font-mono">FK</Badge> column will be auto-created in{" "}
-                            <span className="font-mono">{targetNode.data.name}</span>.
-                            Deleting this relation removes the column.
+                            A{" "}
+                            <Badge
+                                variant="secondary"
+                                className="text-[9px] px-1 py-0 h-4 font-mono"
+                            >
+                                FK
+                            </Badge>{" "}
+                            column will be auto-created in{" "}
+                            <span className="font-mono">
+                                {targetNode.data.name}
+                            </span>
+                            . Deleting this relation removes the column.
                         </p>
                     </div>
                 )}
@@ -183,7 +185,8 @@ export default function ConnectionDialog({
                                 <p className="text-[10px] text-muted-foreground mt-0.5">
                                     Creates{" "}
                                     <span className="font-mono">
-                                        {sourceNode.data.name}_{targetNode.data.name}
+                                        {sourceNode.data.name}_
+                                        {targetNode.data.name}
                                     </span>{" "}
                                     with FK columns to both tables
                                 </p>

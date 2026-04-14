@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
     Dialog,
     DialogContent,
@@ -23,6 +23,14 @@ export default function NewTableDialog({
 }: NewTableDialogProps) {
     const addTable = useDiagramStore((s) => s.addTable);
     const [name, setName] = useState("");
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (open) {
+            setName("");
+            requestAnimationFrame(() => inputRef.current?.focus());
+        }
+    }, [open]);
 
     const handleCreate = () => {
         const trimmed = name.trim();
@@ -39,11 +47,14 @@ export default function NewTableDialog({
                 </DialogHeader>
 
                 <Input
-                    autoFocus
+                    ref={inputRef}
                     placeholder="table_name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter") handleCreate();
+                        if (e.key === "Escape") onOpenChange(false);
+                    }}
                     className="font-mono text-sm"
                 />
 
