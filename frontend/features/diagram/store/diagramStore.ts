@@ -194,6 +194,19 @@ interface DiagramState {
     createJunctionTable: (sourceNodeId: string, targetNodeId: string) => void;
     /** Replaces the entire diagram state (nodes + edges) — used for loading saved or mock data. */
     loadDiagram: (nodes: TableNode[], edges: RelationEdge[]) => void;
+    /**
+     * Toggles the handle side (left ↔ right) for all edges connected to a
+     * specific column on a node. Lets users control which side arrows exit/enter.
+     */
+    flipColumnHandleSide: (nodeId: string, columnId: string) => void;
+    /** Toggles the source or target handle of a single edge between left and right. */
+    flipEdgeEnd: (edgeId: string, end: "source" | "target") => void;
+    /**
+     * Re-targets a FK column to a different reference table:
+     * renames the column to {newTable}_id, updates its references,
+     * and swaps the connecting edge to start from the new table's PK.
+     */
+    retargetFkColumn: (nodeId: string, columnId: string, newRefTableId: string) => void;
 }
 
 // ── Store ─────────────────────────────────────────────────────────────────────
@@ -518,6 +531,102 @@ export const useDiagramStore = create<DiagramState>()(
                         nodes: [...updatedNodes, junctionNode],
                         edges: [...s.edges, edgeToSource, edgeToTarget],
                     };
+                }),
+
+            flipColumnHandleSide: (nodeId, columnId) =>
+                set((s) => ({
+                    edges: s.edges.map((e) => {
+                        if (e.source === nodeId) {
+                            const sh = e.sourceHandle ?? "";
+                            if (sh === `${columnId}-source`)
+                                return { ...e, sourceHandle: `${columnId}-source-left` };
+                            if (sh === `${columnId}-source-left`)
+                                return { ...e, sourceHandle: `${columnId}-source` };
+                        }
+                        if (e.target === nodeId) {
+                            const th = e.targetHandle ?? "";
+                            if (th === `${columnId}-target`)
+                                return { ...e, targetHandle: `${columnId}-target-right` };
+                            if (th === `${columnId}-target-right`)
+                                return { ...e, targetHandle: `${columnId}-target` };
+                        }
+                        return e;
+                    }),
+                })),
+
+            flipEdgeEnd: (edgeId, end) =>
+                set((s) => ({
+                    edges: s.edges.map((e) => {
+                        if (e.id !== edgeId) return e;
+                        if (end === "source") {
+                            const sh = e.sourceHandle ?? "";
+                            const newHandle = sh.endsWith("-source-left")
+                                ? sh.replace("-source-left", "-source")
+                                : sh.replace("-source", "-source-left");
+                            return { ...e, sourceHandle: newHandle };
+                        } else {
+                            const th = e.targetHandle ?? "";
+                            const newHandle = th.endsWith("-target-right")
+                                ? th.replace("-target-right", "-target")
+                                : th.replace("-target", "-target-right");
+                            return { ...e, targetHandle: newHandle };
+                        }
+                    }),
+                })),
+
+            retargetFkColumn: (nodeId, columnId, newRefTableId) =>
+                set((s) => {
+                    const newRefNode = s.nodes.find((n) => n.id === newRefTableId);
+                    const newPk = newRefNode?.data.columns.find((c) => c.isPrimaryKey);
+                    if (!newRefNode || !newPk) return s;
+
+                    // Find the edge currently wired to this FK column (as target)
+                    const oldEdge = s.edges.find(
+                        (e) =>
+                            e.target === nodeId &&
+                            (e.targetHandle === `${columnId}-target` ||
+                                e.targetHandle === `${columnId}-target-right`),
+                    );
+
+                    const newColName = `${newRefNode.data.name.toLowerCase()}_id`;
+
+                    // Rename the column and update its reference
+                    const nodes = patchColumns(s.nodes, nodeId, (cols) =>
+                        cols.map((c) =>
+                            c.id !== columnId
+                                ? c
+                                : {
+                                      ...c,
+                                      name: newColName,
+                                      references: { tableId: newRefTableId, columnId: newPk.id },
+                                  },
+                        ),
+                    );
+
+                    // Swap the edge to come from the new table's PK
+                    const targetHandle = oldEdge?.targetHandle ?? `${columnId}-target`;
+                    const newEdge = makeEdge(
+                        newRefTableId,
+                        nodeId,
+                        `${newPk.id}-source`,
+                        targetHandle,
+                        {
+                            sourceColumnId: newPk.id,
+                            targetColumnId: columnId,
+                            relationshipType:
+                                (oldEdge?.data?.relationshipType as RelationshipType) ??
+                                "one-to-many",
+                            autoCreatedColumnId: columnId,
+                            autoCreatedColumnNodeId: nodeId,
+                        },
+                    );
+
+                    const edges = [
+                        ...(oldEdge ? s.edges.filter((e) => e.id !== oldEdge.id) : s.edges),
+                        newEdge,
+                    ];
+
+                    return { nodes, edges };
                 }),
 
             loadDiagram: (nodes, edges) => set({ nodes, edges }),

@@ -1,6 +1,8 @@
 "use client";
 
+import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
     Tooltip,
     TooltipContent,
@@ -21,11 +23,10 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Settings2 } from "lucide-react";
+import { Settings2, ArrowLeft, ArrowRight, KeyRound } from "lucide-react";
 import type { DbColumn } from "../types/db.types";
 import type { TableNode } from "../types/flow.types";
 import { useDiagramStore } from "../store/diagramStore";
-import { useMemo } from "react";
 
 interface ColumnSettingsPopoverProps {
     nodeId: string;
@@ -39,13 +40,46 @@ export default function ColumnSettingsPopover({
     onUpdate,
 }: ColumnSettingsPopoverProps) {
     const nodes = useDiagramStore((s) => s.nodes);
+    const edges = useDiagramStore((s) => s.edges);
+    const flipColumnHandleSide = useDiagramStore((s) => s.flipColumnHandleSide);
+    const retargetFkColumn = useDiagramStore((s) => s.retargetFkColumn);
 
     const otherNodes = useMemo(
         () => nodes.filter((n): n is TableNode => n.id !== nodeId),
         [nodes, nodeId],
     );
 
+    // The edge that connects through this column (as source or target)
+    const connectedEdge = useMemo(
+        () =>
+            edges.find(
+                (e) =>
+                    (e.source === nodeId &&
+                        (e.sourceHandle === `${column.id}-source` ||
+                            e.sourceHandle === `${column.id}-source-left`)) ||
+                    (e.target === nodeId &&
+                        (e.targetHandle === `${column.id}-target` ||
+                            e.targetHandle === `${column.id}-target-right`)),
+            ),
+        [edges, nodeId, column.id],
+    );
+
+    // Current handle side for the connected edge
+    const currentSide = useMemo(() => {
+        if (!connectedEdge) return null;
+        if (connectedEdge.source === nodeId) {
+            return connectedEdge.sourceHandle === `${column.id}-source-left`
+                ? "left"
+                : "right";
+        }
+        return connectedEdge.targetHandle === `${column.id}-target-right`
+            ? "right"
+            : "left";
+    }, [connectedEdge, nodeId, column.id]);
+
+    // The referenced table's PK column (for display only)
     const refNode = otherNodes.find((n) => n.id === column.references?.tableId);
+    const refPk = refNode?.data.columns.find((c) => c.isPrimaryKey);
 
     return (
         <Popover>
@@ -121,7 +155,48 @@ export default function ColumnSettingsPopover({
                     }
                 />
 
-                {/* FK reference pickers */}
+                {/* Arrow side — only shown when an edge is connected */}
+                {currentSide !== null && (
+                    <div className="space-y-1.5 pt-1 border-t border-border">
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">
+                            Arrow side
+                        </p>
+                        <div className="flex gap-1">
+                            <Button
+                                size="sm"
+                                variant={
+                                    currentSide === "left"
+                                        ? "default"
+                                        : "outline"
+                                }
+                                className={`flex-1 h-7 text-xs gap-1 ${currentSide === "left" ? "bg-indigo-600 hover:bg-indigo-700 text-white" : ""}`}
+                                onClick={() =>
+                                    currentSide !== "left" &&
+                                    flipColumnHandleSide(nodeId, column.id)
+                                }
+                            >
+                                <ArrowLeft className="w-3 h-3" /> Left
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant={
+                                    currentSide === "right"
+                                        ? "default"
+                                        : "outline"
+                                }
+                                className={`flex-1 h-7 text-xs gap-1 ${currentSide === "right" ? "bg-indigo-600 hover:bg-indigo-700 text-white" : ""}`}
+                                onClick={() =>
+                                    currentSide !== "right" &&
+                                    flipColumnHandleSide(nodeId, column.id)
+                                }
+                            >
+                                Right <ArrowRight className="w-3 h-3" />
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
+                {/* FK reference — only the table picker; column is always the PK */}
                 {column.isForeignKey && (
                     <div className="space-y-2 pt-1 border-t border-border">
                         <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">
@@ -134,14 +209,12 @@ export default function ColumnSettingsPopover({
                             </Label>
                             <Select
                                 value={column.references?.tableId ?? ""}
-                                onValueChange={(tableId) =>
-                                    onUpdate({
-                                        ...column,
-                                        references: {
-                                            tableId,
-                                            columnId: column.references?.columnId ?? "",
-                                        },
-                                    })
+                                onValueChange={(newTableId) =>
+                                    retargetFkColumn(
+                                        nodeId,
+                                        column.id,
+                                        newTableId,
+                                    )
                                 }
                             >
                                 <SelectTrigger className="h-7 text-xs">
@@ -161,39 +234,12 @@ export default function ColumnSettingsPopover({
                             </Select>
                         </div>
 
-                        {refNode && (
-                            <div className="space-y-1">
-                                <Label className="text-xs text-muted-foreground">
-                                    Column
-                                </Label>
-                                <Select
-                                    value={column.references?.columnId ?? ""}
-                                    onValueChange={(columnId) =>
-                                        onUpdate({
-                                            ...column,
-                                            references: {
-                                                tableId: column.references?.tableId ?? "",
-                                                columnId,
-                                            },
-                                        })
-                                    }
-                                >
-                                    <SelectTrigger className="h-7 text-xs">
-                                        <SelectValue placeholder="Select column…" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {refNode.data.columns.map((c) => (
-                                            <SelectItem
-                                                key={c.id}
-                                                value={c.id}
-                                                className="text-xs font-mono"
-                                            >
-                                                {c.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                        {/* Show the PK column as read-only info */}
+                        {refPk && (
+                            <Badge className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1">
+                                <KeyRound className="w-3 h-3 text-amber-500 shrink-0" />
+                                <div className="font-mono">{refPk.name}</div>
+                            </Badge>
                         )}
                     </div>
                 )}
