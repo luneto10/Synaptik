@@ -1,5 +1,5 @@
 import type { Node, Edge } from "@xyflow/react";
-import { DbTable } from "./db.types";
+import type { DbTable } from "./db.types";
 
 export type TableNodeData = DbTable & Record<string, unknown>;
 
