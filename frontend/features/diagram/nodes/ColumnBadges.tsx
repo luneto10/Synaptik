@@ -24,15 +24,15 @@ import type { DbColumn, ColumnType } from "../types/db.types";
 // ── Type → icon map (different types may share the same icon) ─────────────────
 
 const TYPE_ICONS: Record<ColumnType, LucideIcon> = {
-    uuid:      Fingerprint,
-    text:      CaseSensitive,
-    varchar:   CaseSensitive,
-    int:       Hash,
-    bigint:    Hash,
-    boolean:   ToggleLeft,
+    uuid: Fingerprint,
+    text: CaseSensitive,
+    varchar: CaseSensitive,
+    int: Hash,
+    bigint: Hash,
+    boolean: ToggleLeft,
     timestamp: Clock,
-    jsonb:     Braces,
-    float:     Divide,
+    jsonb: Braces,
+    float: Divide,
 };
 
 // ── Badge helpers ─────────────────────────────────────────────────────────────
@@ -69,7 +69,9 @@ export default function ColumnBadges({ column }: { column: DbColumn }) {
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <span className="inline-flex">
-                            <KeyRound className={`${ICON_CLS} text-amber-500`} />
+                            <KeyRound
+                                className={`${ICON_CLS} text-amber-500`}
+                            />
                         </span>
                     </TooltipTrigger>
                     <TooltipContent side="top">Primary key</TooltipContent>

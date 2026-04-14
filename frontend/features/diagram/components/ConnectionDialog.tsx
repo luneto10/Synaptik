@@ -17,7 +17,8 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { ArrowRight, TableProperties, KeyRound } from "lucide-react";
 import type { Connection } from "@xyflow/react";
-import type { RelationshipType } from "../types/flow.types";
+import type { RelationshipType, TableNode } from "../types/flow.types";
+import type { DbColumn } from "../types/db.types";
 import { useDiagramStore } from "../store/diagramStore";
 import { RELATION_LABELS } from "../constants";
 
@@ -44,43 +45,54 @@ export default function ConnectionDialog({
     onConfirm,
     onCancel,
 }: ConnectionDialogProps) {
-    const nodes = useDiagramStore((s) => s.nodes);
-
-    const sourceNode = nodes.find((n) => n.id === connection?.source);
-    const targetNode = nodes.find((n) => n.id === connection?.target);
-    const sourcePk = sourceNode?.data.columns.find((c) => c.isPrimaryKey);
-    const defaultFkName = sourceNode
-        ? `${sourceNode.data.name.toLowerCase()}_id`
-        : "";
+    // Read nodes once from store snapshot when dialog opens — avoids subscribing
+    // to the full nodes array (which re-renders on every position change).
+    const [sourceNode, setSourceNode] = useState<TableNode | undefined>();
+    const [targetNode, setTargetNode] = useState<TableNode | undefined>();
+    const [sourcePk, setSourcePk] = useState<DbColumn | undefined>();
+    const [defaultFkName, setDefaultFkName] = useState("");
 
     const [relType, setRelType] = useState<RelationshipType>("one-to-many");
-    const [fkName, setFkName] = useState(defaultFkName);
+    const [fkName, setFkName] = useState("");
     const [createJunction, setCreateJunction] = useState(false);
 
-    // Reset state whenever the dialog opens with a new connection
     useEffect(() => {
-        if (open) {
-            setRelType("one-to-many");
-            setFkName(defaultFkName);
-            setCreateJunction(false);
-        }
-    }, [open, defaultFkName]);
+        if (!open) return;
+        const { nodes } = useDiagramStore.getState();
+        const src = nodes.find((n) => n.id === connection?.source);
+        const tgt = nodes.find((n) => n.id === connection?.target);
+        const pk = src?.data.columns.find((c) => c.isPrimaryKey);
+        const fk = src ? `${src.data.name.toLowerCase()}_id` : "";
+
+        setSourceNode(src);
+        setTargetNode(tgt);
+        setSourcePk(pk);
+        setDefaultFkName(fk);
+
+        // Reset form
+        setRelType("one-to-many");
+        setFkName(fk);
+        setCreateJunction(false);
+    }, [open, connection?.source, connection?.target]);
 
     const isMany = relType === "many-to-many";
 
     const handleConfirm = () => {
-        onConfirm(
-            relType,
-            fkName.trim() || defaultFkName,
-            isMany && createJunction,
-        );
+        onConfirm(relType, fkName.trim() || defaultFkName, isMany && createJunction);
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key !== "Enter") return;
+        if ((e.target as HTMLElement).tagName === "BUTTON") return;
+        e.preventDefault();
+        handleConfirm();
     };
 
     if (!sourceNode || !targetNode) return null;
 
     return (
         <Dialog open={open} onOpenChange={(o) => !o && onCancel()}>
-            <DialogContent className="sm:max-w-sm">
+            <DialogContent className="sm:max-w-sm" onKeyDown={handleKeyDown}>
                 <DialogHeader>
                     <DialogTitle className="text-sm flex items-center gap-2">
                         <TableProperties className="w-4 h-4 text-indigo-400" />
@@ -151,10 +163,15 @@ export default function ConnectionDialog({
                                 </div>
                             )}
                             <Input
+                                autoFocus
                                 value={fkName}
                                 onChange={(e) => setFkName(e.target.value)}
                                 placeholder={defaultFkName}
                                 className="h-8 text-xs font-mono"
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter") handleConfirm();
+                                    e.stopPropagation();
+                                }}
                             />
                         </div>
                         <p className="text-[10px] text-muted-foreground">

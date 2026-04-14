@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { memo, useEffect, useRef } from "react";
 import { Handle, Position } from "@xyflow/react";
 import { Input } from "@/components/ui/input";
 import {
@@ -17,7 +17,11 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Trash2 } from "lucide-react";
-import { COLUMN_TYPES, type DbColumn, type ColumnType } from "../types/db.types";
+import {
+    COLUMN_TYPES,
+    type DbColumn,
+    type ColumnType,
+} from "../types/db.types";
 import ColumnBadges from "./ColumnBadges";
 import ColumnSettingsPopover from "./ColumnSettingsPopover";
 
@@ -27,10 +31,10 @@ interface Props {
     autoFocus?: boolean;
     onFocusConsumed?: () => void;
     onUpdate: (column: DbColumn) => void;
-    onRemove: () => void;
+    onRemove: (colId: string) => void;
 }
 
-export default function TableNodeColumnRow({
+function TableNodeColumnRow({
     nodeId,
     column,
     autoFocus,
@@ -54,9 +58,9 @@ export default function TableNodeColumnRow({
     return (
         <div className="group relative flex items-center border-b border-border/40 last:border-0 hover:bg-muted/40 transition-colors">
             {/* ── Handles (left: source + target, right: source + target) ── */}
-            <Handle type="source" position={Position.Left}  id={`${column.id}-source-left`}  className={handleCls} style={{ top: "50%" }} />
-            <Handle type="target" position={Position.Left}  id={`${column.id}-target`}        className={handleCls} style={{ top: "50%" }} />
-            <Handle type="target" position={Position.Right} id={`${column.id}-target-right`}  className={handleCls} style={{ top: "50%" }} />
+            <Handle type="source" position={Position.Left}  id={`${column.id}-source-left`}  className={handleCls} />
+            <Handle type="target" position={Position.Left}  id={`${column.id}-target`}        className={handleCls} />
+            <Handle type="target" position={Position.Right} id={`${column.id}-target-right`}  className={handleCls} />
 
             {/* Badges */}
             <div className="w-10 px-2 shrink-0">
@@ -84,14 +88,14 @@ export default function TableNodeColumnRow({
             </div>
 
             {/* Type */}
-            <div className="w-24 px-0.5 py-1 shrink-0 flex items-center justify-center">
+            <div className="w-24 px-0.5 py-1 shrink-0 flex items-center justify-end">
                 <Select
                     value={column.type}
                     onValueChange={(v) =>
                         onUpdate({ ...column, type: v as ColumnType })
                     }
                 >
-                    <SelectTrigger className="h-7 text-xs border-0! bg-transparent! dark:bg-transparent! dark:hover:bg-transparent! shadow-none px-1 focus-visible:ring-0! focus-visible:border-0! text-muted-foreground justify-start! gap-1 w-auto [&>svg]:opacity-60 [&>svg]:size-3!">
+                    <SelectTrigger className="h-7 text-xs border-0! bg-transparent! dark:bg-transparent! dark:hover:bg-transparent! shadow-none px-1 focus-visible:ring-0! focus-visible:border-0! text-muted-foreground justify-end! gap-1 w-auto [&>svg]:opacity-60 [&>svg]:size-3! ">
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -122,7 +126,7 @@ export default function TableNodeColumnRow({
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    onClick={onRemove}
+                                    onClick={() => onRemove(column.id)}
                                     className="h-5 w-5 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                                 >
                                     <Trash2 className="w-3 h-3" />
@@ -137,7 +141,14 @@ export default function TableNodeColumnRow({
             </div>
 
             {/* ── Source handle (right) ── */}
-            <Handle type="source" position={Position.Right} id={`${column.id}-source`} className={handleCls} style={{ top: "50%" }} />
+            <Handle
+                type="source"
+                position={Position.Right}
+                id={`${column.id}-source`}
+                className={handleCls}
+            />
         </div>
     );
 }
+
+export default memo(TableNodeColumnRow);

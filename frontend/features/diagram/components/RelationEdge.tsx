@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import {
-    getBezierPath,
+    getSmoothStepPath,
     EdgeLabelRenderer,
     BaseEdge,
     type EdgeProps,
@@ -109,8 +109,8 @@ export function EdgeMarkerDefs() {
 // N:M → ▶ ────────── ▶  (arrows on both ends for a direct M:M edge)
 
 const MARKERS: Record<RelationshipType, [string, string]> = {
-    "one-to-one":   ["url(#ms-bar)",   "url(#me-bar)"],
-    "one-to-many":  ["url(#ms-bar)",   "url(#me-arrow)"],
+    "one-to-one": ["url(#ms-bar)", "url(#me-bar)"],
+    "one-to-many": ["url(#ms-bar)", "url(#me-arrow)"],
     "many-to-many": ["url(#ms-arrow)", "url(#me-arrow)"],
 };
 
@@ -129,13 +129,14 @@ export default function RelationEdge({
     data,
     selected = false,
 }: EdgeProps<RelationEdgeType>) {
-    const [edgePath, labelX, labelY] = getBezierPath({
+    const [edgePath, labelX, labelY] = getSmoothStepPath({
         sourceX,
         sourceY,
         sourcePosition,
         targetX,
         targetY,
         targetPosition,
+        borderRadius: 10,
     });
 
     const setEdgeRelationType = useDiagramStore((s) => s.setEdgeRelationType);
@@ -274,7 +275,11 @@ export default function RelationEdge({
                                         onValueChange={handleTypeChange}
                                         className="gap-1"
                                     >
-                                        {(Object.keys(RELATION_LABELS) as RelationshipType[]).map((v) => (
+                                        {(
+                                            Object.keys(
+                                                RELATION_LABELS,
+                                            ) as RelationshipType[]
+                                        ).map((v) => (
                                             <ToggleGroupItem
                                                 key={v}
                                                 value={v}

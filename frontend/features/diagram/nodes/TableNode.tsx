@@ -5,6 +5,7 @@ import { NodeResizer } from "@xyflow/react";
 import type { NodeProps } from "@xyflow/react";
 import { useDiagramStore } from "../store/diagramStore";
 import type { TableNode as TableNodeType } from "../types/flow.types";
+import type { DbColumn } from "../types/db.types";
 import TableNodeHeader from "./TableNodeHeader";
 import TableNodeColumns from "./TableNodeColumns";
 import TableNodeFooter from "./TableNodeFooter";
@@ -24,6 +25,16 @@ function TableNode({ id, data, selected }: NodeProps<TableNodeType>) {
     }, [id, addColumn]);
 
     const handleFocusConsumed = useCallback(() => setFocusColId(null), []);
+
+    const handleUpdateColumn = useCallback(
+        (col: DbColumn) => updateColumn(id, col),
+        [id, updateColumn],
+    );
+
+    const handleRemoveColumn = useCallback(
+        (colId: string) => removeColumn(id, colId),
+        [id, removeColumn],
+    );
 
     return (
         <>
@@ -59,8 +70,8 @@ function TableNode({ id, data, selected }: NodeProps<TableNodeType>) {
                     columns={data.columns}
                     focusColId={focusColId}
                     onFocusConsumed={handleFocusConsumed}
-                    onUpdate={(col) => updateColumn(id, col)}
-                    onRemove={(colId) => removeColumn(id, colId)}
+                    onUpdate={handleUpdateColumn}
+                    onRemove={handleRemoveColumn}
                 />
 
                 {/* ── Footer ── */}

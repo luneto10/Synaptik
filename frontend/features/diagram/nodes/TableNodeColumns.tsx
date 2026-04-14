@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import type { DbColumn } from "../types/db.types";
@@ -11,10 +12,10 @@ interface TableNodeColumnsProps {
     focusColId: string | null;
     onFocusConsumed: () => void;
     onUpdate: (column: DbColumn) => void;
-    onRemove: (columnId: string) => void;
+    onRemove: (colId: string) => void;
 }
 
-export default function TableNodeColumns({
+function TableNodeColumns({
     nodeId,
     columns,
     focusColId,
@@ -35,7 +36,7 @@ export default function TableNodeColumns({
                             autoFocus={col.id === focusColId}
                             onFocusConsumed={onFocusConsumed}
                             onUpdate={onUpdate}
-                            onRemove={() => onRemove(col.id)}
+                            onRemove={onRemove}
                         />
                     ))}
                 </div>
@@ -43,3 +44,5 @@ export default function TableNodeColumns({
         </>
     );
 }
+
+export default memo(TableNodeColumns);

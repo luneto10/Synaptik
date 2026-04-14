@@ -12,7 +12,6 @@ import {
     ReactFlowProvider,
     type EdgeTypes,
 } from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
 import { useDiagramStore } from "./store/diagramStore";
 import { nodeTypes } from "./nodes";
 import FlowToolbar from "./components/FlowToolbar";
@@ -24,8 +23,22 @@ import { Map } from "lucide-react";
 import { useDiagramActions } from "./hooks/useDiagramActions";
 import { useConnectMode } from "./hooks/useConnectMode";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
+import type { RelationshipType } from "./types/flow.types";
+
+// ── Module-level constants (stable references, never cause re-renders) ────────
 
 const edgeTypes: EdgeTypes = { relation: RelationEdge as EdgeTypes[string] };
+
+const CONNECTION_LINE_STYLE = { stroke: "#6366f1", strokeWidth: 2 };
+const FIT_VIEW_OPTIONS = { padding: 0.3 };
+const DEFAULT_EDGE_OPTIONS = {
+    type: "relation",
+    data: {
+        relationshipType: "one-to-many" as RelationshipType,
+        sourceColumnId: "",
+        targetColumnId: "",
+    },
+};
 
 // ── Inner canvas (needs useReactFlow) ────────────────────────────────────────
 
@@ -50,6 +63,8 @@ function DiagramCanvas() {
         pendingConnectSource,
         setPendingConnectSource,
         handleConnect,
+        handleConnectStart,
+        handleConnectEnd,
         handleNodeClick,
         handleConfirmRelation,
         displayNodes,
@@ -75,8 +90,16 @@ function DiagramCanvas() {
         setPendingConnectSource,
     });
 
-    // Refocus the canvas whenever a dialog closes so keyboard shortcuts
-    // (T, C, S …) work immediately without an extra click.
+    const handleUndo = useCallback(
+        () => useDiagramStore.temporal.getState().undo(),
+        [],
+    );
+    const handleRedo = useCallback(
+        () => useDiagramStore.temporal.getState().redo(),
+        [],
+    );
+
+    // Refocus the canvas whenever a dialog closes so keyboard shortcuts work.
     useEffect(() => {
         if (!tableDialogOpen && !pendingConn) {
             const id = setTimeout(() => containerRef.current?.focus(), 50);
@@ -104,8 +127,8 @@ function DiagramCanvas() {
                 <LeftToolbox
                     activeTool={activeTool}
                     onToolChange={handleToolChange}
-                    onUndo={() => useDiagramStore.temporal.getState().undo()}
-                    onRedo={() => useDiagramStore.temporal.getState().redo()}
+                    onUndo={handleUndo}
+                    onRedo={handleRedo}
                 />
 
                 {activeTool === "connect" && pendingConnectSource && (
@@ -124,11 +147,13 @@ function DiagramCanvas() {
                     onNodesChange={onNodesChange}
                     onEdgesChange={onEdgesChange}
                     onConnect={handleConnect}
+                    onConnectStart={handleConnectStart}
+                    onConnectEnd={handleConnectEnd}
                     onNodeClick={handleNodeClick}
                     nodeTypes={nodeTypes}
                     edgeTypes={edgeTypes}
                     fitView
-                    fitViewOptions={{ padding: 0.3 }}
+                    fitViewOptions={FIT_VIEW_OPTIONS}
                     minZoom={0.2}
                     maxZoom={2}
                     selectionOnDrag={activeTool === "areaSelect"}
@@ -137,15 +162,8 @@ function DiagramCanvas() {
                     }
                     selectionMode={SelectionMode.Partial}
                     deleteKeyCode={["Delete", "Backspace"]}
-                    connectionLineStyle={{ stroke: "#6366f1", strokeWidth: 2 }}
-                    defaultEdgeOptions={{
-                        type: "relation",
-                        data: {
-                            relationshipType: "one-to-many",
-                            sourceColumnId: "",
-                            targetColumnId: "",
-                        },
-                    }}
+                    connectionLineStyle={CONNECTION_LINE_STYLE}
+                    defaultEdgeOptions={DEFAULT_EDGE_OPTIONS}
                     style={{ width: "100%", height: "100%" }}
                     proOptions={{ hideAttribution: true }}
                 >
