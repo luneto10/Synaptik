@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { cn } from "@/lib/utils";
 import {
     Tooltip,
@@ -58,7 +59,7 @@ const TOOLS: {
     },
 ];
 
-export default function LeftToolbox({
+function LeftToolbox({
     activeTool,
     onToolChange,
     onUndo,
@@ -144,3 +145,5 @@ export default function LeftToolbox({
         </div>
     );
 }
+
+export default memo(LeftToolbox);

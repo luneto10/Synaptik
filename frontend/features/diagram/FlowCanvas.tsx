@@ -25,14 +25,14 @@ import { useDiagramActions } from "./hooks/useDiagramActions";
 import { useConnectMode } from "./hooks/useConnectMode";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import type { RelationshipType } from "./types/flow.types";
-import { FIT_VIEW_PADDING } from "./constants";
+import { FIT_VIEW_PADDING, DIAGRAM_COLORS, REFLOW_DELAY_MS } from "./constants";
 import { cn } from "@/lib/utils";
 
 // ── Module-level constants (stable references, never cause re-renders) ────────
 
 const edgeTypes: EdgeTypes = { relation: RelationEdge as EdgeTypes[string] };
 
-const CONNECTION_LINE_STYLE = { stroke: "#6366f1", strokeWidth: 2 };
+const CONNECTION_LINE_STYLE = { stroke: DIAGRAM_COLORS.edge, strokeWidth: 2 };
 const FIT_VIEW_OPTIONS = { padding: FIT_VIEW_PADDING };
 const DEFAULT_EDGE_OPTIONS = {
     type: "relation",
@@ -87,6 +87,9 @@ function DiagramCanvas() {
         if (!open) setActiveTool("select");
     }, []);
 
+    const handleCancelConn    = useCallback(() => setPendingConn(null), [setPendingConn]);
+    const handleToggleMinimap = useCallback(() => setShowMinimap((v) => !v), []);
+
     const { handleUndo, handleRedo } = useKeyboardShortcuts({
         handleToolChange,
         setTableDialogOpen,
@@ -96,7 +99,7 @@ function DiagramCanvas() {
     // Refocus the canvas whenever a dialog closes so keyboard shortcuts work.
     useEffect(() => {
         if (!tableDialogOpen && !pendingConn) {
-            const id = setTimeout(() => containerRef.current?.focus(), 50);
+            const id = setTimeout(() => containerRef.current?.focus(), REFLOW_DELAY_MS);
             return () => clearTimeout(id);
         }
     }, [tableDialogOpen, pendingConn]);
@@ -177,7 +180,7 @@ function DiagramCanvas() {
                                    [&>button:hover]:bg-muted! [&>button]:w-8! [&>button]:h-8!"
                     >
                         <ControlButton
-                            onClick={() => setShowMinimap((v) => !v)}
+                            onClick={handleToggleMinimap}
                             title="Toggle minimap"
                             className={cn(showMinimap && "text-indigo-400!")}
                         >
@@ -187,7 +190,7 @@ function DiagramCanvas() {
 
                     {showMinimap && (
                         <MiniMap
-                            nodeColor="#6366f1"
+                            nodeColor={DIAGRAM_COLORS.minimap}
                             maskColor="rgba(0,0,0,0.4)"
                             position="bottom-right"
                             style={{ bottom: 56, right: 12 }}
@@ -206,7 +209,7 @@ function DiagramCanvas() {
                 open={!!pendingConn}
                 connection={pendingConn}
                 onConfirm={handleConfirmRelation}
-                onCancel={() => setPendingConn(null)}
+                onCancel={handleCancelConn}
             />
         </div>
     );

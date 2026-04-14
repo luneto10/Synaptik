@@ -1,9 +1,11 @@
 "use client";
 
+import { DIAGRAM_COLORS } from "../../constants";
+
 function ArrowMarker({ id, orient }: { id: string; orient: string }) {
     return (
         <marker id={id} orient={orient} refX="8" refY="4" markerWidth="10" markerHeight="8">
-            <path d="M0,0 L0,8 L8,4 Z" fill="#6366f1" />
+            <path d="M0,0 L0,8 L8,4 Z" fill={DIAGRAM_COLORS.edge} />
         </marker>
     );
 }
@@ -11,7 +13,7 @@ function ArrowMarker({ id, orient }: { id: string; orient: string }) {
 function BarMarker({ id, orient }: { id: string; orient: string }) {
     return (
         <marker id={id} orient={orient} refX="2" refY="5" markerWidth="6" markerHeight="10">
-            <line x1="2" y1="0" x2="2" y2="10" stroke="#6366f1" strokeWidth="2" />
+            <line x1="2" y1="0" x2="2" y2="10" stroke={DIAGRAM_COLORS.edge} strokeWidth="2" />
         </marker>
     );
 }

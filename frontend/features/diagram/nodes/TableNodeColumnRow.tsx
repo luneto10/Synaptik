@@ -24,6 +24,8 @@ import {
 } from "../types/db.types";
 import ColumnBadges from "./ColumnBadges";
 import ColumnSettingsPopover from "./ColumnSettingsPopover";
+import { handleIds } from "../utils/handleIds";
+import { onInputCommit } from "../utils/onInputCommit";
 
 interface Props {
     nodeId: string;
@@ -58,9 +60,9 @@ function TableNodeColumnRow({
     return (
         <div className="group relative flex items-center border-b border-border/40 last:border-0 hover:bg-muted/40 transition-colors">
             {/* ── Handles (left: source + target, right: source + target) ── */}
-            <Handle type="source" position={Position.Left}  id={`${column.id}-source-left`}  className={handleCls} />
-            <Handle type="target" position={Position.Left}  id={`${column.id}-target`}        className={handleCls} />
-            <Handle type="target" position={Position.Right} id={`${column.id}-target-right`}  className={handleCls} />
+            <Handle type="source" position={Position.Left}  id={handleIds(column.id).sourceLeft}  className={handleCls} />
+            <Handle type="target" position={Position.Left}  id={handleIds(column.id).targetLeft}  className={handleCls} />
+            <Handle type="target" position={Position.Right} id={handleIds(column.id).targetRight} className={handleCls} />
 
             {/* Badges */}
             <div className="w-10 px-2 shrink-0">
@@ -76,8 +78,7 @@ function TableNodeColumnRow({
                         onUpdate({ ...column, name: e.target.value })
                     }
                     onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === "Escape")
-                            e.currentTarget.blur();
+                        onInputCommit(e, { onCommit: () => e.currentTarget.blur(), onCancel: () => e.currentTarget.blur() });
                         e.stopPropagation(); // prevent canvas shortcuts firing
                     }}
                     className="h-7 text-sm border-0 bg-transparent! dark:bg-transparent! shadow-none p-0 font-mono text-foreground
@@ -144,7 +145,7 @@ function TableNodeColumnRow({
             <Handle
                 type="source"
                 position={Position.Right}
-                id={`${column.id}-source`}
+                id={handleIds(column.id).sourceRight}
                 className={handleCls}
             />
         </div>

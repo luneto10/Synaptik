@@ -1,5 +1,6 @@
 import type { TableNode, RelationEdge, RelationEdgeData, RelationshipType } from "../types/flow.types";
 import type { DbColumn } from "../types/db.types";
+import { handleIds } from "../utils/handleIds";
 
 // ── Node patchers ─────────────────────────────────────────────────────────────
 
@@ -34,6 +35,12 @@ export function stripAutoCol(
     if (!autoColId || !colNodeId) return nodes;
     return patchColumns(nodes, colNodeId, (cols) => cols.filter((c) => c.id !== autoColId));
 }
+
+// ── Naming helpers ────────────────────────────────────────────────────────────
+
+/** Canonical FK column name derived from the referenced table name. */
+export const defaultFkColumnName = (tableName: string) =>
+    `${tableName.toLowerCase()}_id`;
 
 // ── Column builders ───────────────────────────────────────────────────────────
 
@@ -106,7 +113,7 @@ export function makeMnEdge(
     const pk1 = t1?.data.columns.find((c) => c.isPrimaryKey);
     const pk2 = t2?.data.columns.find((c) => c.isPrimaryKey);
     if (!t1 || !t2 || !pk1 || !pk2) return undefined;
-    return makeEdge(t1.id, t2.id, `${pk1.id}-source`, `${pk2.id}-target`, {
+    return makeEdge(t1.id, t2.id, handleIds(pk1.id).sourceRight, handleIds(pk2.id).targetLeft, {
         sourceColumnId: pk1.id,
         targetColumnId: pk2.id,
         relationshipType: "many-to-many",

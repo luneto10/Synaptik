@@ -1,8 +1,9 @@
 import { applyNodeChanges, type NodeChange } from "@xyflow/react";
 import { TABLE_NODE_TYPE, type TableNode, type RelationEdge } from "../types/flow.types";
 import { LAYOUT } from "../constants";
-import { makePkCol, makeFkCol, makeEdge, makeMnEdge, stripAutoCol } from "./helpers";
+import { makePkCol, makeFkCol, makeEdge, makeMnEdge, stripAutoCol, defaultFkColumnName } from "./helpers";
 import type { SetState } from "./diagramStore.types";
+import { handleIds } from "../utils/handleIds";
 
 export function createNodeActions(set: SetState) {
     return {
@@ -113,20 +114,20 @@ export function createNodeActions(set: SetState) {
                         name: `${sourceNode.data.name}_${targetNode.data.name}`,
                         columns: [
                             makePkCol(),
-                            makeFkCol(fkSourceColId, `${sourceNode.data.name}_id`, sourceNodeId, sourcePk.id),
-                            makeFkCol(fkTargetColId, `${targetNode.data.name}_id`, targetNodeId, targetPk.id),
+                            makeFkCol(fkSourceColId, defaultFkColumnName(sourceNode.data.name), sourceNodeId, sourcePk.id),
+                            makeFkCol(fkTargetColId, defaultFkColumnName(targetNode.data.name), targetNodeId, targetPk.id),
                         ],
                     },
                 };
 
                 const edgeToSource = makeEdge(
                     sourceNodeId, junctionId,
-                    `${sourcePk.id}-source`, `${fkSourceColId}-target`,
+                    handleIds(sourcePk.id).sourceRight, handleIds(fkSourceColId).targetLeft,
                     { sourceColumnId: sourcePk.id, targetColumnId: fkSourceColId, relationshipType: "one-to-many", autoCreatedColumnId: fkSourceColId, junctionTableId: junctionId },
                 );
                 const edgeToTarget = makeEdge(
                     targetNodeId, junctionId,
-                    `${targetPk.id}-source-left`, `${fkTargetColId}-target-right`,
+                    handleIds(targetPk.id).sourceLeft, handleIds(fkTargetColId).targetRight,
                     { sourceColumnId: targetPk.id, targetColumnId: fkTargetColId, relationshipType: "one-to-many", autoCreatedColumnId: fkTargetColId, junctionTableId: junctionId },
                 );
 

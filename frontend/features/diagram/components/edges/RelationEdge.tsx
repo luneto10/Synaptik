@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { getSmoothStepPath, EdgeLabelRenderer, BaseEdge, type EdgeProps } from "@xyflow/react";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { RelationEdge as RelationEdgeType, RelationEdgeData, RelationshipType } from "../../types/flow.types";
 import { useDiagramStore } from "../../store/diagramStore";
-import { RELATION_LABELS } from "../../constants";
+import { RELATION_LABELS, DIAGRAM_COLORS, EDGE_STYLE } from "../../constants";
 import { cn } from "@/lib/utils";
 import { JunctionPrompt } from "./JunctionPrompt";
 import { EdgePopoverContent } from "./EdgePopoverContent";
@@ -35,11 +35,10 @@ export default function RelationEdge({
     data,
     selected = false,
 }: EdgeProps<RelationEdgeType>) {
-    const [edgePath, labelX, labelY] = getSmoothStepPath({
-        sourceX, sourceY, sourcePosition,
-        targetX, targetY, targetPosition,
-        borderRadius: 10,
-    });
+    const [edgePath, labelX, labelY] = useMemo(
+        () => getSmoothStepPath({ sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition, borderRadius: EDGE_STYLE.borderRadius }),
+        [sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition],
+    );
 
     const setEdgeRelationType = useDiagramStore((s) => s.setEdgeRelationType);
     const deleteEdge           = useDiagramStore((s) => s.deleteEdge);
@@ -84,14 +83,14 @@ export default function RelationEdge({
     }, [id, deleteEdge]);
 
     const [markerStart, markerEnd] = MARKERS[relType];
-    const color = selected ? "#818cf8" : "#6366f1";
+    const color = selected ? DIAGRAM_COLORS.edgeSelected : DIAGRAM_COLORS.edge;
 
     return (
         <>
             <BaseEdge
                 id={id}
                 path={edgePath}
-                style={{ stroke: color, strokeWidth: selected ? 2.5 : 1.8 }}
+                style={{ stroke: color, strokeWidth: selected ? EDGE_STYLE.strokeWidthSelected : EDGE_STYLE.strokeWidth }}
                 markerStart={markerStart}
                 markerEnd={markerEnd}
             />

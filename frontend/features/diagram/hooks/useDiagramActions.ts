@@ -4,7 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import dagre from "dagre";
 import { useDiagramStore } from "../store/diagramStore";
 import { saveDiagram, type DiagramPayload } from "../api/diagram.api";
-import { FIT_VIEW_PADDING } from "../constants";
+import { FIT_VIEW_PADDING, REFLOW_DELAY_MS, LAYOUT } from "../constants";
 import type { TableNode, RelationEdge } from "../types/flow.types";
 
 export function useDiagramActions() {
@@ -28,7 +28,7 @@ export function useDiagramActions() {
             example.nodes as TableNode[],
             example.edges as RelationEdge[],
         );
-        setTimeout(() => fitView({ padding: FIT_VIEW_PADDING }), 50);
+        setTimeout(() => fitView({ padding: FIT_VIEW_PADDING }), REFLOW_DELAY_MS);
     }, [loadDiagram, fitView]);
 
     const handleAutoLayout = useCallback(() => {
@@ -36,12 +36,12 @@ export function useDiagramActions() {
 
         const g = new dagre.graphlib.Graph();
         g.setDefaultEdgeLabel(() => ({}));
-        g.setGraph({ rankdir: "LR", nodesep: 80, ranksep: 140 });
+        g.setGraph({ rankdir: "LR", nodesep: LAYOUT.DAGRE_NODE_SEP, ranksep: LAYOUT.DAGRE_RANK_SEP });
 
         for (const n of nodes) {
             g.setNode(n.id, {
-                width:  (n as TableNode & { measured?: { width?: number } }).measured?.width  ?? 280,
-                height: (n as TableNode & { measured?: { height?: number } }).measured?.height ?? 200,
+                width:  (n as TableNode & { measured?: { width?: number } }).measured?.width  ?? LAYOUT.DEFAULT_NODE_WIDTH,
+                height: (n as TableNode & { measured?: { height?: number } }).measured?.height ?? LAYOUT.DEFAULT_NODE_HEIGHT,
             });
         }
         for (const e of edges) g.setEdge(e.source, e.target);
@@ -54,7 +54,7 @@ export function useDiagramActions() {
         });
 
         onNodesChange(changes);
-        setTimeout(() => fitView({ padding: FIT_VIEW_PADDING }), 50);
+        setTimeout(() => fitView({ padding: FIT_VIEW_PADDING }), REFLOW_DELAY_MS);
     }, [fitView]);
 
     return { isPending, handleSave, handleLoadExample, handleAutoLayout };

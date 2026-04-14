@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import type { RelationshipType } from "../../types/flow.types";
 import { SidePicker } from "../SidePicker";
 import { RelationTypePicker } from "./RelationTypePicker";
+import { getHandleSide } from "../../utils/handleIds";
 
 interface Props {
     relType: RelationshipType;
@@ -26,8 +27,8 @@ export function EdgePopoverContent({
     onFlipTarget,
     onDelete,
 }: Props) {
-    const sourceSide = sourceHandleId?.endsWith("-source-left") ? "left" : "right";
-    const targetSide = targetHandleId?.endsWith("-target-right") ? "right" : "left";
+    const sourceSide = getHandleSide(sourceHandleId, "source");
+    const targetSide = getHandleSide(targetHandleId, "target");
     const hasSides = Boolean(sourceHandleId && targetHandleId);
 
     return (

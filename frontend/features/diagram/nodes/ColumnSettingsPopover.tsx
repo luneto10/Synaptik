@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useState, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import {
     Tooltip,
@@ -25,9 +25,24 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Settings2, KeyRound } from "lucide-react";
 import type { DbColumn } from "../types/db.types";
-import type { TableNode } from "../types/flow.types";
+import type { TableNode, RelationEdge } from "../types/flow.types";
 import { useDiagramStore } from "../store/diagramStore";
 import { SidePicker } from "../components/SidePicker";
+import { handleIds, getHandleSide } from "../utils/handleIds";
+
+// ── Snapshot (read once on open — zero subscriptions during drag) ─────────────
+
+type Snapshot = {
+    otherNodes: TableNode[];
+    connectedEdge: RelationEdge | undefined;
+    currentSide: "left" | "right" | null;
+};
+
+const EMPTY_SNAPSHOT: Snapshot = {
+    otherNodes: [],
+    connectedEdge: undefined,
+    currentSide: null,
+};
 
 interface ColumnSettingsPopoverProps {
     nodeId: string;
@@ -40,43 +55,53 @@ export default function ColumnSettingsPopover({
     column,
     onUpdate,
 }: ColumnSettingsPopoverProps) {
-    const nodes = useDiagramStore((s) => s.nodes);
-    const edges = useDiagramStore((s) => s.edges);
+    const [open, setOpen] = useState(false);
+    const [snap, setSnap] = useState<Snapshot>(EMPTY_SNAPSHOT);
+
+    // Only stable action selectors — these never change and do not cause re-renders on drag
     const flipColumnHandleSide = useDiagramStore((s) => s.flipColumnHandleSide);
     const retargetFkColumn = useDiagramStore((s) => s.retargetFkColumn);
 
-    const otherNodes = useMemo(
-        () => nodes.filter((n) => n.id !== nodeId),
-        [nodes, nodeId],
-    );
+    const readSnapshot = useCallback((): Snapshot => {
+        const { nodes, edges } = useDiagramStore.getState();
+        const h = handleIds(column.id);
+        const otherNodes = nodes.filter((n) => n.id !== nodeId);
+        const connectedEdge = edges.find(
+            (e) =>
+                (e.source === nodeId && (e.sourceHandle === h.sourceRight || e.sourceHandle === h.sourceLeft)) ||
+                (e.target === nodeId && (e.targetHandle === h.targetLeft  || e.targetHandle === h.targetRight)),
+        );
+        let currentSide: "left" | "right" | null = null;
+        if (connectedEdge) {
+            currentSide = connectedEdge.source === nodeId
+                ? getHandleSide(connectedEdge.sourceHandle, "source")
+                : getHandleSide(connectedEdge.targetHandle, "target");
+        }
+        return { otherNodes, connectedEdge, currentSide };
+    }, [nodeId, column.id]);
 
-    const connectedEdge = useMemo(
-        () =>
-            edges.find(
-                (e) =>
-                    (e.source === nodeId &&
-                        (e.sourceHandle === `${column.id}-source` ||
-                            e.sourceHandle === `${column.id}-source-left`)) ||
-                    (e.target === nodeId &&
-                        (e.targetHandle === `${column.id}-target` ||
-                            e.targetHandle === `${column.id}-target-right`)),
-            ),
-        [edges, nodeId, column.id],
-    );
+    const handleOpenChange = (next: boolean) => {
+        setOpen(next);
+        if (next) setSnap(readSnapshot());
+    };
 
-    const currentSide = useMemo(() => {
-        if (!connectedEdge) return null;
-        if (connectedEdge.source === nodeId)
-            return connectedEdge.sourceHandle === `${column.id}-source-left` ? "left" : "right";
-        return connectedEdge.targetHandle === `${column.id}-target-right` ? "right" : "left";
-    }, [connectedEdge, nodeId, column.id]);
+    // After each action, refresh the snapshot so the UI reflects the change immediately
+    const handleFlipSide = () => {
+        flipColumnHandleSide(nodeId, column.id);
+        setSnap(readSnapshot());
+    };
 
-    const refPk = otherNodes
+    const handleRetarget = (nId: string, colId: string, tableId: string) => {
+        retargetFkColumn(nId, colId, tableId);
+        setSnap(readSnapshot());
+    };
+
+    const refPk = snap.otherNodes
         .find((n) => n.id === column.references?.tableId)
         ?.data.columns.find((c) => c.isPrimaryKey);
 
     return (
-        <Popover>
+        <Popover open={open} onOpenChange={handleOpenChange}>
             <Tooltip>
                 <TooltipTrigger asChild>
                     <PopoverTrigger asChild>
@@ -102,15 +127,15 @@ export default function ColumnSettingsPopover({
 
                 <ColumnFlagToggles column={column} onUpdate={onUpdate} />
 
-                {currentSide !== null && (
+                {snap.currentSide !== null && (
                     <div className="space-y-1.5 pt-1 border-t border-border">
                         <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">
                             Arrow side
                         </p>
                         <SidePicker
                             label=""
-                            side={currentSide}
-                            onFlip={() => flipColumnHandleSide(nodeId, column.id)}
+                            side={snap.currentSide}
+                            onFlip={handleFlipSide}
                         />
                     </div>
                 )}
@@ -119,9 +144,9 @@ export default function ColumnSettingsPopover({
                     <FkReferenceSection
                         column={column}
                         nodeId={nodeId}
-                        otherNodes={otherNodes}
+                        otherNodes={snap.otherNodes}
                         refPk={refPk}
-                        onRetarget={retargetFkColumn}
+                        onRetarget={handleRetarget}
                     />
                 )}
             </PopoverContent>

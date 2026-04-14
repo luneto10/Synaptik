@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useState } from "react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -12,6 +12,7 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { BrainCircuit, Save, Loader2, Sun, Moon, Wand2, FlaskConical } from "lucide-react";
+import { onInputCommit } from "../../utils/onInputCommit";
 
 interface FlowToolbarProps {
     nodeCount: number;
@@ -22,7 +23,7 @@ interface FlowToolbarProps {
     onLoadExample: () => void;
 }
 
-export default function FlowToolbar({
+function FlowToolbar({
     nodeCount,
     edgeCount,
     isPending,
@@ -51,10 +52,7 @@ export default function FlowToolbar({
                     value={projectName}
                     onChange={(e) => setProjectName(e.target.value)}
                     onBlur={() => setEditingName(false)}
-                    onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === "Escape")
-                            setEditingName(false);
-                    }}
+                    onKeyDown={(e) => onInputCommit(e, { onCommit: () => setEditingName(false), onCancel: () => setEditingName(false) })}
                     className="h-7 w-32 text-xs px-2 font-medium"
                 />
             ) : (
@@ -158,3 +156,5 @@ export default function FlowToolbar({
         </div>
     );
 }
+
+export default memo(FlowToolbar);

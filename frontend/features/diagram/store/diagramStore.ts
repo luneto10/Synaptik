@@ -13,6 +13,10 @@ export const useDiagramStore = create<DiagramState>()(
             ...createNodeActions(set),
             ...createEdgeActions(set),
         })),
-        { limit: 50 },
+        {
+            limit: 50,
+            // Only snapshot data — action functions are pure and don't need history
+            partialize: (s) => ({ nodes: s.nodes, edges: s.edges }),
+        },
     ),
 );

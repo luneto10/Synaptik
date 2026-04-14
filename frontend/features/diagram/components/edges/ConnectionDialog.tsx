@@ -23,6 +23,7 @@ import type { RelationshipType, TableNode } from "../../types/flow.types";
 import type { DbColumn } from "../../types/db.types";
 import { useDiagramStore } from "../../store/diagramStore";
 import { RelationTypePicker } from "./RelationTypePicker";
+import { defaultFkColumnName } from "../../store/helpers";
 
 // ── Schema ────────────────────────────────────────────────────────────────────
 
@@ -69,7 +70,7 @@ export default function ConnectionDialog({
         const src = nodes.find((n) => n.id === connection?.source);
         const tgt = nodes.find((n) => n.id === connection?.target);
         const pk  = src?.data.columns.find((c) => c.isPrimaryKey);
-        const fk  = src ? `${src.data.name.toLowerCase()}_id` : "";
+        const fk  = src ? defaultFkColumnName(src.data.name) : "";
 
         setSourceNode(src);
         setTargetNode(tgt);

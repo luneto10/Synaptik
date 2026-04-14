@@ -10,6 +10,7 @@ import TableNodeHeader from "./TableNodeHeader";
 import TableNodeColumns from "./TableNodeColumns";
 import TableNodeFooter from "./TableNodeFooter";
 import { cn } from "@/lib/utils";
+import { LAYOUT } from "../constants";
 
 function TableNode({ id, data, selected }: NodeProps<TableNodeType>) {
     const addColumn = useDiagramStore((s) => s.addColumn);
@@ -40,8 +41,8 @@ function TableNode({ id, data, selected }: NodeProps<TableNodeType>) {
     return (
         <>
             <NodeResizer
-                minWidth={280}
-                minHeight={120}
+                minWidth={LAYOUT.MIN_NODE_WIDTH}
+                minHeight={LAYOUT.MIN_NODE_HEIGHT}
                 isVisible={selected}
                 lineClassName="border-indigo-400!"
                 handleClassName="bg-indigo-500! border-white! rounded-sm!"

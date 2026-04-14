@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import {
     Tooltip,
     TooltipContent,
@@ -7,43 +8,42 @@ import {
 } from "@/components/ui/tooltip";
 import {
     Fingerprint,
-    CaseSensitive,
-    Hash,
     ToggleLeft,
     Clock,
     Braces,
-    Divide,
+    DecimalsArrowRight,
     KeyRound,
     Link2,
     CircleDot,
-    type LucideIcon,
+    LucideIcon,
+    Binary,
 } from "lucide-react";
+import { IoText } from "react-icons/io5";
+import type { IconType } from "react-icons";
 import type { DbColumn, ColumnType } from "../types/db.types";
 import { cn } from "@/lib/utils";
 
 // ── Type → icon map (different types may share the same icon) ─────────────────
 
-const TYPE_ICONS: Record<ColumnType, LucideIcon> = {
+const TYPE_ICONS: Record<ColumnType, LucideIcon | IconType> = {
     uuid: Fingerprint,
-    text: CaseSensitive,
-    varchar: CaseSensitive,
-    int: Hash,
-    bigint: Hash,
+    text: IoText,
+    varchar: IoText,
+    int: Binary,
+    bigint: Binary,
     boolean: ToggleLeft,
     timestamp: Clock,
     jsonb: Braces,
-    float: Divide,
+    float: DecimalsArrowRight,
 };
 
 // ── Badge helpers ─────────────────────────────────────────────────────────────
 
 export const ICON_CLS = "w-3 h-3 shrink-0";
 
-const WIDE_ICONS = new Set<LucideIcon>([CaseSensitive]);
-
 function TypeIcon({ type }: { type: ColumnType }) {
     const Icon = TYPE_ICONS[type];
-    const cls = cn(WIDE_ICONS.has(Icon) ? "w-4 h-3" : ICON_CLS, "text-foreground/40");
+    const cls = cn("w-3.5 h-3.5 shrink-0", "text-foreground/40");
     return (
         <Tooltip>
             <TooltipTrigger asChild>
@@ -58,7 +58,7 @@ function TypeIcon({ type }: { type: ColumnType }) {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function ColumnBadges({ column }: { column: DbColumn }) {
+function ColumnBadges({ column }: { column: DbColumn }) {
     return (
         <div className="flex gap-0.5 items-center">
             <TypeIcon type={column.type} />
@@ -67,7 +67,9 @@ export default function ColumnBadges({ column }: { column: DbColumn }) {
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <span className="inline-flex">
-                            <KeyRound className={cn(ICON_CLS, "text-amber-500")} />
+                            <KeyRound
+                                className={cn(ICON_CLS, "text-amber-500")}
+                            />
                         </span>
                     </TooltipTrigger>
                     <TooltipContent side="top">Primary key</TooltipContent>
@@ -78,7 +80,9 @@ export default function ColumnBadges({ column }: { column: DbColumn }) {
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <span className="inline-flex">
-                            <Link2 className={cn(ICON_CLS, "text-violet-500")} />
+                            <Link2
+                                className={cn(ICON_CLS, "text-violet-500")}
+                            />
                         </span>
                     </TooltipTrigger>
                     <TooltipContent side="top">
@@ -96,7 +100,9 @@ export default function ColumnBadges({ column }: { column: DbColumn }) {
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <span className="inline-flex">
-                            <CircleDot className={cn(ICON_CLS, "text-sky-400")} />
+                            <CircleDot
+                                className={cn(ICON_CLS, "text-sky-400")}
+                            />
                         </span>
                     </TooltipTrigger>
                     <TooltipContent side="top">Unique</TooltipContent>
@@ -105,3 +111,5 @@ export default function ColumnBadges({ column }: { column: DbColumn }) {
         </div>
     );
 }
+
+export default memo(ColumnBadges);

@@ -11,6 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useDiagramStore } from "../../store/diagramStore";
+import { onInputCommit } from "../../utils/onInputCommit";
 
 interface NewTableDialogProps {
     open: boolean;
@@ -51,10 +52,7 @@ export default function NewTableDialog({
                     placeholder="table_name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    onKeyDown={(e) => {
-                        if (e.key === "Enter") handleCreate();
-                        if (e.key === "Escape") onOpenChange(false);
-                    }}
+                    onKeyDown={(e) => onInputCommit(e, { onCommit: handleCreate, onCancel: () => onOpenChange(false) })}
                     className="font-mono text-sm"
                 />
 

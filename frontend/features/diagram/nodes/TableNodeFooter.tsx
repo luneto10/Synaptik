@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Plus } from "lucide-react";
@@ -8,7 +9,7 @@ interface TableNodeFooterProps {
     onAddColumn: () => void;
 }
 
-export default function TableNodeFooter({ onAddColumn }: TableNodeFooterProps) {
+function TableNodeFooter({ onAddColumn }: TableNodeFooterProps) {
     return (
         <div className="flex flex-col">
             <Separator />
@@ -25,3 +26,5 @@ export default function TableNodeFooter({ onAddColumn }: TableNodeFooterProps) {
         </div>
     );
 }
+
+export default memo(TableNodeFooter);
