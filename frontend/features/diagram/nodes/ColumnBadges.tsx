@@ -12,18 +12,13 @@ import {
     Clock,
     Braces,
     DecimalsArrowRight,
-    KeyRound,
-    Link2,
-    CircleDot,
-    LucideIcon,
     Binary,
+    LucideIcon,
 } from "lucide-react";
 import { IoText } from "react-icons/io5";
 import type { IconType } from "react-icons";
 import type { DbColumn, ColumnType } from "../types/db.types";
 import { cn } from "@/lib/utils";
-
-// ── Type → icon map (different types may share the same icon) ─────────────────
 
 const TYPE_ICONS: Record<ColumnType, LucideIcon | IconType> = {
     uuid: Fingerprint,
@@ -37,76 +32,49 @@ const TYPE_ICONS: Record<ColumnType, LucideIcon | IconType> = {
     float: DecimalsArrowRight,
 };
 
-// ── Badge helpers ─────────────────────────────────────────────────────────────
-
 export const ICON_CLS = "w-3 h-3 shrink-0";
 
 function TypeIcon({ type }: { type: ColumnType }) {
     const Icon = TYPE_ICONS[type];
-    const cls = cn("w-3.5 h-3.5 shrink-0", "text-foreground/40");
     return (
         <Tooltip>
             <TooltipTrigger asChild>
-                <span className="inline-flex">
-                    <Icon className={cls} />
+                <span className="inline-flex text-foreground/35">
+                    <Icon className="w-3.5 h-3.5 shrink-0" />
                 </span>
             </TooltipTrigger>
-            <TooltipContent side="top">{type}</TooltipContent>
+            <TooltipContent side="top" className="font-mono">{type}</TooltipContent>
         </Tooltip>
     );
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
+function Pill({ label, cls }: { label: string; cls: string }) {
+    return (
+        <span
+            className={cn(
+                "inline-flex items-center justify-center",
+                "text-[8px] font-bold leading-none tracking-wide",
+                "px-1 py-0.5 rounded",
+                cls,
+            )}
+        >
+            {label}
+        </span>
+    );
+}
 
 function ColumnBadges({ column }: { column: DbColumn }) {
     return (
         <div className="flex gap-0.5 items-center">
             <TypeIcon type={column.type} />
-
             {column.isPrimaryKey && (
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <span className="inline-flex">
-                            <KeyRound
-                                className={cn(ICON_CLS, "text-amber-500")}
-                            />
-                        </span>
-                    </TooltipTrigger>
-                    <TooltipContent side="top">Primary key</TooltipContent>
-                </Tooltip>
+                <Pill label="PK" cls="bg-amber-500/15 text-amber-500 border border-amber-500/25" />
             )}
-
             {column.isForeignKey && (
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <span className="inline-flex">
-                            <Link2
-                                className={cn(ICON_CLS, "text-violet-500")}
-                            />
-                        </span>
-                    </TooltipTrigger>
-                    <TooltipContent side="top">
-                        Foreign key
-                        {column.references && (
-                            <span className="block text-muted-foreground font-mono text-[10px]">
-                                → {column.references.tableId.slice(0, 8)}…
-                            </span>
-                        )}
-                    </TooltipContent>
-                </Tooltip>
+                <Pill label="FK" cls="bg-violet-500/15 text-violet-400 border border-violet-500/25" />
             )}
-
             {column.isUnique && !column.isPrimaryKey && (
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <span className="inline-flex">
-                            <CircleDot
-                                className={cn(ICON_CLS, "text-sky-400")}
-                            />
-                        </span>
-                    </TooltipTrigger>
-                    <TooltipContent side="top">Unique</TooltipContent>
-                </Tooltip>
+                <Pill label="U" cls="bg-sky-500/15 text-sky-400 border border-sky-500/25" />
             )}
         </div>
     );

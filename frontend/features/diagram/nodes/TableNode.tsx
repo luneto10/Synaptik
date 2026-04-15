@@ -5,7 +5,6 @@ import { NodeResizer } from "@xyflow/react";
 import type { NodeProps } from "@xyflow/react";
 import { useDiagramStore } from "../store/diagramStore";
 import {
-    beginDiagramHistoryGesture,
     endDiagramHistoryGestureDeferred,
     endDiagramHistoryGestureIfActive,
 } from "../store/diagramHistory";
@@ -52,20 +51,23 @@ function TableNode({ id, data, selected }: NodeProps<TableNodeType>) {
                 lineClassName="border-indigo-400!"
                 handleClassName="bg-indigo-500! border-white! rounded-sm!"
                 onResizeStart={() => {
+                    // End any lingering gesture before starting a new resize.
                     endDiagramHistoryGestureIfActive();
                 }}
                 onResizeEnd={() => {
-                    endDiagramHistoryGestureIfActive();
+                    // Deferred fallback: ends the gesture if React Flow never emits
+                    // resizing:false through onNodesChange (which is the primary path).
                     endDiagramHistoryGestureDeferred();
                 }}
             />
 
             <div
                 className={cn(
-                    "bg-card rounded-xl border shadow-md w-full h-full overflow-hidden transition-shadow duration-150",
+                    "bg-card rounded-xl border w-full h-full overflow-hidden",
+                    "transition-all duration-150",
                     selected
-                        ? "border-indigo-500 shadow-indigo-500/20 shadow-lg ring-1 ring-indigo-500/30"
-                        : "border-border hover:shadow-lg",
+                        ? "border-indigo-500/70 shadow-xl shadow-indigo-500/15 ring-1 ring-indigo-500/20"
+                        : "border-border/60 shadow-md hover:border-border hover:shadow-lg",
                 )}
             >
                 {/* ── Header ── */}

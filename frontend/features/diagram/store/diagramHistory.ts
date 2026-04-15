@@ -1,55 +1,47 @@
 import { useDiagramStore } from "./diagramStore";
 
-/**
- * True while a geometry interaction (drag, selection-drag, resize) is mutating the
- * store with temporal tracking paused. Mirrors zundo pause for FlowCanvas branching.
- */
+/** True while a drag/resize gesture is active and temporal tracking is paused. */
 export const historyPausedRef = { current: false };
 
-let geometrySessionActive = false;
+let gestureActive = false;
 
-function syncHistoryPausedRef() {
-    historyPausedRef.current = geometrySessionActive;
-}
-
-/**
- * Pause temporal history once per geometry session (idempotent).
- */
+/** Pause temporal history at the start of a drag/resize gesture (idempotent). */
 export function beginDiagramHistoryGesture() {
-    if (geometrySessionActive) return;
-    geometrySessionActive = true;
+    if (gestureActive) return;
+    gestureActive = true;
+    historyPausedRef.current = true;
     useDiagramStore.temporal.getState().pause();
-    syncHistoryPausedRef();
+}
+
+/** Resume temporal history at the end of a drag/resize gesture (idempotent). */
+export function endDiagramHistoryGesture() {
+    if (!gestureActive) return;
+    gestureActive = false;
+    historyPausedRef.current = false;
+    useDiagramStore.temporal.getState().resume();
+}
+
+// Alias kept for all existing call sites.
+export const endDiagramHistoryGestureIfActive = endDiagramHistoryGesture;
+
+/** Deferred end — fallback when React Flow misses a final drag/resize event. */
+export function endDiagramHistoryGestureDeferred() {
+    queueMicrotask(endDiagramHistoryGesture);
 }
 
 /**
- * Resume temporal history when a geometry session ends (idempotent).
+ * Apply `fn` without recording a history entry.
+ * Useful for selection, passive dimension updates, and other non-semantic mutations.
  */
-export function endDiagramHistoryGesture() {
-    if (!geometrySessionActive) return;
-    geometrySessionActive = false;
-    useDiagramStore.temporal.getState().resume();
-    syncHistoryPausedRef();
+export function withoutHistory(fn: () => void) {
+    const t = useDiagramStore.temporal.getState();
+    t.pause();
+    try { fn(); } finally { t.resume(); }
 }
 
-export function endDiagramHistoryGestureIfActive() {
-    endDiagramHistoryGesture();
-}
-
-/** Fallback when React Flow does not emit a final `dragging: false` / resize-end change. */
-export function endDiagramHistoryGestureDeferred() {
-    queueMicrotask(() => {
-        endDiagramHistoryGestureIfActive();
-    });
-}
-
-export function isDiagramHistoryGestureActive() {
-    return geometrySessionActive;
-}
-
-/** Test / dialog / unmount helper — clears session and resumes tracking. */
+/** Test / dialog / unmount helper — hard-resets gesture state. */
 export function resetDiagramHistoryGestureDepthForTests() {
-    geometrySessionActive = false;
+    gestureActive = false;
+    historyPausedRef.current = false;
     useDiagramStore.temporal.getState().resume();
-    syncHistoryPausedRef();
 }

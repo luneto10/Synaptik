@@ -244,6 +244,7 @@ export default function RelationEdge({
                             ) : (
                                 <EdgePopoverContent
                                     relType={relType}
+                                    hasJunction={!!(data as RelationEdgeData | undefined)?.junctionTableId}
                                     sourceHandleId={sourceHandleId}
                                     targetHandleId={targetHandleId}
                                     onTypeChange={handleTypeChange}
@@ -254,6 +255,7 @@ export default function RelationEdge({
                                         flipEdgeEnd(id, "target")
                                     }
                                     onDelete={handleDelete}
+                                    onCreateJunction={handleCreateJunction}
                                 />
                             )}
                         </PopoverContent>

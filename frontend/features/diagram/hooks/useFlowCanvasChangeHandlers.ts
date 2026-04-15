@@ -6,6 +6,7 @@ import {
     endDiagramHistoryGestureDeferred,
     endDiagramHistoryGestureIfActive,
     historyPausedRef,
+    withoutHistory,
 } from "../store/diagramHistory";
 import type { RelationEdge, TableNode } from "../types/flow.types";
 
@@ -65,6 +66,13 @@ export function useFlowCanvasChangeHandlers({
                 changes = filtered;
             }
 
+            // Pure selection changes must not create history entries
+            if (changes.every((c) => c.type === "select")) {
+                withoutHistory(() => onNodesChange?.(changes));
+                return;
+            }
+
+            // Passive dimension updates (initial measurement) — never recorded
             const isPassiveDimensionsOnly =
                 changes.length > 0 &&
                 changes.every(
@@ -75,24 +83,21 @@ export function useFlowCanvasChangeHandlers({
                                 undefined),
                 );
             if (isPassiveDimensionsOnly && !historyPausedRef.current) {
-                const temporal = useDiagramStore.temporal.getState();
-                temporal.pause();
-                onNodesChange?.(changes);
-                temporal.resume();
+                withoutHistory(() => onNodesChange?.(changes));
                 return;
             }
 
             const isDragging = changes.some(
                 (c) => c.type === "position" && c.dragging === true,
             );
-            const isDropped = changes.some(
-                (c) => c.type === "position" && c.dragging === false,
-            );
             const isResizing = changes.some(
                 (c) =>
                     c.type === "dimensions" &&
                     "resizing" in c &&
                     c.resizing === true,
+            );
+            const isDropped = changes.some(
+                (c) => c.type === "position" && c.dragging === false,
             );
             const isResizeEnd = changes.some(
                 (c) =>
@@ -103,6 +108,7 @@ export function useFlowCanvasChangeHandlers({
 
             if (isDragging || isResizing) {
                 if (!historyPausedRef.current) {
+                    // Apply BEFORE pausing so this first change records the pre-gesture state.
                     onNodesChange?.(changes);
                     beginDiagramHistoryGesture();
                     return;
@@ -111,13 +117,14 @@ export function useFlowCanvasChangeHandlers({
                 return;
             }
 
+            // Final event of a drag / resize — apply while the gesture is still paused
+            // (so this change is NOT a separate history entry), then commit.
+            // For drops specifically, also re-normalize edge handles so that moving a node
+            // past another one auto-flips the arrow direction — all in the same undo step.
             if (isDropped || isResizeEnd) {
                 onNodesChange?.(changes);
-                return;
-            }
-
-            if (historyPausedRef.current) {
-                onNodesChange?.(changes);
+                if (isDropped) useDiagramStore.getState().normalizeEdgeHandleDirections();
+                endDiagramHistoryGestureIfActive();
                 return;
             }
 
@@ -136,17 +143,23 @@ export function useFlowCanvasChangeHandlers({
                 if (filtered.length === 0) return;
                 changes = filtered;
             }
+            // Pure edge-selection changes must not create history entries
+            if (changes.every((c) => c.type === "select")) {
+                withoutHistory(() => onEdgesChange?.(changes));
+                return;
+            }
             onEdgesChange?.(changes);
         },
         [onEdgesChange],
     );
 
     const handleNodeDragStart = useCallback(() => {
+        // End any lingering gesture from a previous drag before starting a new one.
         endDiagramHistoryGestureIfActive();
     }, []);
 
     const handleNodeDragStop = useCallback(() => {
-        endDiagramHistoryGestureIfActive();
+        // Deferred fallback: ends the gesture if React Flow never emits dragging:false.
         endDiagramHistoryGestureDeferred();
     }, []);
 
@@ -155,7 +168,7 @@ export function useFlowCanvasChangeHandlers({
     }, []);
 
     const handleSelectionDragStop = useCallback(() => {
-        endDiagramHistoryGestureIfActive();
+        // Deferred fallback only — gesture is normally ended inside handleNodesChange.
         endDiagramHistoryGestureDeferred();
     }, []);
 

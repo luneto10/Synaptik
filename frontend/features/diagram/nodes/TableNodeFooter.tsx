@@ -2,7 +2,6 @@
 
 import { memo } from "react";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { Plus } from "lucide-react";
 
 interface TableNodeFooterProps {
@@ -11,19 +10,17 @@ interface TableNodeFooterProps {
 
 function TableNodeFooter({ onAddColumn }: TableNodeFooterProps) {
     return (
-        <div className="flex flex-col">
-            <Separator />
-            <Button
-                variant="ghost"
-                size="sm"
-                onClick={onAddColumn}
-                className="w-full h-8 text-xs text-muted-foreground rounded-t-none rounded-b-xl
-                   hover:text-indigo-500 hover:bg-indigo-500/10 gap-1"
-            >
-                <Plus className="w-3 h-3" />
-                add column
-            </Button>
-        </div>
+        <Button
+            variant="ghost"
+            size="sm"
+            onClick={onAddColumn}
+            className="w-full h-7 text-[11px] text-muted-foreground/60 rounded-none rounded-b-xl
+                       border-t border-border/30
+                       hover:text-indigo-400 hover:bg-indigo-500/8 gap-1.5 transition-colors"
+        >
+            <Plus className="w-3 h-3" />
+            Add column
+        </Button>
     );
 }
 

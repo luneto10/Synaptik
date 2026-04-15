@@ -83,7 +83,6 @@ function DiagramCanvas() {
         setTableDialogOpen(open);
         if (!open) {
             setActiveTool("select");
-            // Ensure zundo is never left paused after the add-table flow.
             endDiagramHistoryGestureIfActive();
         }
     }, []);

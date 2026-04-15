@@ -21,16 +21,12 @@ export function useKeyboardShortcuts({
 
     const handleUndo = useCallback(() => {
         endDiagramHistoryGestureIfActive();
-        const { pastStates, undo } = useDiagramStore.temporal.getState();
-        if (!pastStates.length) return;
-        undo();
+        useDiagramStore.temporal.getState().undo();
     }, []);
 
     const handleRedo = useCallback(() => {
         endDiagramHistoryGestureIfActive();
-        const { futureStates, redo } = useDiagramStore.temporal.getState();
-        if (!futureStates.length) return;
-        redo();
+        useDiagramStore.temporal.getState().redo();
     }, []);
 
     useHotkeys("mod+z", handleUndo, {

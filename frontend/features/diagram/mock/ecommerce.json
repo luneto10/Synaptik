@@ -103,6 +103,19 @@
                         "isUnique": true
                     },
                     {
+                        "id": "col-prd-category-id",
+                        "name": "category_id",
+                        "type": "uuid",
+                        "isPrimaryKey": false,
+                        "isForeignKey": true,
+                        "isNullable": false,
+                        "isUnique": false,
+                        "references": {
+                            "tableId": "tbl-categories",
+                            "columnId": "col-cat-id"
+                        }
+                    },
+                    {
                         "id": "col-prd-name",
                         "name": "name",
                         "type": "varchar",
@@ -128,19 +141,6 @@
                         "isForeignKey": false,
                         "isNullable": true,
                         "isUnique": false
-                    },
-                    {
-                        "id": "col-prd-category-id",
-                        "name": "category_id",
-                        "type": "uuid",
-                        "isPrimaryKey": false,
-                        "isForeignKey": true,
-                        "isNullable": false,
-                        "isUnique": false,
-                        "references": {
-                            "tableId": "tbl-categories",
-                            "columnId": "col-cat-id"
-                        }
                     },
                     {
                         "id": "col-prd-stock",
