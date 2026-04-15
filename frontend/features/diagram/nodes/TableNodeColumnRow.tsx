@@ -82,11 +82,28 @@ function TableNodeColumnRow({
           : "border-l-2 border-l-transparent";
 
     return (
-        <div className={`group relative flex items-center border-b border-border/30 last:border-0 hover:bg-muted/40 transition-colors ${rowAccent}`}>
+        <div
+            className={`group relative flex items-center border-b border-border/30 last:border-0 hover:bg-muted/40 transition-colors ${rowAccent}`}
+        >
             {/* ── Handles (left: source + target, right: source + target) ── */}
-            <Handle type="source" position={Position.Left}  id={handleIds(column.id).sourceLeft}  className={handleCls} />
-            <Handle type="target" position={Position.Left}  id={handleIds(column.id).targetLeft}  className={handleCls} />
-            <Handle type="target" position={Position.Right} id={handleIds(column.id).targetRight} className={handleCls} />
+            <Handle
+                type="source"
+                position={Position.Left}
+                id={handleIds(column.id).sourceLeft}
+                className={handleCls}
+            />
+            <Handle
+                type="target"
+                position={Position.Left}
+                id={handleIds(column.id).targetLeft}
+                className={handleCls}
+            />
+            <Handle
+                type="target"
+                position={Position.Right}
+                id={handleIds(column.id).targetRight}
+                className={handleCls}
+            />
 
             {/* Badges */}
             <div className="w-14 pl-2 pr-1 shrink-0">
@@ -102,8 +119,14 @@ function TableNodeColumnRow({
                     onBlur={commitName}
                     onKeyDown={(e) => {
                         onInputCommit(e, {
-                            onCommit: () => { commitName(); e.currentTarget.blur(); },
-                            onCancel: () => { cancelName(); e.currentTarget.blur(); },
+                            onCommit: () => {
+                                commitName();
+                                e.currentTarget.blur();
+                            },
+                            onCancel: () => {
+                                cancelName();
+                                e.currentTarget.blur();
+                            },
                         });
                         e.stopPropagation();
                     }}
@@ -115,13 +138,24 @@ function TableNodeColumnRow({
 
             {/* Type */}
             <div className="w-20 px-0.5 py-1 shrink-0 flex items-center justify-end">
-                <Select value={column.type} onValueChange={(v) => onUpdate({ ...column, type: v as ColumnType })}>
+                <Select
+                    value={column.type}
+                    onValueChange={(v) =>
+                        onUpdate({ ...column, type: v as ColumnType })
+                    }
+                >
                     <SelectTrigger className="h-6 text-[11px] border-0! bg-transparent! dark:bg-transparent! dark:hover:bg-transparent! shadow-none px-1 focus-visible:ring-0! focus-visible:border-0! text-muted-foreground/70 justify-end! gap-0.5 w-auto [&>svg]:opacity-50 [&>svg]:size-2.5! font-mono">
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                         {COLUMN_TYPES.map((t) => (
-                            <SelectItem key={t} value={t} className="text-sm font-mono">{t}</SelectItem>
+                            <SelectItem
+                                key={t}
+                                value={t}
+                                className="text-sm font-mono"
+                            >
+                                {t}
+                            </SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
@@ -130,7 +164,11 @@ function TableNodeColumnRow({
             {/* Actions */}
             <div className="w-12 px-1 shrink-0">
                 <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <ColumnSettingsPopover nodeId={nodeId} column={column} onUpdate={onUpdate} />
+                    <ColumnSettingsPopover
+                        nodeId={nodeId}
+                        column={column}
+                        onUpdate={onUpdate}
+                    />
                     {!column.isPrimaryKey && (
                         <Tooltip>
                             <TooltipTrigger asChild>
@@ -143,14 +181,21 @@ function TableNodeColumnRow({
                                     <Trash2 className="w-3 h-3" />
                                 </Button>
                             </TooltipTrigger>
-                            <TooltipContent side="top">Delete column</TooltipContent>
+                            <TooltipContent side="top">
+                                Delete column
+                            </TooltipContent>
                         </Tooltip>
                     )}
                 </div>
             </div>
 
             {/* ── Source handle (right) ── */}
-            <Handle type="source" position={Position.Right} id={handleIds(column.id).sourceRight} className={handleCls} />
+            <Handle
+                type="source"
+                position={Position.Right}
+                id={handleIds(column.id).sourceRight}
+                className={handleCls}
+            />
         </div>
     );
 }

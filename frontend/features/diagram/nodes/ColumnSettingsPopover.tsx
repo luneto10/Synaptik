@@ -68,14 +68,19 @@ export default function ColumnSettingsPopover({
         const otherNodes = nodes.filter((n) => n.id !== nodeId);
         const connectedEdge = edges.find(
             (e) =>
-                (e.source === nodeId && (e.sourceHandle === h.sourceRight || e.sourceHandle === h.sourceLeft)) ||
-                (e.target === nodeId && (e.targetHandle === h.targetLeft  || e.targetHandle === h.targetRight)),
+                (e.source === nodeId &&
+                    (e.sourceHandle === h.sourceRight ||
+                        e.sourceHandle === h.sourceLeft)) ||
+                (e.target === nodeId &&
+                    (e.targetHandle === h.targetLeft ||
+                        e.targetHandle === h.targetRight)),
         );
         let currentSide: "left" | "right" | null = null;
         if (connectedEdge) {
-            currentSide = connectedEdge.source === nodeId
-                ? getHandleSide(connectedEdge.sourceHandle, "source")
-                : getHandleSide(connectedEdge.targetHandle, "target");
+            currentSide =
+                connectedEdge.source === nodeId
+                    ? getHandleSide(connectedEdge.sourceHandle, "source")
+                    : getHandleSide(connectedEdge.targetHandle, "target");
         }
         return { otherNodes, connectedEdge, currentSide };
     }, [nodeId, column.id]);
@@ -120,7 +125,9 @@ export default function ColumnSettingsPopover({
             <PopoverContent className="w-64 p-3 space-y-3" side="right">
                 <p className="text-xs font-semibold">
                     Column:{" "}
-                    <span className="font-mono text-indigo-400">{column.name}</span>
+                    <span className="font-mono text-indigo-400">
+                        {column.name}
+                    </span>
                 </p>
 
                 <Separator />
@@ -183,14 +190,18 @@ function ColumnFlagToggles({
                 label="Unique"
                 checked={column.isUnique}
                 disabled={column.isPrimaryKey}
-                onCheckedChange={(checked) => onUpdate({ ...column, isUnique: checked })}
+                onCheckedChange={(checked) =>
+                    onUpdate({ ...column, isUnique: checked })
+                }
             />
             <ToggleRow
                 id={`null-${column.id}`}
                 label="Nullable"
                 checked={column.isNullable}
                 disabled={column.isPrimaryKey}
-                onCheckedChange={(checked) => onUpdate({ ...column, isNullable: checked })}
+                onCheckedChange={(checked) =>
+                    onUpdate({ ...column, isNullable: checked })
+                }
             />
             <ToggleRow
                 id={`fk-${column.id}`}
@@ -232,14 +243,20 @@ function FkReferenceSection({
                 <Label className="text-xs text-muted-foreground">Table</Label>
                 <Select
                     value={column.references?.tableId ?? ""}
-                    onValueChange={(newTableId) => onRetarget(nodeId, column.id, newTableId)}
+                    onValueChange={(newTableId) =>
+                        onRetarget(nodeId, column.id, newTableId)
+                    }
                 >
                     <SelectTrigger className="h-7 text-xs">
                         <SelectValue placeholder="Select table…" />
                     </SelectTrigger>
                     <SelectContent>
                         {otherNodes.map((n) => (
-                            <SelectItem key={n.id} value={n.id} className="text-xs font-mono">
+                            <SelectItem
+                                key={n.id}
+                                value={n.id}
+                                className="text-xs font-mono"
+                            >
                                 {n.data.name}
                             </SelectItem>
                         ))}
@@ -273,10 +290,18 @@ function ToggleRow({
 }) {
     return (
         <div className="flex items-center justify-between">
-            <Label htmlFor={id} className="text-xs text-muted-foreground cursor-pointer">
+            <Label
+                htmlFor={id}
+                className="text-xs text-muted-foreground cursor-pointer"
+            >
                 {label}
             </Label>
-            <Switch id={id} checked={checked} disabled={disabled} onCheckedChange={onCheckedChange} />
+            <Switch
+                id={id}
+                checked={checked}
+                disabled={disabled}
+                onCheckedChange={onCheckedChange}
+            />
         </div>
     );
 }

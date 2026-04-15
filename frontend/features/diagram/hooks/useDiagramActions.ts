@@ -57,10 +57,18 @@ export function useDiagramActions() {
         dagre.layout(g);
 
         // Build positions from dagre output (top-left origin).
-        const positions = new Map<string, { x: number; y: number; w: number; h: number }>();
+        const positions = new Map<
+            string,
+            { x: number; y: number; w: number; h: number }
+        >();
         for (const n of nodes) {
             const { x, y, width, height } = g.node(n.id);
-            positions.set(n.id, { x: x - width / 2, y: y - height / 2, w: width, h: height });
+            positions.set(n.id, {
+                x: x - width / 2,
+                y: y - height / 2,
+                w: width,
+                h: height,
+            });
         }
 
         // ── Post-process 1: fix junction-table edge crossings ────────────────
@@ -72,7 +80,8 @@ export function useDiagramActions() {
         for (const e of edges) {
             const jId = e.data?.junctionTableId;
             if (jId) {
-                if (!junctionParents.has(jId)) junctionParents.set(jId, new Set());
+                if (!junctionParents.has(jId))
+                    junctionParents.set(jId, new Set());
                 junctionParents.get(jId)!.add(e.source);
             }
         }
@@ -89,7 +98,7 @@ export function useDiagramActions() {
                 .sort((a, b) => a.pos.y - b.pos.y);
 
             const splitAt = Math.ceil(parents.length / 2);
-            const leftGroup  = parents.slice(0, splitAt);
+            const leftGroup = parents.slice(0, splitAt);
             const rightGroup = parents.slice(splitAt);
 
             const stackH = (g: typeof parents) =>
@@ -124,7 +133,8 @@ export function useDiagramActions() {
         const BALANCE_THRESHOLD = 3;
         const sourcesByTarget = new Map<string, string[]>();
         for (const e of edges) {
-            if (!sourcesByTarget.has(e.target)) sourcesByTarget.set(e.target, []);
+            if (!sourcesByTarget.has(e.target))
+                sourcesByTarget.set(e.target, []);
             sourcesByTarget.get(e.target)!.push(e.source);
         }
 
@@ -139,8 +149,13 @@ export function useDiagramActions() {
             if (leftSources.length <= BALANCE_THRESHOLD) continue;
 
             // Sort by Y and migrate the bottom half to the right side.
-            leftSources.sort((a, b) => (positions.get(a)?.y ?? 0) - (positions.get(b)?.y ?? 0));
-            const rightCandidates = leftSources.slice(Math.ceil(leftSources.length / 2));
+            leftSources.sort(
+                (a, b) =>
+                    (positions.get(a)?.y ?? 0) - (positions.get(b)?.y ?? 0),
+            );
+            const rightCandidates = leftSources.slice(
+                Math.ceil(leftSources.length / 2),
+            );
 
             const rightX = targetPos.x + targetPos.w + LAYOUT.GAP_X;
             let rightY = targetPos.y;
@@ -153,12 +168,19 @@ export function useDiagramActions() {
 
         const changes = nodes.map((n) => {
             const p = positions.get(n.id)!;
-            return { id: n.id, type: "position" as const, position: { x: p.x, y: p.y } };
+            return {
+                id: n.id,
+                type: "position" as const,
+                position: { x: p.x, y: p.y },
+            };
         });
 
         onNodesChange(changes);
         normalizeEdgeHandleDirections();
-        setTimeout(() => fitView({ padding: FIT_VIEW_PADDING }), REFLOW_DELAY_MS);
+        setTimeout(
+            () => fitView({ padding: FIT_VIEW_PADDING }),
+            REFLOW_DELAY_MS,
+        );
     }, [fitView]);
 
     return { isPending, handleSave, handleLoadExample, handleAutoLayout };

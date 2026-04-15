@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type MouseEvent } from "react";
+import {
+    useCallback,
+    useEffect,
+    useRef,
+    useState,
+    type MouseEvent,
+} from "react";
 import {
     ReactFlow,
     Background,
@@ -24,7 +30,12 @@ import { useDiagramActions } from "./hooks/useDiagramActions";
 import { useConnectMode } from "./hooks/useConnectMode";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { useFlowCanvasChangeHandlers } from "./hooks/useFlowCanvasChangeHandlers";
-import { edgeTypes, CONNECTION_LINE_STYLE, FIT_VIEW_OPTIONS, DEFAULT_EDGE_OPTIONS } from "./FlowCanvas.constants";
+import {
+    edgeTypes,
+    CONNECTION_LINE_STYLE,
+    FIT_VIEW_OPTIONS,
+    DEFAULT_EDGE_OPTIONS,
+} from "./FlowCanvas.constants";
 import { FIT_VIEW_PADDING, DIAGRAM_COLORS, REFLOW_DELAY_MS } from "./constants";
 import { cn } from "@/lib/utils";
 

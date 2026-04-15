@@ -3,16 +3,33 @@
 import { memo, useState } from "react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import {
     Tooltip,
     TooltipContent,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { BrainCircuit, Save, Loader2, Sun, Moon, Wand2, FlaskConical } from "lucide-react";
+import {
+    BrainCircuit,
+    Save,
+    Loader2,
+    Sun,
+    Moon,
+    Wand2,
+    FlaskConical,
+} from "lucide-react";
 import { onInputCommit } from "../../utils/onInputCommit";
 import { cn } from "@/lib/utils";
+
+/** Vertical rule for toolbars: avoids Radix Separator `self-stretch` fighting `h-*` in flex rows. */
+function ToolbarDivider() {
+    return (
+        <span
+            aria-hidden
+            className="h-5 w-px shrink-0 self-center rounded-full bg-border"
+        />
+    );
+}
 
 interface FlowToolbarProps {
     nodeCount: number;
@@ -23,7 +40,14 @@ interface FlowToolbarProps {
     onLoadExample: () => void;
 }
 
-function FlowToolbar({ nodeCount, edgeCount, isPending, onSave, onAutoLayout, onLoadExample }: FlowToolbarProps) {
+function FlowToolbar({
+    nodeCount,
+    edgeCount,
+    isPending,
+    onSave,
+    onAutoLayout,
+    onLoadExample,
+}: FlowToolbarProps) {
     const { theme, setTheme } = useTheme();
     const [projectName, setProjectName] = useState("untitled");
     const [editingName, setEditingName] = useState(false);
@@ -35,10 +59,12 @@ function FlowToolbar({ nodeCount, edgeCount, isPending, onSave, onAutoLayout, on
                 <div className="w-6 h-6 rounded-md bg-indigo-600 flex items-center justify-center shadow-sm">
                     <BrainCircuit className="w-3.5 h-3.5 text-white" />
                 </div>
-                <span className="font-semibold text-sm text-foreground">Synaptik</span>
+                <span className="font-semibold text-sm text-foreground">
+                    Synaptik
+                </span>
             </div>
 
-            <Separator orientation="vertical" className="h-5 shrink-0" />
+            <ToolbarDivider />
 
             {/* ── Project name ── */}
             {editingName ? (
@@ -47,7 +73,12 @@ function FlowToolbar({ nodeCount, edgeCount, isPending, onSave, onAutoLayout, on
                     value={projectName}
                     onChange={(e) => setProjectName(e.target.value)}
                     onBlur={() => setEditingName(false)}
-                    onKeyDown={(e) => onInputCommit(e, { onCommit: () => setEditingName(false), onCancel: () => setEditingName(false) })}
+                    onKeyDown={(e) =>
+                        onInputCommit(e, {
+                            onCommit: () => setEditingName(false),
+                            onCancel: () => setEditingName(false),
+                        })
+                    }
                     className="h-6 w-28 text-xs px-2"
                 />
             ) : (
@@ -64,12 +95,17 @@ function FlowToolbar({ nodeCount, edgeCount, isPending, onSave, onAutoLayout, on
                 PostgreSQL
             </span>
 
-            <Separator orientation="vertical" className="h-5 shrink-0" />
+            <ToolbarDivider />
 
             {/* ── Tools ── */}
             <Tooltip>
                 <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={onAutoLayout}>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                        onClick={onAutoLayout}
+                    >
                         <Wand2 className="w-3.5 h-3.5" />
                     </Button>
                 </TooltipTrigger>
@@ -78,7 +114,12 @@ function FlowToolbar({ nodeCount, edgeCount, isPending, onSave, onAutoLayout, on
 
             <Tooltip>
                 <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={onLoadExample}>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                        onClick={onLoadExample}
+                    >
                         <FlaskConical className="w-3.5 h-3.5" />
                     </Button>
                 </TooltipTrigger>
@@ -93,7 +134,7 @@ function FlowToolbar({ nodeCount, edgeCount, isPending, onSave, onAutoLayout, on
                     {edgeCount} {edgeCount === 1 ? "relation" : "relations"}
                 </span>
 
-                <Separator orientation="vertical" className="h-5 shrink-0" />
+                <ToolbarDivider />
 
                 <Tooltip>
                     <TooltipTrigger asChild>
@@ -101,9 +142,15 @@ function FlowToolbar({ nodeCount, edgeCount, isPending, onSave, onAutoLayout, on
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                            onClick={() =>
+                                setTheme(theme === "dark" ? "light" : "dark")
+                            }
                         >
-                            {theme === "dark" ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+                            {theme === "dark" ? (
+                                <Sun className="w-3.5 h-3.5" />
+                            ) : (
+                                <Moon className="w-3.5 h-3.5" />
+                            )}
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>Toggle theme</TooltipContent>
@@ -119,7 +166,11 @@ function FlowToolbar({ nodeCount, edgeCount, isPending, onSave, onAutoLayout, on
                     onClick={onSave}
                     disabled={isPending}
                 >
-                    {isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                    {isPending ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                        <Save className="w-3 h-3" />
+                    )}
                     Save
                 </Button>
             </div>
