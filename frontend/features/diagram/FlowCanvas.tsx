@@ -10,55 +10,45 @@ import {
     SelectionMode,
     ControlButton,
     ReactFlowProvider,
-    type EdgeTypes,
-    type NodeChange,
 } from "@xyflow/react";
-import { useStore } from "zustand";
 import { useDiagramStore } from "./store/diagramStore";
+import { endDiagramHistoryGestureIfActive } from "./store/diagramHistory";
 import { nodeTypes } from "./nodes";
 import FlowToolbar from "./components/canvas/FlowToolbar";
 import LeftToolbox, { type DiagramTool } from "./components/canvas/LeftToolbox";
 import NewTableDialog from "./components/canvas/NewTableDialog";
 import ConnectionDialog from "./components/edges/ConnectionDialog";
-import RelationEdge from "./components/edges/RelationEdge";
 import { EdgeMarkerDefs } from "./components/edges/EdgeMarkerDefs";
 import { Map } from "lucide-react";
 import { useDiagramActions } from "./hooks/useDiagramActions";
 import { useConnectMode } from "./hooks/useConnectMode";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
-import type { RelationshipType } from "./types/flow.types";
+import { useFlowCanvasChangeHandlers } from "./hooks/useFlowCanvasChangeHandlers";
+import { edgeTypes, CONNECTION_LINE_STYLE, FIT_VIEW_OPTIONS, DEFAULT_EDGE_OPTIONS } from "./FlowCanvas.constants";
 import { FIT_VIEW_PADDING, DIAGRAM_COLORS, REFLOW_DELAY_MS } from "./constants";
 import { cn } from "@/lib/utils";
-
-// ── Module-level constants (stable references, never cause re-renders) ────────
-
-const edgeTypes: EdgeTypes = { relation: RelationEdge as EdgeTypes[string] };
-
-const CONNECTION_LINE_STYLE = { stroke: DIAGRAM_COLORS.edge, strokeWidth: 2 };
-const FIT_VIEW_OPTIONS = { padding: FIT_VIEW_PADDING };
-const DEFAULT_EDGE_OPTIONS = {
-    type: "relation",
-    data: {
-        relationshipType: "one-to-many" as RelationshipType,
-        sourceColumnId: "",
-        targetColumnId: "",
-    },
-};
 
 // ── Inner canvas (needs useReactFlow) ────────────────────────────────────────
 
 function DiagramCanvas() {
     const containerRef = useRef<HTMLDivElement>(null);
-    const historyPausedRef = useRef(false);
 
     const nodes = useDiagramStore((s) => s.nodes);
     const edges = useDiagramStore((s) => s.edges);
     const onNodesChange = useDiagramStore((s) => s.onNodesChange);
     const onEdgesChange = useDiagramStore((s) => s.onEdgesChange);
-    const undo = useStore(useDiagramStore.temporal, (s) => s.undo);
-    const redo = useStore(useDiagramStore.temporal, (s) => s.redo);
-    const pause = useStore(useDiagramStore.temporal, (s) => s.pause);
-    const resume = useStore(useDiagramStore.temporal, (s) => s.resume);
+    const {
+        handleBeforeDelete,
+        handleNodesChange,
+        handleEdgesChange,
+        handleNodeDragStart,
+        handleNodeDragStop,
+        handleSelectionDragStart,
+        handleSelectionDragStop,
+    } = useFlowCanvasChangeHandlers({
+        onNodesChange,
+        onEdgesChange,
+    });
 
     const [activeTool, setActiveTool] = useState<DiagramTool>("select");
     const [tableDialogOpen, setTableDialogOpen] = useState(false);
@@ -91,7 +81,11 @@ function DiagramCanvas() {
 
     const handleTableDialogClose = useCallback((open: boolean) => {
         setTableDialogOpen(open);
-        if (!open) setActiveTool("select");
+        if (!open) {
+            setActiveTool("select");
+            // Ensure zundo is never left paused after the add-table flow.
+            endDiagramHistoryGestureIfActive();
+        }
     }, []);
 
     const handleCancelConn = useCallback(
@@ -102,61 +96,11 @@ function DiagramCanvas() {
         () => setShowMinimap((v) => !v),
         [],
     );
-    const handleNodesChange = useCallback(
-        (changes: NodeChange[]) => {
-            const isDragging = changes.some(
-                (c) => c.type === "position" && c.dragging === true,
-            );
-            const isDropped = changes.some(
-                (c) => c.type === "position" && c.dragging === false,
-            );
-            const isResizing = changes.some(
-                (c) =>
-                    c.type === "dimensions" &&
-                    "resizing" in c &&
-                    c.resizing === true,
-            );
-            const isResizeEnd = changes.some(
-                (c) =>
-                    c.type === "dimensions" &&
-                    "resizing" in c &&
-                    c.resizing === false,
-            );
 
-            if (isDragging || isResizing) {
-                if (!historyPausedRef.current) {
-                    pause();
-                    historyPausedRef.current = true;
-                }
-                onNodesChange?.(changes);
-                return;
-            }
-
-            if (isDropped || isResizeEnd) {
-                // Apply final geometry first; then resume so this frame is committed once.
-                onNodesChange?.(changes);
-                if (historyPausedRef.current) {
-                    resume();
-                    historyPausedRef.current = false;
-                }
-                return;
-            }
-
-            if (historyPausedRef.current) {
-                resume();
-                historyPausedRef.current = false;
-            }
-
-            onNodesChange?.(changes);
-        },
-        [onNodesChange, pause, resume],
-    );
     const { handleUndo, handleRedo } = useKeyboardShortcuts({
         handleToolChange,
         setTableDialogOpen,
         setPendingConnectSource,
-        undo,
-        redo,
     });
 
     // Refocus the canvas whenever a dialog closes so keyboard shortcuts work.
@@ -169,6 +113,12 @@ function DiagramCanvas() {
             return () => clearTimeout(id);
         }
     }, [tableDialogOpen, pendingConn]);
+
+    useEffect(() => {
+        return () => {
+            endDiagramHistoryGestureIfActive();
+        };
+    }, []);
 
     return (
         <div
@@ -206,8 +156,13 @@ function DiagramCanvas() {
                 <ReactFlow
                     nodes={displayNodes}
                     edges={edges}
+                    onBeforeDelete={handleBeforeDelete}
                     onNodesChange={handleNodesChange}
-                    onEdgesChange={onEdgesChange}
+                    onNodeDragStart={handleNodeDragStart}
+                    onNodeDragStop={handleNodeDragStop}
+                    onSelectionDragStart={handleSelectionDragStart}
+                    onSelectionDragStop={handleSelectionDragStop}
+                    onEdgesChange={handleEdgesChange}
                     onConnect={handleConnect}
                     onConnectStart={handleConnectStart}
                     onConnectEnd={handleConnectEnd}

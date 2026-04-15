@@ -29,6 +29,8 @@ export interface DiagramState {
     removeColumn: (nodeId: string, columnId: string) => void;
     renameTable: (nodeId: string, name: string) => void;
     deleteTable: (nodeId: string) => void;
+    /** Deletes one or more tables in a single immer transaction (one undo step) — for React Flow batch delete. */
+    deleteTablesAtomic: (nodeIds: string[]) => void;
     /** Creates a junction table for M:N and wires it with 1:N edges to both parent tables. */
     createJunctionTable: (sourceNodeId: string, targetNodeId: string) => void;
     /** Replaces the entire diagram state — used for loading saved or mock data. */

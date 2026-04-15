@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { temporal } from "zundo";
 import { immer } from "zustand/middleware/immer";
+import cloneDeep from "lodash/cloneDeep";
 import isEqual from "lodash/isEqual";
 import type { DiagramState, SetState } from "./diagramStore.types";
 import { createNodeActions } from "./nodeActions";
@@ -15,6 +16,10 @@ type HistorySnapshot = {
         position: { x: number; y: number };
         data: DiagramState["nodes"][number]["data"];
         type?: string;
+        width?: number;
+        height?: number;
+        measured?: { width?: number; height?: number };
+        style?: DiagramState["nodes"][number]["style"];
     }[];
     edges: {
         id: string;
@@ -31,11 +36,15 @@ const EMPTY_SNAPSHOT: HistorySnapshot = { nodes: [], edges: [] };
 const toSnapshot = (state: DiagramState | undefined): HistorySnapshot => {
     if (!state) return EMPTY_SNAPSHOT;
     return {
-        nodes: state.nodes.map(({ id, position, data, type }) => ({
-            id,
-            position: { ...position },
-            data,
-            type,
+        nodes: state.nodes.map((n) => ({
+            id: n.id,
+            position: { ...n.position },
+            data: cloneDeep(n.data),
+            type: n.type,
+            width: n.width,
+            height: n.height,
+            measured: n.measured ? { ...n.measured } : undefined,
+            style: n.style ? cloneDeep(n.style) : undefined,
         })),
         edges: state.edges.map(
             ({ id, source, target, sourceHandle, targetHandle, data }) => ({
@@ -44,7 +53,7 @@ const toSnapshot = (state: DiagramState | undefined): HistorySnapshot => {
                 target,
                 sourceHandle,
                 targetHandle,
-                data,
+                data: data !== undefined ? cloneDeep(data) : undefined,
             }),
         ),
     };

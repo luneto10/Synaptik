@@ -11,6 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useDiagramStore } from "../../store/diagramStore";
+import { endDiagramHistoryGestureIfActive } from "../../store/diagramHistory";
 import { onInputCommit } from "../../utils/onInputCommit";
 
 interface NewTableDialogProps {
@@ -39,6 +40,7 @@ export default function NewTableDialog({
 
     const handleCreate = () => {
         const trimmed = name.trim();
+        endDiagramHistoryGestureIfActive();
         addTable(trimmed || "new_table");
         setName("");
         handleOpenChange(false);

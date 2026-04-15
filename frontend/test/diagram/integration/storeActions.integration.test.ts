@@ -3,6 +3,11 @@ import type { Connection } from "@xyflow/react";
 import type { DbColumn } from "../../../features/diagram/types/db.types";
 import type { TableNode } from "../../../features/diagram/types/flow.types";
 import { useDiagramStore } from "../../../features/diagram/store/diagramStore";
+import {
+    beginDiagramHistoryGesture,
+    endDiagramHistoryGestureIfActive,
+    resetDiagramHistoryGestureDepthForTests,
+} from "../../../features/diagram/store/diagramHistory";
 
 const pk = (id: string): DbColumn => ({
     id,
@@ -31,6 +36,7 @@ const conn = (source: string, target: string): Connection => ({
 
 describe("diagram store actions integration", () => {
     beforeEach(() => {
+        resetDiagramHistoryGestureDepthForTests();
         const history = useDiagramStore.temporal.getState() as {
             clear?: () => void;
             pastStates?: unknown[];
@@ -46,6 +52,312 @@ describe("diagram store actions integration", () => {
         history.unpause?.();
         history.setTracking?.(true);
         useDiagramStore.setState({ nodes: [], edges: [] });
+    });
+
+    it("does not append temporal history during a paused geometry burst", () => {
+        const history = useDiagramStore.temporal.getState();
+        history.clear?.();
+        useDiagramStore.setState({
+            nodes: [node("a", "A", [pk("pk-a")])],
+            edges: [],
+        });
+        history.clear?.();
+
+        beginDiagramHistoryGesture();
+        const lenDuring = history.pastStates.length;
+        for (let i = 0; i < 15; i++) {
+            useDiagramStore.getState().onNodesChange([
+                {
+                    type: "position",
+                    id: "a",
+                    position: { x: 10 + i, y: 20 },
+                    dragging: true,
+                },
+            ]);
+        }
+        expect(history.pastStates.length).toBe(lenDuring);
+
+        endDiagramHistoryGestureIfActive();
+        useDiagramStore.getState().onNodesChange([
+            {
+                type: "position",
+                id: "a",
+                position: { x: 500, y: 600 },
+                dragging: false,
+            },
+        ]);
+        expect(history.pastStates.length).toBeGreaterThan(lenDuring);
+    });
+
+    it("does not append temporal history during a paused resize burst", () => {
+        const history = useDiagramStore.temporal.getState();
+        history.clear?.();
+        useDiagramStore.setState({
+            nodes: [node("a", "A", [pk("pk-a")])],
+            edges: [],
+        });
+        history.clear?.();
+
+        beginDiagramHistoryGesture();
+        const lenDuring = history.pastStates.length;
+        for (let i = 0; i < 12; i++) {
+            useDiagramStore.getState().onNodesChange([
+                {
+                    type: "dimensions",
+                    id: "a",
+                    dimensions: { width: 300 + i, height: 200 },
+                    resizing: true,
+                },
+            ]);
+        }
+        expect(history.pastStates.length).toBe(lenDuring);
+
+        endDiagramHistoryGestureIfActive();
+        useDiagramStore.getState().onNodesChange([
+            {
+                type: "dimensions",
+                id: "a",
+                dimensions: { width: 420, height: 260 },
+                resizing: false,
+            },
+        ]);
+        expect(history.pastStates.length).toBeGreaterThan(lenDuring);
+    });
+
+    it("undo restores prior width and height after resize commit", () => {
+        const history = useDiagramStore.temporal.getState();
+        history.clear?.();
+        useDiagramStore.setState({
+            nodes: [
+                {
+                    ...node("a", "A", [pk("pk-a")]),
+                    width: 280,
+                    height: 200,
+                },
+            ],
+            edges: [],
+        });
+        history.clear?.();
+
+        beginDiagramHistoryGesture();
+        endDiagramHistoryGestureIfActive();
+        useDiagramStore.getState().onNodesChange([
+            {
+                type: "dimensions",
+                id: "a",
+                dimensions: { width: 420, height: 260 },
+                resizing: false,
+            },
+        ]);
+
+        let n = useDiagramStore.getState().nodes.find((x) => x.id === "a");
+        expect(n?.width).toBe(420);
+        expect(n?.height).toBe(260);
+
+        history.undo();
+        n = useDiagramStore.getState().nodes.find((x) => x.id === "a");
+        expect(n?.width).toBe(280);
+        expect(n?.height).toBe(200);
+    });
+
+    it("deleteTablesAtomic on junction then one undo restores node and junction edges", () => {
+        const history = useDiagramStore.temporal.getState();
+        useDiagramStore.setState({
+            nodes: [
+                node("users", "Users", [pk("pk-users")]),
+                node("roles", "Roles", [pk("pk-roles")]),
+            ],
+            edges: [],
+        });
+
+        useDiagramStore.getState().createJunctionTable("users", "roles");
+        const withJunction = useDiagramStore.getState();
+        const junction = withJunction.nodes.find(
+            (n) => n.id !== "users" && n.id !== "roles",
+        );
+        expect(junction).toBeTruthy();
+        const junctionId = junction!.id;
+        expect(
+            withJunction.edges.filter((e) => e.data?.junctionTableId === junctionId)
+                .length,
+        ).toBe(2);
+
+        history.clear?.();
+        const pastLen = history.pastStates.length;
+
+        useDiagramStore.getState().deleteTablesAtomic([junctionId]);
+
+        expect(history.pastStates.length).toBeGreaterThan(pastLen);
+        let state = useDiagramStore.getState();
+        expect(state.nodes.some((n) => n.id === junctionId)).toBe(false);
+
+        history.undo();
+        state = useDiagramStore.getState();
+        expect(state.nodes.some((n) => n.id === junctionId)).toBe(true);
+        expect(
+            state.edges.filter((e) => e.data?.junctionTableId === junctionId)
+                .length,
+        ).toBe(2);
+    });
+
+    it("addTable then undo removes the table without any move", () => {
+        const history = useDiagramStore.temporal.getState();
+        history.clear?.();
+        expect(useDiagramStore.getState().nodes.length).toBe(0);
+
+        useDiagramStore.getState().addTable("Orders");
+        expect(useDiagramStore.getState().nodes.length).toBe(1);
+
+        history.undo();
+        expect(useDiagramStore.getState().nodes.length).toBe(0);
+    });
+
+    it("temporal undo and redo with empty stacks do not throw", () => {
+        const history = useDiagramStore.temporal.getState();
+        history.clear?.();
+        expect(() => history.undo()).not.toThrow();
+        expect(() => history.redo()).not.toThrow();
+    });
+
+    it("two sequential move gestures undo in LIFO (only last moved node reverts)", () => {
+        const history = useDiagramStore.temporal.getState();
+        useDiagramStore.setState({
+            nodes: [node("a", "A", [pk("pk-a")]), node("b", "B", [pk("pk-b")])],
+            edges: [],
+        });
+        history.clear?.();
+
+        // Gesture 1: move A (seed snapshot on first change, then pause during gesture)
+        useDiagramStore.getState().onNodesChange([
+            {
+                type: "position",
+                id: "a",
+                position: { x: 100, y: 0 },
+                dragging: true,
+            },
+        ]);
+        beginDiagramHistoryGesture();
+        useDiagramStore.getState().onNodesChange([
+            {
+                type: "position",
+                id: "a",
+                position: { x: 200, y: 0 },
+                dragging: true,
+            },
+        ]);
+        endDiagramHistoryGestureIfActive();
+
+        // Gesture 2: move B
+        useDiagramStore.getState().onNodesChange([
+            {
+                type: "position",
+                id: "b",
+                position: { x: 0, y: 150 },
+                dragging: true,
+            },
+        ]);
+        beginDiagramHistoryGesture();
+        useDiagramStore.getState().onNodesChange([
+            {
+                type: "position",
+                id: "b",
+                position: { x: 0, y: 250 },
+                dragging: true,
+            },
+        ]);
+        endDiagramHistoryGestureIfActive();
+
+        let a = useDiagramStore.getState().nodes.find((n) => n.id === "a");
+        let b = useDiagramStore.getState().nodes.find((n) => n.id === "b");
+        expect(a?.position).toEqual({ x: 200, y: 0 });
+        expect(b?.position).toEqual({ x: 0, y: 250 });
+
+        history.undo();
+        a = useDiagramStore.getState().nodes.find((n) => n.id === "a");
+        b = useDiagramStore.getState().nodes.find((n) => n.id === "b");
+        expect(a?.position).toEqual({ x: 200, y: 0 });
+        expect(b?.position).toEqual({ x: 0, y: 0 });
+
+        history.undo();
+        a = useDiagramStore.getState().nodes.find((n) => n.id === "a");
+        b = useDiagramStore.getState().nodes.find((n) => n.id === "b");
+        expect(a?.position).toEqual({ x: 0, y: 0 });
+        expect(b?.position).toEqual({ x: 0, y: 0 });
+    });
+
+    it("two sequential resize gestures undo in LIFO (only last resized node reverts)", () => {
+        const history = useDiagramStore.temporal.getState();
+        useDiagramStore.setState({
+            nodes: [
+                { ...node("a", "A", [pk("pk-a")]), width: 280, height: 200 },
+                { ...node("b", "B", [pk("pk-b")]), width: 300, height: 220 },
+            ],
+            edges: [],
+        });
+        history.clear?.();
+
+        // Gesture 1: resize A
+        useDiagramStore.getState().onNodesChange([
+            {
+                type: "dimensions",
+                id: "a",
+                dimensions: { width: 400, height: 260 },
+                resizing: true,
+            },
+        ]);
+        beginDiagramHistoryGesture();
+        useDiagramStore.getState().onNodesChange([
+            {
+                type: "dimensions",
+                id: "a",
+                dimensions: { width: 420, height: 280 },
+                resizing: true,
+            },
+        ]);
+        endDiagramHistoryGestureIfActive();
+
+        // Gesture 2: resize B
+        useDiagramStore.getState().onNodesChange([
+            {
+                type: "dimensions",
+                id: "b",
+                dimensions: { width: 520, height: 340 },
+                resizing: true,
+            },
+        ]);
+        beginDiagramHistoryGesture();
+        useDiagramStore.getState().onNodesChange([
+            {
+                type: "dimensions",
+                id: "b",
+                dimensions: { width: 560, height: 360 },
+                resizing: true,
+            },
+        ]);
+        endDiagramHistoryGestureIfActive();
+
+        let a = useDiagramStore.getState().nodes.find((n) => n.id === "a");
+        let b = useDiagramStore.getState().nodes.find((n) => n.id === "b");
+        expect(a?.width).toBe(420);
+        expect(a?.height).toBe(280);
+        expect(b?.width).toBe(560);
+        expect(b?.height).toBe(360);
+
+        history.undo();
+        a = useDiagramStore.getState().nodes.find((n) => n.id === "a");
+        b = useDiagramStore.getState().nodes.find((n) => n.id === "b");
+        expect(a?.width).toBe(420);
+        expect(a?.height).toBe(280);
+        expect(b?.width).toBe(300);
+        expect(b?.height).toBe(220);
+
+        history.undo();
+        a = useDiagramStore.getState().nodes.find((n) => n.id === "a");
+        b = useDiagramStore.getState().nodes.find((n) => n.id === "b");
+        expect(a?.width).toBe(280);
+        expect(a?.height).toBe(200);
+        expect(b?.width).toBe(300);
+        expect(b?.height).toBe(220);
     });
 
     it("addEdgeWithType creates FK column, and deleteEdge removes it", () => {

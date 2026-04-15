@@ -4,6 +4,11 @@ import { memo, useCallback, useState } from "react";
 import { NodeResizer } from "@xyflow/react";
 import type { NodeProps } from "@xyflow/react";
 import { useDiagramStore } from "../store/diagramStore";
+import {
+    beginDiagramHistoryGesture,
+    endDiagramHistoryGestureDeferred,
+    endDiagramHistoryGestureIfActive,
+} from "../store/diagramHistory";
 import type { TableNode as TableNodeType } from "../types/flow.types";
 import type { DbColumn } from "../types/db.types";
 import TableNodeHeader from "./TableNodeHeader";
@@ -46,6 +51,13 @@ function TableNode({ id, data, selected }: NodeProps<TableNodeType>) {
                 isVisible={selected}
                 lineClassName="border-indigo-400!"
                 handleClassName="bg-indigo-500! border-white! rounded-sm!"
+                onResizeStart={() => {
+                    endDiagramHistoryGestureIfActive();
+                }}
+                onResizeEnd={() => {
+                    endDiagramHistoryGestureIfActive();
+                    endDiagramHistoryGestureDeferred();
+                }}
             />
 
             <div

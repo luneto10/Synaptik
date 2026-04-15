@@ -9,11 +9,10 @@ import {
     makePkCol,
     makeFkCol,
     makeEdge,
-    makeMnEdge,
-    stripAutoCol,
     defaultFkColumnName,
     singularizeTableName,
 } from "./helpers";
+import { removeTableAndCascadeInDraft } from "./tableDeletion";
 import type { SetState } from "./diagramStore.types";
 import { handleIds } from "../utils/handleIds";
 import { DbColumn } from "../types/db.types";
@@ -85,33 +84,17 @@ export function createNodeActions(set: SetState) {
 
         deleteTable: (nodeId: string) =>
             set((draft) => {
-                for (const edge of draft.edges.filter(
-                    (e) => e.source === nodeId,
-                )) {
-                    draft.nodes = stripAutoCol(
-                        draft.nodes as TableNode[],
-                        edge.data?.autoCreatedColumnId,
-                        edge.data?.autoCreatedColumnNodeId ?? edge.target,
-                    );
-                }
-                draft.nodes = draft.nodes.filter(
-                    (n) => n.id !== nodeId,
-                ) as TableNode[];
+                removeTableAndCascadeInDraft(draft, nodeId);
+            }),
 
-                const filteredEdges = draft.edges.filter(
-                    (e) => e.source !== nodeId && e.target !== nodeId,
-                );
-                const junctionEdges = draft.edges.filter(
-                    (e) => e.data?.junctionTableId === nodeId,
-                );
-                if (junctionEdges.length > 0) {
-                    const mn = makeMnEdge(
-                        draft.nodes as TableNode[],
-                        junctionEdges as RelationEdge[],
-                    );
-                    draft.edges = mn ? [...filteredEdges, mn] : filteredEdges;
-                } else {
-                    draft.edges = filteredEdges;
+        /** One zundo step for React Flow keyboard delete (replaces applyNodeChanges(remove) + edge removes). */
+        deleteTablesAtomic: (nodeIds: string[]) =>
+            set((draft) => {
+                const unique = [...new Set(nodeIds)];
+                for (const id of unique) {
+                    if (draft.nodes.some((n) => n.id === id)) {
+                        removeTableAndCascadeInDraft(draft, id);
+                    }
                 }
             }),
 
