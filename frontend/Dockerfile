@@ -1,5 +1,7 @@
 # check=skip=all
-FROM node:25-alpine AS base
+ARG NODE_VERSION=25
+
+FROM node:${NODE_VERSION}-alpine AS base
 WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm ci
@@ -13,7 +15,7 @@ FROM base AS builder
 COPY . .
 RUN npm run build
 
-FROM node:25-alpine AS release
+FROM node:${NODE_VERSION}-alpine AS release
 WORKDIR /app
 ENV NODE_ENV=production
 
