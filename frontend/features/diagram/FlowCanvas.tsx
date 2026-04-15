@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type MouseEvent } from "react";
 import {
     ReactFlow,
     Background,
@@ -32,6 +32,7 @@ import { cn } from "@/lib/utils";
 
 function DiagramCanvas() {
     const containerRef = useRef<HTMLDivElement>(null);
+    const prevToolRef = useRef<DiagramTool | null>(null);
 
     const nodes = useDiagramStore((s) => s.nodes);
     const edges = useDiagramStore((s) => s.edges);
@@ -69,6 +70,22 @@ function DiagramCanvas() {
         handleConfirmRelation,
         displayNodes,
     } = useConnectMode(activeTool);
+
+    // Middle-mouse-button: hold to temporarily activate the select tool.
+    const handleMiddleMouseDown = useCallback(
+        (e: MouseEvent<HTMLDivElement>) => {
+            if (e.button !== 1 || prevToolRef.current !== null) return;
+            e.preventDefault();
+            prevToolRef.current = activeTool;
+            setActiveTool("select");
+        },
+        [activeTool],
+    );
+    const handleMiddleMouseUp = useCallback((e: MouseEvent<HTMLDivElement>) => {
+        if (e.button !== 1 || prevToolRef.current === null) return;
+        setActiveTool(prevToolRef.current);
+        prevToolRef.current = null;
+    }, []);
 
     const handleToolChange = useCallback(
         (tool: DiagramTool) => {
@@ -124,6 +141,8 @@ function DiagramCanvas() {
             ref={containerRef}
             className="w-screen h-screen flex flex-col overflow-hidden bg-background"
             tabIndex={-1}
+            onMouseDown={handleMiddleMouseDown}
+            onMouseUp={handleMiddleMouseUp}
         >
             <FlowToolbar
                 nodeCount={nodes.length}

@@ -64,9 +64,10 @@ export function useDiagramActions() {
         }
 
         // ── Post-process 1: fix junction-table edge crossings ────────────────
-        // Dagre (LR) centres a junction between its two parents in Y, so edges
-        // from T1 (above J) and T2 (below J) cross in smooth-step routing.
-        // Fix: push J below both parents so all edges converge from the same side.
+        // Dagre (LR) stacks all junction parents in a single left column, causing
+        // edges to cross in the middle. Fix: split parents into a left group and a
+        // right group, then centre the junction between them so edges arrive cleanly
+        // from both sides  (T1 → Junction ← T3 / T2 → Junction ← T4).
         const junctionParents = new Map<string, Set<string>>();
         for (const e of edges) {
             const jId = e.data?.junctionTableId;
@@ -81,19 +82,38 @@ export function useDiagramActions() {
             const jPos = positions.get(jId);
             if (!jPos) continue;
 
-            let minParentY = Infinity;
-            let maxParentBottom = -Infinity;
-            for (const pId of parentIds) {
-                const p = positions.get(pId);
-                if (!p) continue;
-                minParentY = Math.min(minParentY, p.y);
-                maxParentBottom = Math.max(maxParentBottom, p.y + p.h);
+            // Sort parents by their dagre Y position for a stable, predictable split.
+            const parents = [...parentIds]
+                .map((id) => ({ id, pos: positions.get(id)! }))
+                .filter((p) => p.pos)
+                .sort((a, b) => a.pos.y - b.pos.y);
+
+            const splitAt = Math.ceil(parents.length / 2);
+            const leftGroup  = parents.slice(0, splitAt);
+            const rightGroup = parents.slice(splitAt);
+
+            const stackH = (g: typeof parents) =>
+                g.reduce((s, p) => s + p.pos.h, 0) +
+                Math.max(0, g.length - 1) * LAYOUT.DAGRE_NODE_SEP;
+
+            // Anchor around the junction's dagre centre Y.
+            const anchorY = jPos.y + jPos.h / 2;
+
+            // Left group: keep dagre X, re-stack centred on anchor.
+            let y = anchorY - stackH(leftGroup) / 2;
+            for (const p of leftGroup) {
+                positions.set(p.id, { ...p.pos, y });
+                y += p.pos.h + LAYOUT.DAGRE_NODE_SEP;
             }
 
-            const jCenterY = jPos.y + jPos.h / 2;
-            if (jCenterY > minParentY && jCenterY < maxParentBottom) {
-                positions.set(jId, { ...jPos, y: maxParentBottom + LAYOUT.DAGRE_NODE_SEP });
+            // Right group: move to the right of the junction, re-stack centred.
+            const rightX = jPos.x + jPos.w + LAYOUT.GAP_X;
+            y = anchorY - stackH(rightGroup) / 2;
+            for (const p of rightGroup) {
+                positions.set(p.id, { ...p.pos, x: rightX, y });
+                y += p.pos.h + LAYOUT.DAGRE_NODE_SEP;
             }
+            // Junction stays at its dagre position (X and Y remain correct).
         }
 
         // ── Post-process 2: balance crowded left columns ──────────────────────

@@ -60,7 +60,7 @@ function TableNodeColumnRow({
     }, [autoFocus, onFocusConsumed]);
 
     const handleCls =
-        "w-2.5! h-2.5! bg-indigo-500! border-2! border-card! rounded-full! opacity-20! group-hover:!opacity-100! transition-opacity! cursor-crosshair!";
+        "w-3.5! h-3.5! bg-indigo-500! border-2! border-card! rounded-full! opacity-0! group-hover:opacity-60! hover:!opacity-100! transition-opacity! cursor-crosshair!";
 
     const commitName = () => {
         const next = draftName.trim();

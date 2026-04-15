@@ -24,9 +24,9 @@ function TableNodeColumns({
     onRemove,
 }: TableNodeColumnsProps) {
     return (
-        <>
-            <Separator />
-            <ScrollArea className="max-h-80">
+        <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+            <Separator className="shrink-0" />
+            <ScrollArea className="flex-1">
                 <div className="flex flex-col">
                     {columns.map((col) => (
                         <TableNodeColumnRow
@@ -41,7 +41,7 @@ function TableNodeColumns({
                     ))}
                 </div>
             </ScrollArea>
-        </>
+        </div>
     );
 }
 

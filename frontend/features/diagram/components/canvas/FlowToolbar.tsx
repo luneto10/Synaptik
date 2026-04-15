@@ -38,7 +38,7 @@ function FlowToolbar({ nodeCount, edgeCount, isPending, onSave, onAutoLayout, on
                 <span className="font-semibold text-sm text-foreground">Synaptik</span>
             </div>
 
-            <Separator orientation="vertical" className="h-4 shrink-0" />
+            <Separator orientation="vertical" className="h-5 shrink-0" />
 
             {/* ── Project name ── */}
             {editingName ? (
@@ -64,7 +64,7 @@ function FlowToolbar({ nodeCount, edgeCount, isPending, onSave, onAutoLayout, on
                 PostgreSQL
             </span>
 
-            <Separator orientation="vertical" className="h-4 shrink-0" />
+            <Separator orientation="vertical" className="h-5 shrink-0" />
 
             {/* ── Tools ── */}
             <Tooltip>
@@ -93,7 +93,7 @@ function FlowToolbar({ nodeCount, edgeCount, isPending, onSave, onAutoLayout, on
                     {edgeCount} {edgeCount === 1 ? "relation" : "relations"}
                 </span>
 
-                <Separator orientation="vertical" className="h-4 shrink-0" />
+                <Separator orientation="vertical" className="h-5 shrink-0" />
 
                 <Tooltip>
                     <TooltipTrigger asChild>

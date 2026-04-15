@@ -40,7 +40,7 @@ function TypeIcon({ type }: { type: ColumnType }) {
         <Tooltip>
             <TooltipTrigger asChild>
                 <span className="inline-flex text-foreground/35">
-                    <Icon className="w-3.5 h-3.5 shrink-0" />
+                    <Icon className="w-3 h-3 shrink-0" />
                 </span>
             </TooltipTrigger>
             <TooltipContent side="top" className="font-mono">{type}</TooltipContent>
@@ -65,7 +65,7 @@ function Pill({ label, cls }: { label: string; cls: string }) {
 
 function ColumnBadges({ column }: { column: DbColumn }) {
     return (
-        <div className="flex gap-0.5 items-center">
+        <div className="flex gap-0.5 items-center flex-wrap">
             <TypeIcon type={column.type} />
             {column.isPrimaryKey && (
                 <Pill label="PK" cls="bg-amber-500/15 text-amber-500 border border-amber-500/25" />
@@ -75,6 +75,9 @@ function ColumnBadges({ column }: { column: DbColumn }) {
             )}
             {column.isUnique && !column.isPrimaryKey && (
                 <Pill label="U" cls="bg-sky-500/15 text-sky-400 border border-sky-500/25" />
+            )}
+            {column.isNullable && (
+                <Pill label="?" cls="bg-muted/60 text-muted-foreground/50 border border-border/40" />
             )}
         </div>
     );

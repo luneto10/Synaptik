@@ -63,7 +63,7 @@ function TableNode({ id, data, selected }: NodeProps<TableNodeType>) {
 
             <div
                 className={cn(
-                    "bg-card rounded-xl border w-full h-full overflow-hidden",
+                    "bg-card rounded-xl border w-full h-full flex flex-col overflow-hidden",
                     "transition-all duration-150",
                     selected
                         ? "border-indigo-500/70 shadow-xl shadow-indigo-500/15 ring-1 ring-indigo-500/20"

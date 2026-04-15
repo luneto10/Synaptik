@@ -28,16 +28,52 @@ interface LeftToolboxProps {
     onRedo?: () => void;
 }
 
-const TOOLS: { value: DiagramTool; icon: React.ReactNode; label: string; shortcut: string }[] = [
-    { value: "select",      icon: <MousePointer2 className="w-4 h-4" />,        label: "Select",       shortcut: "S" },
-    { value: "addTable",    icon: <Table2 className="w-4 h-4" />,               label: "Add table",    shortcut: "T" },
-    { value: "connect",     icon: <Spline className="w-4 h-4" />,               label: "Connect",      shortcut: "C" },
-    { value: "areaSelect",  icon: <RectangleHorizontal className="w-4 h-4" />,  label: "Area select",  shortcut: "A" },
+const TOOLS: {
+    value: DiagramTool;
+    icon: React.ReactNode;
+    label: string;
+    shortcut: string;
+}[] = [
+    {
+        value: "select",
+        icon: <MousePointer2 className="w-4 h-4" />,
+        label: "Select",
+        shortcut: "S",
+    },
+    {
+        value: "addTable",
+        icon: <Table2 className="w-4 h-4" />,
+        label: "Add table",
+        shortcut: "T",
+    },
+    {
+        value: "connect",
+        icon: <Spline className="w-4 h-4" />,
+        label: "Connect",
+        shortcut: "C",
+    },
+    {
+        value: "areaSelect",
+        icon: <RectangleHorizontal className="w-4 h-4" />,
+        label: "Area select",
+        shortcut: "A",
+    },
 ];
 
-function LeftToolbox({ activeTool, onToolChange, onUndo, onRedo }: LeftToolboxProps) {
-    const canUndo = useStore(useDiagramStore.temporal, (s) => s.pastStates.length > 0);
-    const canRedo = useStore(useDiagramStore.temporal, (s) => s.futureStates.length > 0);
+function LeftToolbox({
+    activeTool,
+    onToolChange,
+    onUndo,
+    onRedo,
+}: LeftToolboxProps) {
+    const canUndo = useStore(
+        useDiagramStore.temporal,
+        (s) => s.pastStates.length > 0,
+    );
+    const canRedo = useStore(
+        useDiagramStore.temporal,
+        (s) => s.futureStates.length > 0,
+    );
 
     return (
         <div
@@ -62,7 +98,10 @@ function LeftToolbox({ activeTool, onToolChange, onUndo, onRedo }: LeftToolboxPr
                             {tool.icon}
                         </Button>
                     </TooltipTrigger>
-                    <TooltipContent side="right" className="flex items-center gap-2">
+                    <TooltipContent
+                        side="right"
+                        className="flex items-center gap-2"
+                    >
                         {tool.label}
                         <kbd className="text-[9px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-mono border border-border">
                             {tool.shortcut}
@@ -90,11 +129,11 @@ function LeftToolbox({ activeTool, onToolChange, onUndo, onRedo }: LeftToolboxPr
                         <Undo2 className="w-3.5 h-3.5" />
                     </Button>
                 </TooltipTrigger>
-                <TooltipContent side="right" className="flex items-center gap-2">
+                <TooltipContent
+                    side="right"
+                    className="flex items-center gap-2"
+                >
                     Undo
-                    <kbd className="text-[9px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-mono border border-border">
-                        ⌘Z
-                    </kbd>
                 </TooltipContent>
             </Tooltip>
 
@@ -115,11 +154,11 @@ function LeftToolbox({ activeTool, onToolChange, onUndo, onRedo }: LeftToolboxPr
                         <Redo2 className="w-3.5 h-3.5" />
                     </Button>
                 </TooltipTrigger>
-                <TooltipContent side="right" className="flex items-center gap-2">
+                <TooltipContent
+                    side="right"
+                    className="flex items-center gap-2"
+                >
                     Redo
-                    <kbd className="text-[9px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-mono border border-border">
-                        ⌘⇧Z
-                    </kbd>
                 </TooltipContent>
             </Tooltip>
         </div>
