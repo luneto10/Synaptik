@@ -28,7 +28,7 @@ import type { DbColumn } from "../types/db.types";
 import type { TableNode, RelationEdge } from "../types/flow.types";
 import { useDiagramStore } from "../store/diagramStore";
 import { SidePicker } from "../components/SidePicker";
-import { handleIds, getHandleSide } from "../utils/handleIds";
+import { getHandleSide } from "../utils/handleIds";
 
 // ── Snapshot (read once on open — zero subscriptions during drag) ─────────────
 
@@ -61,19 +61,16 @@ export default function ColumnSettingsPopover({
     // Only stable action selectors — these never change and do not cause re-renders on drag
     const flipColumnHandleSide = useDiagramStore((s) => s.flipColumnHandleSide);
     const retargetFkColumn = useDiagramStore((s) => s.retargetFkColumn);
+    const deleteEdgeOnly = useDiagramStore((s) => s.deleteEdgeOnly);
 
     const readSnapshot = useCallback((): Snapshot => {
         const { nodes, edges } = useDiagramStore.getState();
-        const h = handleIds(column.id);
         const otherNodes = nodes.filter((n) => n.id !== nodeId);
+        // Find edge by column data IDs (works with node-level handles)
         const connectedEdge = edges.find(
             (e) =>
-                (e.source === nodeId &&
-                    (e.sourceHandle === h.sourceRight ||
-                        e.sourceHandle === h.sourceLeft)) ||
-                (e.target === nodeId &&
-                    (e.targetHandle === h.targetLeft ||
-                        e.targetHandle === h.targetRight)),
+                (e.source === nodeId && e.data?.sourceColumnId === column.id) ||
+                (e.target === nodeId && e.data?.targetColumnId === column.id),
         );
         let currentSide: "left" | "right" | null = null;
         if (connectedEdge) {
@@ -89,6 +86,21 @@ export default function ColumnSettingsPopover({
         setOpen(next);
         if (next) setSnap(readSnapshot());
     };
+
+    // Intercept FK toggle-off: delete the FK edge (without cascading column removal)
+    const handleUpdate = useCallback(
+        (updated: DbColumn) => {
+            if (column.isForeignKey && !updated.isForeignKey) {
+                const { edges } = useDiagramStore.getState();
+                const edge = edges.find(
+                    (e) => e.target === nodeId && e.data?.targetColumnId === column.id,
+                );
+                if (edge) deleteEdgeOnly(edge.id);
+            }
+            onUpdate(updated);
+        },
+        [column.isForeignKey, column.id, nodeId, deleteEdgeOnly, onUpdate],
+    );
 
     // After each action, refresh the snapshot so the UI reflects the change immediately
     const handleFlipSide = () => {
@@ -132,7 +144,7 @@ export default function ColumnSettingsPopover({
 
                 <Separator />
 
-                <ColumnFlagToggles column={column} onUpdate={onUpdate} />
+                <ColumnFlagToggles column={column} onUpdate={handleUpdate} />
 
                 {snap.currentSide !== null && (
                     <div className="space-y-1.5 pt-1 border-t border-border">

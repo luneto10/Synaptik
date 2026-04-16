@@ -1,7 +1,6 @@
 "use client";
 
 import { memo, useEffect, useRef, useState } from "react";
-import { Handle, Position } from "@xyflow/react";
 import { Input } from "@/components/ui/input";
 import {
     Select,
@@ -24,7 +23,6 @@ import {
 } from "../types/db.types";
 import ColumnBadges from "./ColumnBadges";
 import ColumnSettingsPopover from "./ColumnSettingsPopover";
-import { handleIds } from "../utils/handleIds";
 import { onInputCommit } from "../utils/onInputCommit";
 
 interface Props {
@@ -59,9 +57,6 @@ function TableNodeColumnRow({
         }
     }, [autoFocus, onFocusConsumed]);
 
-    const handleCls =
-        "w-3.5! h-3.5! bg-indigo-500! border-2! border-card! rounded-full! opacity-0! group-hover:opacity-60! hover:!opacity-100! transition-opacity! cursor-crosshair!";
-
     const commitName = () => {
         const next = draftName.trim();
         if (!next || next === column.name) {
@@ -85,26 +80,6 @@ function TableNodeColumnRow({
         <div
             className={`group relative flex items-center border-b border-border/30 last:border-0 hover:bg-muted/40 transition-colors ${rowAccent}`}
         >
-            {/* ── Handles (left: source + target, right: source + target) ── */}
-            <Handle
-                type="source"
-                position={Position.Left}
-                id={handleIds(column.id).sourceLeft}
-                className={handleCls}
-            />
-            <Handle
-                type="target"
-                position={Position.Left}
-                id={handleIds(column.id).targetLeft}
-                className={handleCls}
-            />
-            <Handle
-                type="target"
-                position={Position.Right}
-                id={handleIds(column.id).targetRight}
-                className={handleCls}
-            />
-
             {/* Badges */}
             <div className="w-14 pl-2 pr-1 shrink-0">
                 <ColumnBadges column={column} />
@@ -189,13 +164,6 @@ function TableNodeColumnRow({
                 </div>
             </div>
 
-            {/* ── Source handle (right) ── */}
-            <Handle
-                type="source"
-                position={Position.Right}
-                id={handleIds(column.id).sourceRight}
-                className={handleCls}
-            />
         </div>
     );
 }

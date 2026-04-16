@@ -7,7 +7,7 @@ function ArrowMarker({ id, orient }: { id: string; orient: string }) {
         <marker
             id={id}
             orient={orient}
-            refX="8"
+            refX="7.5"
             refY="4"
             markerWidth="10"
             markerHeight="8"
@@ -22,7 +22,7 @@ function BarMarker({ id, orient }: { id: string; orient: string }) {
         <marker
             id={id}
             orient={orient}
-            refX="2"
+            refX="1.5"
             refY="5"
             markerWidth="6"
             markerHeight="10"

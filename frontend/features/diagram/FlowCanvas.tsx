@@ -5,7 +5,6 @@ import {
     useEffect,
     useRef,
     useState,
-    type MouseEvent,
 } from "react";
 import {
     ReactFlow,
@@ -43,7 +42,6 @@ import { cn } from "@/lib/utils";
 
 function DiagramCanvas() {
     const containerRef = useRef<HTMLDivElement>(null);
-    const prevToolRef = useRef<DiagramTool | null>(null);
 
     const nodes = useDiagramStore((s) => s.nodes);
     const edges = useDiagramStore((s) => s.edges);
@@ -64,7 +62,8 @@ function DiagramCanvas() {
 
     const [activeTool, setActiveTool] = useState<DiagramTool>("select");
     const [tableDialogOpen, setTableDialogOpen] = useState(false);
-    const [showMinimap, setShowMinimap] = useState(true);
+    const [showMinimap, setShowMinimap] = useState(false);
+    const [isGrabbing, setIsGrabbing] = useState(false);
 
     const { isPending, handleSave, handleLoadExample, handleAutoLayout } =
         useDiagramActions();
@@ -81,22 +80,6 @@ function DiagramCanvas() {
         handleConfirmRelation,
         displayNodes,
     } = useConnectMode(activeTool);
-
-    // Middle-mouse-button: hold to temporarily activate the select tool.
-    const handleMiddleMouseDown = useCallback(
-        (e: MouseEvent<HTMLDivElement>) => {
-            if (e.button !== 1 || prevToolRef.current !== null) return;
-            e.preventDefault();
-            prevToolRef.current = activeTool;
-            setActiveTool("select");
-        },
-        [activeTool],
-    );
-    const handleMiddleMouseUp = useCallback((e: MouseEvent<HTMLDivElement>) => {
-        if (e.button !== 1 || prevToolRef.current === null) return;
-        setActiveTool(prevToolRef.current);
-        prevToolRef.current = null;
-    }, []);
 
     const handleToolChange = useCallback(
         (tool: DiagramTool) => {
@@ -128,6 +111,7 @@ function DiagramCanvas() {
         handleToolChange,
         setTableDialogOpen,
         setPendingConnectSource,
+        handleToggleMinimap,
     });
 
     // Refocus the canvas whenever a dialog closes so keyboard shortcuts work.
@@ -152,8 +136,9 @@ function DiagramCanvas() {
             ref={containerRef}
             className="w-screen h-screen flex flex-col overflow-hidden bg-background"
             tabIndex={-1}
-            onMouseDown={handleMiddleMouseDown}
-            onMouseUp={handleMiddleMouseUp}
+            onContextMenu={(e) => e.preventDefault()}
+            onMouseDown={(e) => { if (e.button === 1 || e.button === 2) setIsGrabbing(true); }}
+            onMouseUp={() => setIsGrabbing(false)}
         >
             <FlowToolbar
                 nodeCount={nodes.length}
@@ -164,7 +149,10 @@ function DiagramCanvas() {
                 onLoadExample={handleLoadExample}
             />
 
-            <div className="flex-1 relative bg-background overflow-hidden">
+            <div
+                className="flex-1 relative bg-background overflow-hidden"
+                style={isGrabbing ? { cursor: "grabbing" } : undefined}
+            >
                 <LeftToolbox
                     activeTool={activeTool}
                     onToolChange={handleToolChange}
@@ -204,7 +192,9 @@ function DiagramCanvas() {
                     maxZoom={2}
                     selectionOnDrag={activeTool === "areaSelect"}
                     panOnDrag={
-                        activeTool !== "areaSelect" && activeTool !== "connect"
+                        activeTool === "areaSelect" || activeTool === "connect"
+                            ? [1, 2]     // middle + right mouse while area-select / connect
+                            : [0, 1, 2]  // left + middle + right mouse for normal pan
                     }
                     selectionMode={SelectionMode.Partial}
                     deleteKeyCode={["Delete", "Backspace"]}
@@ -245,6 +235,8 @@ function DiagramCanvas() {
                             position="bottom-right"
                             style={{ bottom: 56, right: 12 }}
                             className="bg-card! border! border-border! rounded-lg shadow-sm"
+                            pannable
+                            zoomable
                         />
                     )}
                 </ReactFlow>

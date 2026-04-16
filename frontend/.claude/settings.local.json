@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "Bash(npm test *)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(cmd *)",
+      "Bash(powershell.exe *)",
+      "Bash(/c/Program Files/nodejs/npx tsc *)"
     ]
   }
 }
