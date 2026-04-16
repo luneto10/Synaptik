@@ -3,7 +3,6 @@
 import {
     useCallback,
     useEffect,
-    useMemo,
     useRef,
     useState,
 } from "react";
@@ -108,12 +107,10 @@ export function DiagramCanvas() {
         setSearchTargetId(nodeId);
     }, []);
 
-    const isMac = useMemo(
-        () =>
-            typeof navigator !== "undefined" &&
-            /mac|iphone|ipad|ipod/i.test(navigator.userAgent),
-        [],
-    );
+    const [isMac, setIsMac] = useState(false);
+    useEffect(() => {
+        setIsMac(/mac|iphone|ipad|ipod/i.test(navigator.userAgent));
+    }, []);
 
     const { handleUndo, handleRedo } = useKeyboardShortcuts({
         handleToolChange,
