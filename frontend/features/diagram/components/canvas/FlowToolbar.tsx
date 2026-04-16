@@ -4,6 +4,7 @@ import { memo, useMemo, useState } from "react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
     Tooltip,
     TooltipContent,
@@ -18,6 +19,7 @@ import {
     Wand2,
     FlaskConical,
     Search,
+    Command,
 } from "lucide-react";
 import { onInputCommit } from "../../utils/onInputCommit";
 import { cn } from "@/lib/utils";
@@ -110,9 +112,12 @@ function FlowToolbar({
                 </button>
             )}
 
-            <span className="text-[10px] font-mono text-muted-foreground/50 bg-muted/50 px-1.5 py-0.5 rounded border border-border/40">
+            <Badge
+                variant="outline"
+                className="text-[10px] font-mono text-foreground bg-neutral-300/50 dark:bg-muted px-1.5 py-0.5 rounded border border-border/60"
+            >
                 PostgreSQL
-            </span>
+            </Badge>
 
             <ToolbarDivider />
 
@@ -172,7 +177,11 @@ function FlowToolbar({
                     <Search className="w-3 h-3 shrink-0" />
                     <span className="hidden sm:inline">Search tables</span>
                     <kbd className="ml-0.5 flex items-center gap-0.5 font-mono text-[10px] opacity-60">
-                        <span>{isMac ? "⌘" : "Ctrl"}</span>
+                        {isMac ? (
+                            <Command className="w-3 h-3" />
+                        ) : (
+                            <span>Ctrl</span>
+                        )}
                         <span>K</span>
                     </kbd>
                 </button>

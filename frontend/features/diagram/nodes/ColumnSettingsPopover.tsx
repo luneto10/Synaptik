@@ -215,18 +215,6 @@ function ColumnFlagToggles({
                     onUpdate({ ...column, isNullable: checked })
                 }
             />
-            <ToggleRow
-                id={`fk-${column.id}`}
-                label="Foreign key"
-                checked={column.isForeignKey}
-                onCheckedChange={(checked) =>
-                    onUpdate({
-                        ...column,
-                        isForeignKey: checked,
-                        references: checked ? column.references : undefined,
-                    })
-                }
-            />
         </>
     );
 }

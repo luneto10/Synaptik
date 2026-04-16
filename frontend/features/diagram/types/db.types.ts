@@ -40,4 +40,5 @@ export interface DbTable {
     id: string;
     name: string;
     columns: DbColumn[];
+    isJunction?: boolean;
 }

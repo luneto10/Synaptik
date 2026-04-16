@@ -220,6 +220,7 @@
             "position": { "x": 780, "y": 250 },
             "data": {
                 "id": "tbl-order_product",
+                "isJunction": true,
                 "name": "order_product",
                 "columns": [
                     {

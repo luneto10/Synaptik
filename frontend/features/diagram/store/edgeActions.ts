@@ -138,20 +138,8 @@ export function createEdgeActions(set: SetState) {
                 const edge = draft.edges.find((e) => e.id === edgeId);
                 if (!edge) return;
 
-                let nodes = stripAutoCol(draft.nodes as TableNode[], edge.data?.autoCreatedColumnId, edge.data?.autoCreatedColumnNodeId ?? edge.target);
-                let edges = draft.edges.filter((e) => e.id !== edgeId) as RelationEdge[];
-
-                const jId = edge.data?.junctionTableId;
-                if (jId) {
-                    const { nodes: n, extraRemovals, newEdge } =
-                        cascadeJunction(nodes, draft.edges as RelationEdge[], jId, new Set([edgeId]));
-                    nodes = n;
-                    edges = edges.filter((e) => !extraRemovals.includes(e.id));
-                    if (newEdge) edges = [...edges, newEdge];
-                }
-
-                draft.nodes = nodes;
-                draft.edges = edges;
+                draft.nodes = stripAutoCol(draft.nodes as TableNode[], edge.data?.autoCreatedColumnId, edge.data?.autoCreatedColumnNodeId ?? edge.target) as typeof draft.nodes;
+                draft.edges = draft.edges.filter((e) => e.id !== edgeId) as RelationEdge[];
             }),
 
         deleteEdgeOnly: (edgeId: string) =>
