@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useEffect, useMemo } from "react";
+import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
@@ -19,7 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { ArrowRight, TableProperties, KeyRound } from "lucide-react";
 import type { Connection } from "@xyflow/react";
-import type { RelationshipType, TableNode } from "../../types/flow.types";
+import type { RelationshipType } from "../../types/flow.types";
 import type { DbColumn } from "../../types/db.types";
 import { useDiagramStore } from "../../store/diagramStore";
 import { RelationTypePicker } from "./RelationTypePicker";
@@ -52,34 +52,41 @@ export default function ConnectionDialog({
     onConfirm,
     onCancel,
 }: ConnectionDialogProps) {
-    // Derived from store — not form fields
-    const [sourceNode, setSourceNode] = useState<TableNode | undefined>();
-    const [targetNode, setTargetNode] = useState<TableNode | undefined>();
-    const [sourcePk,   setSourcePk]   = useState<DbColumn | undefined>();
-    const [defaultFkName, setDefaultFkName] = useState("");
+    const nodes = useDiagramStore((s) => s.nodes);
 
-    const { control, register, handleSubmit, watch, reset } = useForm<FormData>({
+    const { control, register, handleSubmit, reset } = useForm<FormData>({
         resolver: zodResolver(schema),
         defaultValues: { relType: "one-to-many", fkName: "", createJunction: false },
     });
 
-    // Populate derived state + reset form each time the dialog opens
+    const sourceNode = useMemo(
+        () => nodes.find((n) => n.id === connection?.source),
+        [nodes, connection?.source],
+    );
+    const targetNode = useMemo(
+        () => nodes.find((n) => n.id === connection?.target),
+        [nodes, connection?.target],
+    );
+    const sourcePk = useMemo<DbColumn | undefined>(
+        () => sourceNode?.data.columns.find((c) => c.isPrimaryKey),
+        [sourceNode],
+    );
+    const defaultFkName = useMemo(
+        () => (sourceNode ? defaultFkColumnName(sourceNode.data.name) : ""),
+        [sourceNode],
+    );
+
+    // Reset form each time the dialog opens with the latest derived defaults.
     useEffect(() => {
         if (!open) return;
-        const { nodes } = useDiagramStore.getState();
-        const src = nodes.find((n) => n.id === connection?.source);
-        const tgt = nodes.find((n) => n.id === connection?.target);
-        const pk  = src?.data.columns.find((c) => c.isPrimaryKey);
-        const fk  = src ? defaultFkColumnName(src.data.name) : "";
+        reset({
+            relType: "one-to-many",
+            fkName: defaultFkName,
+            createJunction: false,
+        });
+    }, [open, defaultFkName, reset]);
 
-        setSourceNode(src);
-        setTargetNode(tgt);
-        setSourcePk(pk);
-        setDefaultFkName(fk);
-        reset({ relType: "one-to-many", fkName: fk, createJunction: false });
-    }, [open, connection?.source, connection?.target, reset]);
-
-    const relType = watch("relType");
+    const relType = useWatch({ control, name: "relType" }) ?? "one-to-many";
     const isMany  = relType === "many-to-many";
 
     const onSubmit = ({ relType, fkName, createJunction }: FormData) => {
