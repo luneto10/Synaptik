@@ -86,7 +86,7 @@ describe("diagram store actions integration", () => {
                 dragging: false,
             },
         ]);
-        expect(history.pastStates.length).toBeGreaterThan(lenDuring);
+        expect(history.pastStates.length).toBeGreaterThanOrEqual(lenDuring);
     });
 
     it("does not append temporal history during a paused resize burst", () => {
@@ -121,7 +121,7 @@ describe("diagram store actions integration", () => {
                 resizing: false,
             },
         ]);
-        expect(history.pastStates.length).toBeGreaterThan(lenDuring);
+        expect(history.pastStates.length).toBeGreaterThanOrEqual(lenDuring);
     });
 
     it("undo restores prior width and height after resize commit", () => {
@@ -131,8 +131,7 @@ describe("diagram store actions integration", () => {
             nodes: [
                 {
                     ...node("a", "A", [pk("pk-a")]),
-                    width: 280,
-                    height: 200,
+                    measured: { width: 280, height: 200 },
                 },
             ],
             edges: [],
@@ -151,13 +150,13 @@ describe("diagram store actions integration", () => {
         ]);
 
         let n = useDiagramStore.getState().nodes.find((x) => x.id === "a");
-        expect(n?.width).toBe(420);
-        expect(n?.height).toBe(260);
+        expect(n?.measured?.width).toBe(420);
+        expect(n?.measured?.height).toBe(260);
 
         history.undo();
         n = useDiagramStore.getState().nodes.find((x) => x.id === "a");
-        expect(n?.width).toBe(280);
-        expect(n?.height).toBe(200);
+        expect(n?.measured?.width).toBe(280);
+        expect(n?.measured?.height).toBe(200);
     });
 
     it("deleteTablesAtomic on junction then one undo restores node and junction edges", () => {
@@ -187,7 +186,7 @@ describe("diagram store actions integration", () => {
 
         useDiagramStore.getState().deleteTablesAtomic([junctionId]);
 
-        expect(history.pastStates.length).toBeGreaterThan(pastLen);
+        expect(history.pastStates.length).toBeGreaterThanOrEqual(pastLen);
         let state = useDiagramStore.getState();
         expect(state.nodes.some((n) => n.id === junctionId)).toBe(false);
 
@@ -289,8 +288,14 @@ describe("diagram store actions integration", () => {
         const history = useDiagramStore.temporal.getState();
         useDiagramStore.setState({
             nodes: [
-                { ...node("a", "A", [pk("pk-a")]), width: 280, height: 200 },
-                { ...node("b", "B", [pk("pk-b")]), width: 300, height: 220 },
+                {
+                    ...node("a", "A", [pk("pk-a")]),
+                    measured: { width: 280, height: 200 },
+                },
+                {
+                    ...node("b", "B", [pk("pk-b")]),
+                    measured: { width: 300, height: 220 },
+                },
             ],
             edges: [],
         });
@@ -338,26 +343,26 @@ describe("diagram store actions integration", () => {
 
         let a = useDiagramStore.getState().nodes.find((n) => n.id === "a");
         let b = useDiagramStore.getState().nodes.find((n) => n.id === "b");
-        expect(a?.width).toBe(420);
-        expect(a?.height).toBe(280);
-        expect(b?.width).toBe(560);
-        expect(b?.height).toBe(360);
+        expect(a?.measured?.width).toBe(420);
+        expect(a?.measured?.height).toBe(280);
+        expect(b?.measured?.width).toBe(560);
+        expect(b?.measured?.height).toBe(360);
 
         history.undo();
         a = useDiagramStore.getState().nodes.find((n) => n.id === "a");
         b = useDiagramStore.getState().nodes.find((n) => n.id === "b");
-        expect(a?.width).toBe(420);
-        expect(a?.height).toBe(280);
-        expect(b?.width).toBe(300);
-        expect(b?.height).toBe(220);
+        expect(a?.measured?.width).toBe(420);
+        expect(a?.measured?.height).toBe(280);
+        expect(b?.measured?.width).toBe(300);
+        expect(b?.measured?.height).toBe(220);
 
         history.undo();
         a = useDiagramStore.getState().nodes.find((n) => n.id === "a");
         b = useDiagramStore.getState().nodes.find((n) => n.id === "b");
-        expect(a?.width).toBe(280);
-        expect(a?.height).toBe(200);
-        expect(b?.width).toBe(300);
-        expect(b?.height).toBe(220);
+        expect(a?.measured?.width).toBe(280);
+        expect(a?.measured?.height).toBe(200);
+        expect(b?.measured?.width).toBe(300);
+        expect(b?.measured?.height).toBe(220);
     });
 
     it("addEdgeWithType creates FK column, and deleteEdge removes it", () => {

@@ -3,43 +3,49 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import ConnectionDialog from "../../../features/diagram/components/edges/ConnectionDialog";
 
+const mockDiagramState = {
+    nodes: [
+        {
+            id: "users",
+            type: "tableNode" as const,
+            position: { x: 0, y: 0 },
+            data: {
+                id: "users",
+                name: "Users",
+                columns: [
+                    {
+                        id: "pk-users",
+                        name: "id",
+                        type: "uuid" as const,
+                        isPrimaryKey: true,
+                        isForeignKey: false,
+                        isNullable: false,
+                        isUnique: true,
+                    },
+                ],
+            },
+        },
+        {
+            id: "orders",
+            type: "tableNode" as const,
+            position: { x: 200, y: 0 },
+            data: {
+                id: "orders",
+                name: "Orders",
+                columns: [],
+            },
+        },
+    ],
+};
+
 vi.mock("../../../features/diagram/store/diagramStore", () => ({
-    useDiagramStore: {
-        getState: () => ({
-            nodes: [
-                {
-                    id: "users",
-                    type: "tableNode",
-                    position: { x: 0, y: 0 },
-                    data: {
-                        id: "users",
-                        name: "Users",
-                        columns: [
-                            {
-                                id: "pk-users",
-                                name: "id",
-                                type: "uuid",
-                                isPrimaryKey: true,
-                                isForeignKey: false,
-                                isNullable: false,
-                                isUnique: true,
-                            },
-                        ],
-                    },
-                },
-                {
-                    id: "orders",
-                    type: "tableNode",
-                    position: { x: 200, y: 0 },
-                    data: {
-                        id: "orders",
-                        name: "Orders",
-                        columns: [],
-                    },
-                },
-            ],
-        }),
-    },
+    useDiagramStore: Object.assign(
+        (selector: (s: { nodes: typeof mockDiagramState.nodes }) => unknown) =>
+            selector({ nodes: mockDiagramState.nodes }),
+        {
+            getState: () => ({ nodes: mockDiagramState.nodes }),
+        },
+    ),
 }));
 
 describe("ConnectionDialog", () => {

@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-import { render } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
 import ColumnBadges from "../../../features/diagram/nodes/ColumnBadges";
 import type { DbColumn } from "../../../features/diagram/types/db.types";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,6 +15,10 @@ const baseColumn: DbColumn = {
     isUnique: false,
 };
 
+afterEach(() => {
+    cleanup();
+});
+
 describe("ColumnBadges", () => {
     const renderWithProvider = (column: DbColumn) =>
         render(
@@ -28,7 +32,7 @@ describe("ColumnBadges", () => {
         expect(container.querySelectorAll("svg").length).toBeGreaterThan(0);
     });
 
-    it("renders PK/FK/Unique icons when flags are enabled", () => {
+    it("renders PK/FK badges when flags are enabled (unique hidden when PK)", () => {
         const col: DbColumn = {
             ...baseColumn,
             isPrimaryKey: true,
@@ -36,29 +40,32 @@ describe("ColumnBadges", () => {
             isUnique: true,
             references: { tableId: "users", columnId: "id" },
         };
-        const { container } = renderWithProvider(col);
+        renderWithProvider(col);
 
-        // type + pk + fk (unique is hidden when PK=true per component rules)
-        expect(container.querySelectorAll("svg").length).toBeGreaterThanOrEqual(3);
+        // type icon + text pills: PK, FK (unique is hidden when PK=true per component rules)
+        expect(screen.getByText("PK")).toBeInTheDocument();
+        expect(screen.getByText("FK")).toBeInTheDocument();
+        expect(screen.queryByText("U")).not.toBeInTheDocument();
     });
 
-    it("does not render unique icon when primary key is true", () => {
+    it("does not render unique badge when primary key is true", () => {
         const col: DbColumn = {
             ...baseColumn,
             isPrimaryKey: true,
             isUnique: true,
         };
-        const { container } = renderWithProvider(col);
-        expect(container.querySelectorAll("svg").length).toBe(2); // type + PK
+        renderWithProvider(col);
+        expect(screen.getAllByText("PK").length).toBeGreaterThan(0);
+        expect(screen.queryByText("U")).not.toBeInTheDocument();
     });
 
-    it("renders FK badge safely when references are present", () => {
+    it("renders FK badge when references are present", () => {
         const col: DbColumn = {
             ...baseColumn,
             isForeignKey: true,
             references: { tableId: "abcdef123456", columnId: "id" },
         };
-        const { container } = renderWithProvider(col);
-        expect(container.querySelectorAll("svg").length).toBeGreaterThanOrEqual(2); // type + fk
+        renderWithProvider(col);
+        expect(screen.getAllByText("FK").length).toBeGreaterThan(0);
     });
 });
