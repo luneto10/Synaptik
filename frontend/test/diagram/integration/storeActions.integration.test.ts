@@ -399,7 +399,7 @@ describe("diagram store actions integration", () => {
         ).toBe(false);
     });
 
-    it("createJunctionTable then deleting one junction edge cascades to direct M:N", () => {
+    it("createJunctionTable then deleting one junction edge removes only that edge and its FK column, leaving the junction table", () => {
         useDiagramStore.setState({
             nodes: [
                 node("users", "Users", [pk("pk-users")]),
@@ -420,18 +420,31 @@ describe("diagram store actions integration", () => {
         );
         expect(junctionEdges.length).toBe(2);
 
-        useDiagramStore.getState().deleteEdge(junctionEdges[0]!.id);
+        const deletedEdge = junctionEdges[0]!;
+        useDiagramStore.getState().deleteEdge(deletedEdge.id);
 
         const finalState = useDiagramStore.getState();
+
+        // Junction table must still exist — deleteEdge no longer cascades the junction node
         expect(
             finalState.nodes.find((n) => n.id === junction?.id),
+        ).toBeTruthy();
+
+        // The deleted edge is gone; the other junction edge remains
+        expect(finalState.edges.find((e) => e.id === deletedEdge.id)).toBeUndefined();
+        expect(finalState.edges.filter((e) => e.data?.junctionTableId === junction?.id).length).toBe(1);
+
+        // The auto-created FK column for that edge was stripped from the junction table
+        const strippedColId = deletedEdge.data?.autoCreatedColumnId;
+        const junctionNode = finalState.nodes.find((n) => n.id === junction?.id);
+        expect(
+            junctionNode?.data.columns.some((c) => c.id === strippedColId),
+        ).toBe(false);
+
+        // No spurious direct M:N edge was created
+        expect(
+            finalState.edges.find((e) => e.data?.relationshipType === "many-to-many"),
         ).toBeUndefined();
-        const mnEdge = finalState.edges.find(
-            (e) => e.data?.relationshipType === "many-to-many",
-        );
-        expect(mnEdge).toBeTruthy();
-        expect(mnEdge?.source).toBe("users");
-        expect(mnEdge?.target).toBe("roles");
     });
 
     it("retargetFkColumn rewires edge source and updates FK metadata", () => {
