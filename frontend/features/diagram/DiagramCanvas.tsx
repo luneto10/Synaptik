@@ -111,7 +111,7 @@ export function DiagramCanvas() {
     const isMac = useMemo(
         () =>
             typeof navigator !== "undefined" &&
-            /mac|iphone|ipad/i.test(navigator.platform ?? navigator.userAgent),
+            /mac|iphone|ipad|ipod/i.test(navigator.userAgent),
         [],
     );
 

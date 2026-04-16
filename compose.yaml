@@ -36,7 +36,7 @@ services:
             args:
                 - NODE_VERSION=${NODE_VERSION:-25}
         working_dir: /app
-        command: npm run dev -- --hostname 0.0.0.0 --webpack
+        command: sh -c "npm ci && npm run dev -- --hostname 0.0.0.0 --webpack"
         env_file:
             - .env
         environment:
