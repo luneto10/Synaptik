@@ -214,7 +214,9 @@ function TableNode({ id, data, selected, dragging }: NodeProps<TableNodeType>) {
                 className={cn(
                     "bg-card rounded-xl border w-full h-full flex flex-col overflow-hidden",
                     "transition-all duration-150",
-                    selected
+                    selected && data.isJunction
+                        ? "border-violet-500/70 shadow-xl shadow-violet-500/15 ring-1 ring-violet-500/20"
+                        : selected
                         ? "border-indigo-500/70 shadow-xl shadow-indigo-500/15 ring-1 ring-indigo-500/20"
                         : "border-border/60 shadow-md hover:border-border hover:shadow-lg",
                 )}
@@ -225,6 +227,7 @@ function TableNode({ id, data, selected, dragging }: NodeProps<TableNodeType>) {
                         nodeId={id}
                         tableName={data.name}
                         columnCount={data.columns.length}
+                        isJunction={data.isJunction}
                     />
                 </div>
 

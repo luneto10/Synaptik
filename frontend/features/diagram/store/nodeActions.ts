@@ -167,6 +167,15 @@ export function createNodeActions(set: SetState) {
             set((draft) => {
                 const node = draft.nodes.find((n) => n.id === nodeId);
                 if (!node) return;
+
+                // Deleting an FK column from a junction table drops the whole junction
+                const col = node.data.columns.find((c) => c.id === columnId);
+                const isJunction = draft.edges.some((e) => e.data?.junctionTableId === nodeId);
+                if (isJunction && col?.isForeignKey) {
+                    removeTableAndCascadeInDraft(draft, nodeId);
+                    return;
+                }
+
                 node.data.columns = node.data.columns.filter(
                     (c) => c.id !== columnId,
                 );
@@ -237,6 +246,7 @@ export function createNodeActions(set: SetState) {
                     position: { x: junctionX, y: junctionY },
                     data: {
                         id: junctionId,
+                        isJunction: true,
                         name: `${singularizeTableName(sourceNode.data.name)}_${singularizeTableName(targetNode.data.name)}`,
                         columns: [
                             makePkCol(),
