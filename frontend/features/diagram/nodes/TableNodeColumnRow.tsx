@@ -24,10 +24,13 @@ import {
 import ColumnBadges from "./ColumnBadges";
 import ColumnSettingsPopover from "./ColumnSettingsPopover";
 import { onInputCommit } from "../utils/onInputCommit";
+import InlineFieldError from "../components/common/InlineFieldError";
+import { hasDuplicateColumnName } from "../utils/nameValidation";
 
 interface Props {
     nodeId: string;
     column: DbColumn;
+    siblingColumns: DbColumn[];
     autoFocus?: boolean;
     onFocusConsumed?: () => void;
     onUpdate: (column: DbColumn) => void;
@@ -37,37 +40,75 @@ interface Props {
 function TableNodeColumnRow({
     nodeId,
     column,
+    siblingColumns,
     autoFocus,
     onFocusConsumed,
     onUpdate,
     onRemove,
 }: Props) {
     const nameInputRef = useRef<HTMLInputElement>(null);
+    const isFreshColumnRef = useRef(false);
     const [draftName, setDraftName] = useState(column.name);
+    const [error, setError] = useState<string | null>(null);
+    const errorId = `${column.id}-name-error`;
 
     useEffect(() => {
         setDraftName(column.name);
+        setError(null);
     }, [column.id, column.name]);
 
     useEffect(() => {
         if (autoFocus && nameInputRef.current) {
+            isFreshColumnRef.current = true;
             nameInputRef.current.focus();
             nameInputRef.current.select();
             onFocusConsumed?.();
         }
     }, [autoFocus, onFocusConsumed]);
 
-    const commitName = () => {
+    const commitName = (source: "blur" | "enter"): "applied" | "blocked" => {
         const next = draftName.trim();
         if (!next || next === column.name) {
             setDraftName(column.name);
-            return;
+            setError(null);
+            return "applied";
         }
+        const hasDuplicate = hasDuplicateColumnName(
+            siblingColumns,
+            next,
+            column.id,
+        );
+        if (hasDuplicate) {
+            const shouldDiscardFreshColumn =
+                isFreshColumnRef.current && source === "blur";
+            if (shouldDiscardFreshColumn) {
+                onRemove(column.id);
+                return "blocked";
+            }
+            setError("Duplicate column name.");
+            requestAnimationFrame(() => {
+                nameInputRef.current?.focus();
+                nameInputRef.current?.select();
+            });
+            return "blocked";
+        }
+        setError(null);
         onUpdate({ ...column, name: next });
+        return "applied";
     };
 
     const cancelName = () => {
+        const isDuplicateDraft = hasDuplicateColumnName(
+            siblingColumns,
+            draftName,
+            column.id,
+        );
+        if (isFreshColumnRef.current && isDuplicateDraft) {
+            onRemove(column.id);
+            return;
+        }
         setDraftName(column.name);
+        setError(null);
     };
 
     const rowAccent = column.isPrimaryKey
@@ -90,13 +131,18 @@ function TableNodeColumnRow({
                 <Input
                     ref={nameInputRef}
                     value={draftName}
-                    onChange={(e) => setDraftName(e.target.value)}
-                    onBlur={commitName}
+                    onChange={(e) => {
+                        setDraftName(e.target.value);
+                        if (error) setError(null);
+                    }}
+                    onBlur={() => commitName("blur")}
                     onKeyDown={(e) => {
                         onInputCommit(e, {
                             onCommit: () => {
-                                commitName();
-                                e.currentTarget.blur();
+                                const result = commitName("enter");
+                                if (result === "applied") {
+                                    e.currentTarget.blur();
+                                }
                             },
                             onCancel: () => {
                                 cancelName();
@@ -105,9 +151,17 @@ function TableNodeColumnRow({
                         });
                         e.stopPropagation();
                     }}
+                    aria-invalid={!!error}
+                    aria-describedby={error ? errorId : undefined}
                     className="h-7 text-sm border-0 bg-transparent! dark:bg-transparent! shadow-none p-0 font-mono text-foreground
                                focus-visible:ring-0! focus-visible:ring-offset-0! focus-visible:border-0!
                                focus-visible:bg-indigo-500/10 focus-visible:rounded focus-visible:px-1 w-full"
+                />
+                <InlineFieldError
+                    id={errorId}
+                    message={error}
+                    compact
+                    className="max-w-[170px]"
                 />
             </div>
 

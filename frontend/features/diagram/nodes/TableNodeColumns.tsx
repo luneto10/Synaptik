@@ -63,6 +63,7 @@ function TableNodeColumns({
                             key={col.id}
                             nodeId={nodeId}
                             column={col}
+                            siblingColumns={columns}
                             autoFocus={col.id === focusColId}
                             onFocusConsumed={onFocusConsumed}
                             onUpdate={onUpdate}
