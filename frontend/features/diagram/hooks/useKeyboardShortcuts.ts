@@ -9,6 +9,8 @@ interface Options {
     setTableDialogOpen: (open: boolean) => void;
     setPendingConnectSource: (id: string | null) => void;
     handleToggleMinimap: () => void;
+    handleAutoLayout: () => void;
+    handleToggleSearch: () => void;
 }
 
 export function useKeyboardShortcuts({
@@ -16,6 +18,8 @@ export function useKeyboardShortcuts({
     setTableDialogOpen,
     setPendingConnectSource,
     handleToggleMinimap,
+    handleAutoLayout,
+    handleToggleSearch,
 }: Options) {
     const selectedNodeId = useDiagramStore(
         (s) => s?.nodes?.find((n) => n.selected)?.id,
@@ -40,7 +44,12 @@ export function useKeyboardShortcuts({
         enableOnFormTags: true,
     });
 
+    useHotkeys("l", handleAutoLayout, { preventDefault: true });
     useHotkeys("m", handleToggleMinimap, { preventDefault: true });
+    useHotkeys("mod+k", handleToggleSearch, {
+        preventDefault: true,
+        enableOnFormTags: true,
+    });
     useHotkeys("t", () => setTableDialogOpen(true), { preventDefault: true });
     useHotkeys("s", () => handleToolChange("select"), { preventDefault: true });
     useHotkeys("a", () => handleToolChange("areaSelect"), {

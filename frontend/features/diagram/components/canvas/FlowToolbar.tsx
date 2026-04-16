@@ -17,6 +17,7 @@ import {
     Moon,
     Wand2,
     FlaskConical,
+    Search,
 } from "lucide-react";
 import { onInputCommit } from "../../utils/onInputCommit";
 import { cn } from "@/lib/utils";
@@ -38,6 +39,8 @@ interface FlowToolbarProps {
     onSave: () => void;
     onAutoLayout: () => void;
     onLoadExample: () => void;
+    onSearch: () => void;
+    isMac: boolean;
 }
 
 function FlowToolbar({
@@ -47,6 +50,8 @@ function FlowToolbar({
     onSave,
     onAutoLayout,
     onLoadExample,
+    onSearch,
+    isMac,
 }: FlowToolbarProps) {
     const { theme, setTheme } = useTheme();
     const [projectName, setProjectName] = useState("untitled");
@@ -128,6 +133,27 @@ function FlowToolbar({
 
             {/* ── Right cluster ── */}
             <div className="ml-auto flex items-center gap-3">
+                {/* ── Search trigger ── */}
+                <button
+                    type="button"
+                    onClick={onSearch}
+                    className={cn(
+                        "flex items-center gap-1.5 h-7 px-2.5 rounded-md text-xs",
+                        "text-muted-foreground border border-border/60 bg-muted/40",
+                        "hover:bg-muted hover:text-foreground hover:border-border transition-colors",
+                        "select-none shrink-0",
+                    )}
+                >
+                    <Search className="w-3 h-3 shrink-0" />
+                    <span className="hidden sm:inline">Search tables</span>
+                    <kbd className="ml-0.5 flex items-center gap-0.5 font-mono text-[10px] opacity-60">
+                        <span>{isMac ? "⌘" : "Ctrl"}</span>
+                        <span>K</span>
+                    </kbd>
+                </button>
+
+                <ToolbarDivider />
+
                 <span className="text-xs text-muted-foreground/60 tabular-nums">
                     {nodeCount} {nodeCount === 1 ? "table" : "tables"}
                     <span className="mx-1.5 opacity-40">·</span>

@@ -77,20 +77,20 @@ function TableNode({ id, data, selected, dragging }: NodeProps<TableNodeType>) {
     // ── Visible interaction dot (source handle, appears on selection) ──────────
     // Keep the handle center exactly on the node wall so edge endpoints
     // visually terminate on the border instead of floating outside.
-    const DOT_SIZE = 8;
+    const DOT_SIZE = 12;
     const visibleDot = (side: "left" | "right"): CSSProperties => ({
         width: DOT_SIZE,
         height: DOT_SIZE,
         borderRadius: "50%",
         background: "#fff",
-        border: "2px solid #6366f1",
+        border: "2.5px solid #6366f1",
         opacity: showHandles ? 1 : 0,
         pointerEvents: showHandles ? "all" : "none",
         transition: "opacity 120ms",
         cursor: "crosshair",
         [side]: 0,
         transform: side === "left" ? "translateX(-50%)" : "translateX(50%)",
-        boxShadow: "0 0 0 3px rgba(99,102,241,0.15)",
+        boxShadow: "0 0 0 4px rgba(99,102,241,0.18)",
     });
 
     // Invisible node-level target — large hit area so drops land easily
@@ -138,8 +138,8 @@ function TableNode({ id, data, selected, dragging }: NodeProps<TableNodeType>) {
                 minWidth={LAYOUT.MIN_NODE_WIDTH}
                 minHeight={minHeight}
                 isVisible={selected}
-                lineClassName="border-indigo-400/70! border-dashed!"
-                handleClassName="!w-3 !h-3 !bg-background !border-[1.5px] !border-indigo-400 !rounded-full !shadow-sm"
+                lineClassName="border-indigo-500/30! border-dashed!"
+                handleClassName="!w-4 !h-4 !rounded !bg-white !border-2 !border-indigo-500 !shadow-[0_0_8px_rgba(99,102,241,0.45)] hover:!bg-indigo-500 hover:!border-indigo-400 !transition-colors !duration-100"
                 onResizeStart={() => {
                     endDiagramHistoryGestureIfActive();
                     setIsResizing(true);
@@ -219,14 +219,16 @@ function TableNode({ id, data, selected, dragging }: NodeProps<TableNodeType>) {
                         : "border-border/60 shadow-md hover:border-border hover:shadow-lg",
                 )}
             >
-                {/* ── Header ── */}
-                <TableNodeHeader
-                    nodeId={id}
-                    tableName={data.name}
-                    columnCount={data.columns.length}
-                />
+                {/* ── Header — shrink-0 so it's never compressed by flex ── */}
+                <div className="shrink-0">
+                    <TableNodeHeader
+                        nodeId={id}
+                        tableName={data.name}
+                        columnCount={data.columns.length}
+                    />
+                </div>
 
-                {/* ── Columns ── */}
+                {/* ── Columns — flex-1 scroll area ── */}
                 <TableNodeColumns
                     nodeId={id}
                     columns={data.columns}
@@ -236,8 +238,10 @@ function TableNode({ id, data, selected, dragging }: NodeProps<TableNodeType>) {
                     onRemove={handleRemoveColumn}
                 />
 
-                {/* ── Footer ── */}
-                <TableNodeFooter onAddColumn={handleAddColumn} />
+                {/* ── Footer — shrink-0 so it's never pushed out of view ── */}
+                <div className="shrink-0">
+                    <TableNodeFooter onAddColumn={handleAddColumn} />
+                </div>
             </div>
         </>
     );

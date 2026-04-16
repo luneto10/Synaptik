@@ -206,6 +206,7 @@ export default function RelationEdge({
                         position: "absolute",
                         transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
                         pointerEvents: "all",
+                        display: "flex",
                     }}
                     className="nodrag nopan"
                 >
@@ -217,7 +218,18 @@ export default function RelationEdge({
                         }}
                     >
                         <PopoverTrigger asChild>
-                            <button>
+                            <button
+                                type="button"
+                                style={{
+                                    display: "flex",
+                                    padding: 0,
+                                    margin: 0,
+                                    border: "none",
+                                    background: "none",
+                                    lineHeight: 0,
+                                    cursor: "inherit",
+                                }}
+                            >
                                 <Badge
                                     variant={selected ? "default" : "secondary"}
                                     className={cn(
