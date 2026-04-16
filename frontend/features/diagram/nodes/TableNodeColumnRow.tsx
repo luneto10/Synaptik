@@ -169,7 +169,7 @@ function TableNodeColumnRow({
                         onUpdate({ ...column, type: v as ColumnType })
                     }
                 >
-                    <SelectTrigger className="h-6 text-[11px] border-0! bg-transparent! dark:bg-transparent! dark:hover:bg-transparent! shadow-none px-1 focus-visible:ring-0! focus-visible:border-0! text-muted-foreground/70 justify-end! gap-0.5 w-auto [&>svg]:opacity-50 [&>svg]:size-2.5! font-mono">
+                    <SelectTrigger className="h-6 text-[11px] border-0! bg-transparent! dark:bg-transparent! dark:hover:bg-transparent! shadow-none px-1 focus-visible:ring-0! focus-visible:border-0! text-muted-foreground justify-end! gap-0.5 w-auto [&>svg]:opacity-50 [&>svg]:size-2.5! font-mono">
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>

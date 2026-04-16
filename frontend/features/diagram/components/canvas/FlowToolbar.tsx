@@ -4,6 +4,7 @@ import { memo, useMemo, useState } from "react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
     Tooltip,
     TooltipContent,
@@ -111,9 +112,12 @@ function FlowToolbar({
                 </button>
             )}
 
-            <span className="text-[10px] font-mono text-muted-foreground/50 bg-muted/50 px-1.5 py-0.5 rounded border border-border/40">
+            <Badge
+                variant="outline"
+                className="text-[10px] font-mono text-foreground bg-neutral-300/50 dark:bg-muted px-1.5 py-0.5 rounded border border-border/60"
+            >
                 PostgreSQL
-            </span>
+            </Badge>
 
             <ToolbarDivider />
 

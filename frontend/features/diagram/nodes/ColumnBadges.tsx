@@ -39,7 +39,7 @@ function TypeIcon({ type }: { type: ColumnType }) {
     return (
         <Tooltip>
             <TooltipTrigger asChild>
-                <span className="inline-flex text-foreground/35">
+                <span className="inline-flex text-foreground/80">
                     <Icon className="w-3 h-3 shrink-0" />
                 </span>
             </TooltipTrigger>

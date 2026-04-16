@@ -50,13 +50,17 @@ function TableNodeColumns({
     }, [columns.length]);
 
     return (
-        <div ref={wrapperRef} className="flex-1 min-h-0 flex flex-col overflow-hidden">
-            <Separator className="shrink-0" />
-            {/* overflow-hidden: required so the flex item's min-height resolves
-                to 0 (not content height), letting flex-1 size it correctly.
-                nowheel: only added when content overflows — blocks ReactFlow's
-                canvas scroll only when the user actually needs to scroll rows. */}
-            <ScrollArea className={cn("flex-1 overflow-hidden", hasOverflow && "nowheel")}>
+        <div
+            ref={wrapperRef}
+            className="flex-1 min-h-0 flex flex-col overflow-hidden"
+        >
+            <Separator className="shrink-0 bg-border/70" />
+            <ScrollArea
+                className={cn(
+                    "flex-1 overflow-hidden",
+                    hasOverflow && "nowheel",
+                )}
+            >
                 <div className="flex flex-col">
                     {columns.map((col) => (
                         <TableNodeColumnRow
