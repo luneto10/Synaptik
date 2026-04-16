@@ -107,10 +107,9 @@ export function DiagramCanvas() {
         setSearchTargetId(nodeId);
     }, []);
 
-    const [isMac, setIsMac] = useState(false);
-    useEffect(() => {
-        setIsMac(/mac|iphone|ipad|ipod/i.test(navigator.userAgent));
-    }, []);
+    const [isMac] = useState(() =>
+        typeof navigator !== "undefined" && /mac|iphone|ipad|ipod/i.test(navigator.userAgent)
+    );
 
     const { handleUndo, handleRedo } = useKeyboardShortcuts({
         handleToolChange,
