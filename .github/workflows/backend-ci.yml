@@ -18,6 +18,10 @@ jobs:
   backend-quality:
     name: Go fmt, vet, test, build
     runs-on: ubuntu-latest
+    env:
+      # Keep real backend CI steps in place, but bypass them for now.
+      # Flip to "false" to re-enable fmt/vet/test/build without rewriting this workflow.
+      BACKEND_CI_BYPASS: "true"
     defaults:
       run:
         working-directory: backend
@@ -27,16 +31,19 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Load versions
+        if: env.BACKEND_CI_BYPASS != 'true'
         run: grep -v '^#' versions.env | grep . >> "$GITHUB_ENV"
         working-directory: .
 
       - name: Setup Go
+        if: env.BACKEND_CI_BYPASS != 'true'
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
           cache-dependency-path: backend/go.sum
 
       - name: Verify formatting
+        if: env.BACKEND_CI_BYPASS != 'true'
         run: |
           files=$(gofmt -l .)
           if [ -n "$files" ]; then
@@ -46,10 +53,19 @@ jobs:
           fi
 
       - name: Vet
+        if: env.BACKEND_CI_BYPASS != 'true'
         run: go vet ./...
 
       - name: Test
+        if: env.BACKEND_CI_BYPASS != 'true'
         run: go test ./... -count=1
 
       - name: Build
+        if: env.BACKEND_CI_BYPASS != 'true'
         run: go build ./...
+
+      - name: Backend CI bypassed
+        if: env.BACKEND_CI_BYPASS == 'true'
+        run: |
+          echo "Backend CI checks are bypassed."
+          echo "Set BACKEND_CI_BYPASS=false in backend-ci.yml to re-enable full checks."

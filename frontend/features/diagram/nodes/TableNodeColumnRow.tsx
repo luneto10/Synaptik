@@ -53,11 +53,6 @@ function TableNodeColumnRow({
     const errorId = `${column.id}-name-error`;
 
     useEffect(() => {
-        setDraftName(column.name);
-        setError(null);
-    }, [column.id, column.name]);
-
-    useEffect(() => {
         if (autoFocus && nameInputRef.current) {
             isFreshColumnRef.current = true;
             nameInputRef.current.focus();

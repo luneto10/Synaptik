@@ -38,7 +38,7 @@ import {
     FIT_VIEW_OPTIONS,
     DEFAULT_EDGE_OPTIONS,
 } from "./FlowCanvas.constants";
-import { FIT_VIEW_PADDING, DIAGRAM_COLORS, REFLOW_DELAY_MS } from "./constants";
+import { DIAGRAM_COLORS, REFLOW_DELAY_MS } from "./constants";
 import { cn } from "@/lib/utils";
 
 export function DiagramCanvas() {
