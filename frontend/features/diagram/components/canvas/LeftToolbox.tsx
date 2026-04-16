@@ -88,6 +88,7 @@ function LeftToolbox({
                             variant="ghost"
                             size="icon"
                             onClick={() => onToolChange(tool.value)}
+                            aria-label={`${tool.label} tool`}
                             className={cn(
                                 "w-8 h-8 rounded-lg transition-all",
                                 activeTool === tool.value
@@ -117,6 +118,7 @@ function LeftToolbox({
                     <Button
                         variant="ghost"
                         size="icon"
+                        aria-label="Undo"
                         className={cn(
                             "w-8 h-8 rounded-lg transition-all",
                             canUndo
@@ -142,6 +144,7 @@ function LeftToolbox({
                     <Button
                         variant="ghost"
                         size="icon"
+                        aria-label="Redo"
                         className={cn(
                             "w-8 h-8 rounded-lg transition-all",
                             canRedo

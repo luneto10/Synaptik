@@ -54,7 +54,8 @@ export function useConnectMode(activeTool: DiagramTool) {
         }
         if (!sourceId) return;
 
-        const el = event.target as Element;
+        const el = event.target;
+        if (!(el instanceof Element)) return;
         const nodeEl = el.closest(".react-flow__node");
         const targetId = nodeEl?.getAttribute("data-id");
 
@@ -96,17 +97,19 @@ export function useConnectMode(activeTool: DiagramTool) {
     );
 
     // Highlight the pending source node visually
-    const displayNodes = useMemo(
-        () =>
-            pendingConnectSource
-                ? nodes.map((n) =>
-                      n.id === pendingConnectSource
-                          ? { ...n, selected: true }
-                          : n,
-                  )
-                : nodes,
-        [nodes, pendingConnectSource],
-    );
+    const displayNodes = useMemo(() => {
+        if (!pendingConnectSource) return nodes;
+
+        const idx = nodes.findIndex((n) => n.id === pendingConnectSource);
+        if (idx === -1) return nodes;
+
+        const node = nodes[idx];
+        if (node.selected) return nodes;
+
+        const next = [...nodes];
+        next[idx] = { ...node, selected: true };
+        return next;
+    }, [nodes, pendingConnectSource]);
 
     return {
         pendingConn,
