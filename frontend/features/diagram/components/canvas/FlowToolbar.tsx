@@ -18,6 +18,7 @@ import {
     Wand2,
     FlaskConical,
     Search,
+    Command,
 } from "lucide-react";
 import { onInputCommit } from "../../utils/onInputCommit";
 import { cn } from "@/lib/utils";
@@ -172,7 +173,11 @@ function FlowToolbar({
                     <Search className="w-3 h-3 shrink-0" />
                     <span className="hidden sm:inline">Search tables</span>
                     <kbd className="ml-0.5 flex items-center gap-0.5 font-mono text-[10px] opacity-60">
-                        <span>{isMac ? "⌘" : "Ctrl"}</span>
+                        {isMac ? (
+                            <Command className="w-3 h-3" />
+                        ) : (
+                            <span>Ctrl</span>
+                        )}
                         <span>K</span>
                     </kbd>
                 </button>
