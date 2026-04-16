@@ -94,6 +94,7 @@ function TableNodeColumnRow({
         }
         setError(null);
         onUpdate({ ...column, name: next });
+        isFreshColumnRef.current = false;
         return "applied";
     };
 

@@ -96,7 +96,14 @@ function FlowToolbar({
             ) : (
                 <button
                     onDoubleClick={() => setEditingName(true)}
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === "F2") {
+                            e.preventDefault();
+                            setEditingName(true);
+                        }
+                    }}
                     title="Double-click to rename"
+                    aria-label="Rename project"
                     className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-default select-none font-medium"
                 >
                     {projectName}
@@ -117,6 +124,7 @@ function FlowToolbar({
                         size="icon"
                         className="h-7 w-7 text-muted-foreground hover:text-foreground"
                         onClick={onAutoLayout}
+                        aria-label="Auto layout diagram"
                     >
                         <Wand2 className="w-3.5 h-3.5" />
                     </Button>
@@ -131,6 +139,7 @@ function FlowToolbar({
                         size="icon"
                         className="h-7 w-7 text-muted-foreground hover:text-foreground"
                         onClick={onLoadExample}
+                        aria-label="Load e-commerce example"
                     >
                         <FlaskConical className="w-3.5 h-3.5" />
                     </Button>
@@ -187,6 +196,7 @@ function FlowToolbar({
                             onClick={() =>
                                 setTheme(theme === "dark" ? "light" : "dark")
                             }
+                            aria-label="Toggle theme"
                         >
                             {theme === "dark" ? (
                                 <Sun className="w-3.5 h-3.5" />

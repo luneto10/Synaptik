@@ -175,7 +175,18 @@ export function createNodeActions(set: SetState) {
         renameTable: (nodeId: string, name: string) =>
             set((draft) => {
                 const node = draft.nodes.find((n) => n.id === nodeId);
-                if (node) node.data.name = name;
+                if (!node) return;
+                const trimmedName = name.trim();
+                if (!normalizeName(trimmedName)) return;
+                if (
+                    hasDuplicateTableName(
+                        draft.nodes as TableNode[],
+                        trimmedName,
+                        nodeId,
+                    )
+                )
+                    return;
+                node.data.name = trimmedName;
             }),
 
         deleteTable: (nodeId: string) =>
