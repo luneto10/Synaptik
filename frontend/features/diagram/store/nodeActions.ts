@@ -16,6 +16,76 @@ import { removeTableAndCascadeInDraft } from "./tableDeletion";
 import type { SetState } from "./diagramStore.types";
 import { handleIds } from "../utils/handleIds";
 import { DbColumn } from "../types/db.types";
+import {
+    hasDuplicateColumnName,
+    hasDuplicateTableName,
+    normalizeName,
+} from "../utils/nameValidation";
+
+const SPAWN_GAP_X = 32;
+const SPAWN_GAP_Y = 28;
+const SPAWN_SEARCH_STEPS = 18;
+
+function rectsOverlap(
+    a: { x: number; y: number; w: number; h: number },
+    b: { x: number; y: number; w: number; h: number },
+) {
+    return (
+        a.x < b.x + b.w &&
+        a.x + a.w > b.x &&
+        a.y < b.y + b.h &&
+        a.y + a.h > b.y
+    );
+}
+
+function measuredSize(node: TableNode) {
+    return {
+        w: node.measured?.width ?? LAYOUT.DEFAULT_NODE_WIDTH,
+        h: node.measured?.height ?? LAYOUT.DEFAULT_NODE_HEIGHT,
+    };
+}
+
+function findSpawnPosition(
+    nodes: TableNode[],
+    desired: { x: number; y: number },
+) {
+    const newW = LAYOUT.DEFAULT_NODE_WIDTH;
+    const newH = LAYOUT.DEFAULT_NODE_HEIGHT;
+
+    const intersectsAny = (x: number, y: number) => {
+        const candidate = { x, y, w: newW, h: newH };
+        return nodes.some((n) => {
+            const size = measuredSize(n);
+            // Keep a small padding so "below" nodes don't appear stacked/covered.
+            const box = {
+                x: n.position.x - SPAWN_GAP_X / 2,
+                y: n.position.y - SPAWN_GAP_Y / 2,
+                w: size.w + SPAWN_GAP_X,
+                h: size.h + SPAWN_GAP_Y,
+            };
+            return rectsOverlap(candidate, box);
+        });
+    };
+
+    if (!intersectsAny(desired.x, desired.y)) return desired;
+
+    for (let step = 1; step <= SPAWN_SEARCH_STEPS; step++) {
+        const down = { x: desired.x, y: desired.y + step * SPAWN_GAP_Y };
+        if (!intersectsAny(down.x, down.y)) return down;
+
+        const right = { x: desired.x + step * SPAWN_GAP_X, y: desired.y };
+        if (!intersectsAny(right.x, right.y)) return right;
+
+        const diagonal = {
+            x: desired.x + step * SPAWN_GAP_X,
+            y: desired.y + step * SPAWN_GAP_Y,
+        };
+        if (!intersectsAny(diagonal.x, diagonal.y)) return diagonal;
+    }
+
+    // Last resort: preserve behavior and place at requested position.
+    return desired;
+}
 
 export function createNodeActions(set: SetState) {
     return {
@@ -29,11 +99,21 @@ export function createNodeActions(set: SetState) {
 
         addTable: (name: string, position?: { x: number; y: number }) =>
             set((draft) => {
+                const trimmedName = name.trim();
+                const finalName = trimmedName || "new_table";
+                if (!normalizeName(finalName)) return;
+                if (hasDuplicateTableName(draft.nodes as TableNode[], finalName))
+                    return;
+
                 const id = crypto.randomUUID();
                 let pos: { x: number; y: number };
                 if (position) {
                     // Offset slightly so the new table isn't exactly centred on the cursor
-                    pos = { x: position.x - LAYOUT.DEFAULT_NODE_WIDTH / 2, y: position.y - 60 };
+                    const desired = {
+                        x: position.x - LAYOUT.DEFAULT_NODE_WIDTH / 2,
+                        y: position.y - 60,
+                    };
+                    pos = findSpawnPosition(draft.nodes as TableNode[], desired);
                 } else {
                     const col = draft.nodes.length;
                     const row = Math.floor(col / LAYOUT.COLS);
@@ -46,7 +126,7 @@ export function createNodeActions(set: SetState) {
                     id,
                     type: TABLE_NODE_TYPE,
                     position: pos,
-                    data: { id, name, columns: [makePkCol()] },
+                    data: { id, name: finalName, columns: [makePkCol()] },
                 });
             }),
 
@@ -68,6 +148,15 @@ export function createNodeActions(set: SetState) {
             set((draft) => {
                 const node = draft.nodes.find((n) => n.id === nodeId);
                 if (!node) return;
+                if (!normalizeName(column.name)) return;
+                if (
+                    hasDuplicateColumnName(
+                        node.data.columns,
+                        column.name,
+                        column.id,
+                    )
+                )
+                    return;
                 const idx = node.data.columns.findIndex(
                     (c) => c.id === column.id,
                 );
