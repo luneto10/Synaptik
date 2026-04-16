@@ -5,6 +5,7 @@ import {
     getSmoothStepPath,
     EdgeLabelRenderer,
     BaseEdge,
+    useViewport,
     type EdgeProps,
 } from "@xyflow/react";
 import { Badge } from "@/components/ui/badge";
@@ -184,6 +185,11 @@ export default function RelationEdge({
 
     const [markerStart, markerEnd] = MARKERS[relType];
     const color = selected ? DIAGRAM_COLORS.edgeSelected : DIAGRAM_COLORS.edge;
+    const { zoom } = useViewport();
+    const safeZoom = Math.max(zoom, 0.05);
+    // Partial inverse scaling: badges get a readability boost when zoomed out
+    // without becoming screen-constant (too large at extreme zoom-out).
+    const labelScale = safeZoom < 1 ? 1 / Math.sqrt(safeZoom) : 1;
 
     return (
         <>
@@ -204,8 +210,10 @@ export default function RelationEdge({
                 <div
                     style={{
                         position: "absolute",
-                        transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+                        transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px) scale(${labelScale})`,
+                        transformOrigin: "center",
                         pointerEvents: "all",
+                        display: "flex",
                     }}
                     className="nodrag nopan"
                 >
@@ -217,7 +225,18 @@ export default function RelationEdge({
                         }}
                     >
                         <PopoverTrigger asChild>
-                            <button>
+                            <button
+                                type="button"
+                                style={{
+                                    display: "flex",
+                                    padding: 0,
+                                    margin: 0,
+                                    border: "none",
+                                    background: "none",
+                                    lineHeight: 0,
+                                    cursor: "inherit",
+                                }}
+                            >
                                 <Badge
                                     variant={selected ? "default" : "secondary"}
                                     className={cn(

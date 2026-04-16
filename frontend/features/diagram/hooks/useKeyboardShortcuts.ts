@@ -3,21 +3,26 @@ import { useHotkeys } from "react-hotkeys-hook";
 import { useDiagramStore } from "../store/diagramStore";
 import { endDiagramHistoryGestureIfActive } from "../store/diagramHistory";
 import type { DiagramTool } from "../components/canvas/LeftToolbox";
+import { useSelectedNodeId } from "./useSelectedNodeId";
 
 interface Options {
     handleToolChange: (tool: DiagramTool) => void;
     setTableDialogOpen: (open: boolean) => void;
     setPendingConnectSource: (id: string | null) => void;
+    handleToggleMinimap: () => void;
+    handleAutoLayout: () => void;
+    handleToggleSearch: () => void;
 }
 
 export function useKeyboardShortcuts({
     handleToolChange,
     setTableDialogOpen,
     setPendingConnectSource,
+    handleToggleMinimap,
+    handleAutoLayout,
+    handleToggleSearch,
 }: Options) {
-    const selectedNodeId = useDiagramStore(
-        (s) => s?.nodes?.find((n) => n.selected)?.id,
-    );
+    const selectedNodeId = useSelectedNodeId();
 
     const handleUndo = useCallback(() => {
         endDiagramHistoryGestureIfActive();
@@ -38,6 +43,12 @@ export function useKeyboardShortcuts({
         enableOnFormTags: true,
     });
 
+    useHotkeys("l", handleAutoLayout, { preventDefault: true });
+    useHotkeys("m", handleToggleMinimap, { preventDefault: true });
+    useHotkeys("mod+k", handleToggleSearch, {
+        preventDefault: true,
+        enableOnFormTags: true,
+    });
     useHotkeys("t", () => setTableDialogOpen(true), { preventDefault: true });
     useHotkeys("s", () => handleToolChange("select"), { preventDefault: true });
     useHotkeys("a", () => handleToolChange("areaSelect"), {

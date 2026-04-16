@@ -1,7 +1,6 @@
 "use client";
 
 import { memo, useEffect, useRef, useState } from "react";
-import { Handle, Position } from "@xyflow/react";
 import { Input } from "@/components/ui/input";
 import {
     Select,
@@ -24,12 +23,14 @@ import {
 } from "../types/db.types";
 import ColumnBadges from "./ColumnBadges";
 import ColumnSettingsPopover from "./ColumnSettingsPopover";
-import { handleIds } from "../utils/handleIds";
 import { onInputCommit } from "../utils/onInputCommit";
+import InlineFieldError from "../components/common/InlineFieldError";
+import { hasDuplicateColumnName } from "../utils/nameValidation";
 
 interface Props {
     nodeId: string;
     column: DbColumn;
+    siblingColumns: DbColumn[];
     autoFocus?: boolean;
     onFocusConsumed?: () => void;
     onUpdate: (column: DbColumn) => void;
@@ -39,40 +40,71 @@ interface Props {
 function TableNodeColumnRow({
     nodeId,
     column,
+    siblingColumns,
     autoFocus,
     onFocusConsumed,
     onUpdate,
     onRemove,
 }: Props) {
     const nameInputRef = useRef<HTMLInputElement>(null);
+    const isFreshColumnRef = useRef(false);
     const [draftName, setDraftName] = useState(column.name);
-
-    useEffect(() => {
-        setDraftName(column.name);
-    }, [column.id, column.name]);
+    const [error, setError] = useState<string | null>(null);
+    const errorId = `${column.id}-name-error`;
 
     useEffect(() => {
         if (autoFocus && nameInputRef.current) {
+            isFreshColumnRef.current = true;
             nameInputRef.current.focus();
             nameInputRef.current.select();
             onFocusConsumed?.();
         }
     }, [autoFocus, onFocusConsumed]);
 
-    const handleCls =
-        "w-3.5! h-3.5! bg-indigo-500! border-2! border-card! rounded-full! opacity-0! group-hover:opacity-60! hover:!opacity-100! transition-opacity! cursor-crosshair!";
-
-    const commitName = () => {
+    const commitName = (source: "blur" | "enter"): "applied" | "blocked" => {
         const next = draftName.trim();
         if (!next || next === column.name) {
             setDraftName(column.name);
-            return;
+            setError(null);
+            return "applied";
         }
+        const hasDuplicate = hasDuplicateColumnName(
+            siblingColumns,
+            next,
+            column.id,
+        );
+        if (hasDuplicate) {
+            const shouldDiscardFreshColumn =
+                isFreshColumnRef.current && source === "blur";
+            if (shouldDiscardFreshColumn) {
+                onRemove(column.id);
+                return "blocked";
+            }
+            setError("Duplicate column name.");
+            requestAnimationFrame(() => {
+                nameInputRef.current?.focus();
+                nameInputRef.current?.select();
+            });
+            return "blocked";
+        }
+        setError(null);
         onUpdate({ ...column, name: next });
+        isFreshColumnRef.current = false;
+        return "applied";
     };
 
     const cancelName = () => {
+        const isDuplicateDraft = hasDuplicateColumnName(
+            siblingColumns,
+            draftName,
+            column.id,
+        );
+        if (isFreshColumnRef.current && isDuplicateDraft) {
+            onRemove(column.id);
+            return;
+        }
         setDraftName(column.name);
+        setError(null);
     };
 
     const rowAccent = column.isPrimaryKey
@@ -85,26 +117,6 @@ function TableNodeColumnRow({
         <div
             className={`group relative flex items-center border-b border-border/30 last:border-0 hover:bg-muted/40 transition-colors ${rowAccent}`}
         >
-            {/* ── Handles (left: source + target, right: source + target) ── */}
-            <Handle
-                type="source"
-                position={Position.Left}
-                id={handleIds(column.id).sourceLeft}
-                className={handleCls}
-            />
-            <Handle
-                type="target"
-                position={Position.Left}
-                id={handleIds(column.id).targetLeft}
-                className={handleCls}
-            />
-            <Handle
-                type="target"
-                position={Position.Right}
-                id={handleIds(column.id).targetRight}
-                className={handleCls}
-            />
-
             {/* Badges */}
             <div className="w-14 pl-2 pr-1 shrink-0">
                 <ColumnBadges column={column} />
@@ -115,13 +127,18 @@ function TableNodeColumnRow({
                 <Input
                     ref={nameInputRef}
                     value={draftName}
-                    onChange={(e) => setDraftName(e.target.value)}
-                    onBlur={commitName}
+                    onChange={(e) => {
+                        setDraftName(e.target.value);
+                        if (error) setError(null);
+                    }}
+                    onBlur={() => commitName("blur")}
                     onKeyDown={(e) => {
                         onInputCommit(e, {
                             onCommit: () => {
-                                commitName();
-                                e.currentTarget.blur();
+                                const result = commitName("enter");
+                                if (result === "applied") {
+                                    e.currentTarget.blur();
+                                }
                             },
                             onCancel: () => {
                                 cancelName();
@@ -130,9 +147,17 @@ function TableNodeColumnRow({
                         });
                         e.stopPropagation();
                     }}
+                    aria-invalid={!!error}
+                    aria-describedby={error ? errorId : undefined}
                     className="h-7 text-sm border-0 bg-transparent! dark:bg-transparent! shadow-none p-0 font-mono text-foreground
                                focus-visible:ring-0! focus-visible:ring-offset-0! focus-visible:border-0!
                                focus-visible:bg-indigo-500/10 focus-visible:rounded focus-visible:px-1 w-full"
+                />
+                <InlineFieldError
+                    id={errorId}
+                    message={error}
+                    compact
+                    className="max-w-[170px]"
                 />
             </div>
 
@@ -189,13 +214,6 @@ function TableNodeColumnRow({
                 </div>
             </div>
 
-            {/* ── Source handle (right) ── */}
-            <Handle
-                type="source"
-                position={Position.Right}
-                id={handleIds(column.id).sourceRight}
-                className={handleCls}
-            />
         </div>
     );
 }

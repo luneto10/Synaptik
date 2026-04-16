@@ -1,64 +1,63 @@
 // @vitest-environment happy-dom
-import { render } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
 import ColumnBadges from "../../../features/diagram/nodes/ColumnBadges";
 import type { DbColumn } from "../../../features/diagram/types/db.types";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-const baseColumn: DbColumn = {
+const base: DbColumn = {
     id: "col-1",
     name: "title",
     type: "text",
     isPrimaryKey: false,
     isForeignKey: false,
-    isNullable: true,
+    isNullable: false,
     isUnique: false,
 };
 
-describe("ColumnBadges", () => {
-    const renderWithProvider = (column: DbColumn) =>
-        render(
-            <TooltipProvider>
-                <ColumnBadges column={column} />
-            </TooltipProvider>,
-        );
+afterEach(() => cleanup());
 
-    it("renders base type icon badge container", () => {
-        const { container } = renderWithProvider(baseColumn);
+const wrap = (column: DbColumn) =>
+    render(
+        <TooltipProvider>
+            <ColumnBadges column={column} />
+        </TooltipProvider>,
+    );
+
+describe("ColumnBadges", () => {
+    it("renders a type icon for every column", () => {
+        const { container } = wrap(base);
         expect(container.querySelectorAll("svg").length).toBeGreaterThan(0);
     });
 
-    it("renders PK/FK/Unique icons when flags are enabled", () => {
-        const col: DbColumn = {
-            ...baseColumn,
-            isPrimaryKey: true,
-            isForeignKey: true,
-            isUnique: true,
-            references: { tableId: "users", columnId: "id" },
-        };
-        const { container } = renderWithProvider(col);
-
-        // type + pk + fk (unique is hidden when PK=true per component rules)
-        expect(container.querySelectorAll("svg").length).toBeGreaterThanOrEqual(3);
+    it("shows PK and FK badges; hides U when isPrimaryKey is true", () => {
+        wrap({ ...base, isPrimaryKey: true, isForeignKey: true, isUnique: true, references: { tableId: "users", columnId: "id" } });
+        expect(screen.getByText("PK")).toBeInTheDocument();
+        expect(screen.getByText("FK")).toBeInTheDocument();
+        expect(screen.queryByText("U")).not.toBeInTheDocument();
     });
 
-    it("does not render unique icon when primary key is true", () => {
-        const col: DbColumn = {
-            ...baseColumn,
-            isPrimaryKey: true,
-            isUnique: true,
-        };
-        const { container } = renderWithProvider(col);
-        expect(container.querySelectorAll("svg").length).toBe(2); // type + PK
+    it("shows U badge when isUnique is true and isPrimaryKey is false", () => {
+        wrap({ ...base, isUnique: true });
+        expect(screen.getByText("U")).toBeInTheDocument();
+        expect(screen.queryByText("PK")).not.toBeInTheDocument();
     });
 
-    it("renders FK badge safely when references are present", () => {
-        const col: DbColumn = {
-            ...baseColumn,
-            isForeignKey: true,
-            references: { tableId: "abcdef123456", columnId: "id" },
-        };
-        const { container } = renderWithProvider(col);
-        expect(container.querySelectorAll("svg").length).toBeGreaterThanOrEqual(2); // type + fk
+    it("shows ? badge when isNullable is true", () => {
+        wrap({ ...base, isNullable: true });
+        expect(screen.getByText("?")).toBeInTheDocument();
+    });
+
+    it("shows no badges for a plain non-key column", () => {
+        wrap(base);
+        expect(screen.queryByText("PK")).not.toBeInTheDocument();
+        expect(screen.queryByText("FK")).not.toBeInTheDocument();
+        expect(screen.queryByText("U")).not.toBeInTheDocument();
+        expect(screen.queryByText("?")).not.toBeInTheDocument();
+    });
+
+    it("renders FK badge when isForeignKey is true", () => {
+        wrap({ ...base, isForeignKey: true, references: { tableId: "users", columnId: "id" } });
+        expect(screen.getByText("FK")).toBeInTheDocument();
     });
 });

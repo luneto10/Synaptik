@@ -25,8 +25,10 @@ function TableNodeHeader({ nodeId, tableName, columnCount }: TableNodeHeaderProp
         setEditing(false);
     };
 
+    const openRename = () => setEditing(true);
+
     return (
-        <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 rounded-t-xl px-3 py-2 flex items-center gap-2">
+        <div className="bg-linear-to-r from-indigo-600 to-indigo-700 rounded-t-xl px-3 py-2 flex items-center gap-2">
             <Table2 className="w-3.5 h-3.5 text-indigo-300 shrink-0" />
 
             <div className="flex-1 min-w-0">
@@ -45,8 +47,15 @@ function TableNodeHeader({ nodeId, tableName, columnCount }: TableNodeHeaderProp
                     <Button
                         variant="ghost"
                         size="sm"
-                        onDoubleClick={() => setEditing(true)}
+                        onDoubleClick={openRename}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === "F2") {
+                                e.preventDefault();
+                                openRename();
+                            }
+                        }}
                         title="Double-click to rename"
+                        aria-label={`Rename table ${tableName}`}
                         className="text-white font-semibold text-sm p-0 h-auto font-mono
                                    hover:bg-transparent hover:text-indigo-100
                                    truncate max-w-full w-full justify-start"

@@ -2,11 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { onInputCommit } from "../../../features/diagram/utils/onInputCommit";
 
 function makeKeyboardEvent(key: string) {
-    const preventDefault = vi.fn();
-    return {
-        key,
-        preventDefault,
-    } as unknown as React.KeyboardEvent;
+    return { key, preventDefault: vi.fn() } as unknown as React.KeyboardEvent;
 }
 
 describe("onInputCommit", () => {
@@ -44,5 +40,14 @@ describe("onInputCommit", () => {
         expect(e.preventDefault).not.toHaveBeenCalled();
         expect(onCommit).not.toHaveBeenCalled();
         expect(onCancel).not.toHaveBeenCalled();
+    });
+
+    it("does not throw when onCancel is omitted and Escape is pressed", () => {
+        const onCommit = vi.fn();
+        const e = makeKeyboardEvent("Escape");
+
+        expect(() => onInputCommit(e, { onCommit })).not.toThrow();
+        expect(e.preventDefault).toHaveBeenCalledTimes(1);
+        expect(onCommit).not.toHaveBeenCalled();
     });
 });

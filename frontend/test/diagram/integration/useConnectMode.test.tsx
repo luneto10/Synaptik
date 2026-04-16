@@ -113,4 +113,46 @@ describe("useConnectMode integration", () => {
         expect(state.edges.filter((e) => e.data?.junctionTableId === junction?.id).length).toBe(2);
         expect(result.current.pendingConn).toBeNull();
     });
+
+    it("clicking the same node twice cancels the pending source selection", () => {
+        const { result } = renderHook(() => useConnectMode("connect"));
+
+        act(() => result.current.handleNodeClick({} as never, { id: "users" } as never));
+        expect(result.current.pendingConnectSource).toBe("users");
+
+        act(() => result.current.handleNodeClick({} as never, { id: "users" } as never));
+        expect(result.current.pendingConnectSource).toBeNull();
+    });
+
+    it("handleNodeClick is a no-op when active tool is not connect", () => {
+        const { result } = renderHook(() => useConnectMode("select"));
+
+        act(() => result.current.handleNodeClick({} as never, { id: "users" } as never));
+        expect(result.current.pendingConnectSource).toBeNull();
+    });
+
+    it("handleConnect (native drag) directly sets pendingConn", () => {
+        const { result } = renderHook(() => useConnectMode("connect"));
+        const conn = { source: "users", target: "orders", sourceHandle: null, targetHandle: null };
+
+        act(() => result.current.handleConnect(conn));
+        expect(result.current.pendingConn).toEqual(conn);
+    });
+
+    it("confirmRelation is a no-op when pendingConn is null", () => {
+        const { result } = renderHook(() => useConnectMode("connect"));
+
+        act(() => result.current.handleConfirmRelation("one-to-many", "user_id", false));
+
+        expect(useDiagramStore.getState().edges.length).toBe(0);
+    });
+
+    it("displayNodes highlights the pending source node as selected", () => {
+        const { result } = renderHook(() => useConnectMode("connect"));
+
+        act(() => result.current.handleNodeClick({} as never, { id: "users" } as never));
+
+        const highlighted = result.current.displayNodes.find((n) => n.id === "users");
+        expect(highlighted?.selected).toBe(true);
+    });
 });
