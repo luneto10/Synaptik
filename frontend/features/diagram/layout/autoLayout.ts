@@ -14,34 +14,51 @@ type LayoutPositions = Map<string, LayoutBox>;
 
 const elk = new ELK();
 
+// These must stay in sync with the constants in TableNode.tsx so that the
+// port Y positions we give ELK match the actual rendered row centres.
+const NODE_HEADER_H = 48;
+const NODE_SEP_H = 1;
+const NODE_ROW_H = 34;
+
+/** Vertical centre of column row i within the node (node-local coordinates). */
+function colRowCenterY(rowIndex: number): number {
+    return NODE_HEADER_H + NODE_SEP_H + rowIndex * NODE_ROW_H + NODE_ROW_H / 2;
+}
+
 const AUTO_LAYOUT = {
-    nodeGap: 56,
-    componentGapX: 220,
-    componentGapY: 180,
-    minColumnGap: 120,
-    minRowGap: 54,
-    maxEdgeSpan: 760,
-    edgeCompressionIterations: 4,
-    overlapIterations: 8,
+    componentGapX: 240,
+    componentGapY: 200,
+    minColumnGap: 100,
+    minRowGap: 48,
+    overlapIterations: 4,
     topLeftPaddingX: 80,
     topLeftPaddingY: 80,
 } as const;
 
+// ELK layered algorithm options tuned for DB diagrams:
+//   - NETWORK_SIMPLEX layering gives better layer assignment (shorter edges)
+//   - BRANDES_KOEPF with BALANCED alignment vertically centers nodes in each layer
+//   - EDGE_LENGTH compaction keeps nodes closer together without breaking routing
+//   - Higher thoroughness (10) lets ELK spend more effort on crossing minimisation
+//   - Generous spacing so orthogonal edge segments don't crowd the table boxes
 const ELK_ROOT_OPTIONS: Record<string, string> = {
     "elk.algorithm": "layered",
     "elk.direction": "RIGHT",
-    "elk.spacing.nodeNode": "60",
-    "elk.layered.spacing.nodeNodeBetweenLayers": "130",
-    "elk.spacing.edgeNode": "28",
-    "elk.layered.spacing.edgeNodeBetweenLayers": "36",
-    "elk.layered.nodePlacement.favorStraightEdges": "true",
-    "elk.layered.compaction.postCompaction.strategy": "LEFT",
-    "elk.layered.crossingMinimization.strategy": "LAYER_SWEEP",
-    "elk.layered.considerModelOrder": "NODES_AND_EDGES",
+    "elk.spacing.nodeNode": "80",
+    "elk.layered.spacing.nodeNodeBetweenLayers": "160",
+    "elk.spacing.edgeNode": "36",
+    "elk.layered.spacing.edgeNodeBetweenLayers": "48",
+    "elk.spacing.edgeEdge": "18",
+    "elk.layered.spacing.edgeEdgeBetweenLayers": "18",
+    "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
     "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
     "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+    "elk.layered.nodePlacement.favorStraightEdges": "true",
+    "elk.layered.compaction.postCompaction.strategy": "EDGE_LENGTH",
+    "elk.layered.crossingMinimization.strategy": "LAYER_SWEEP",
     "elk.edgeRouting": "ORTHOGONAL",
-    "elk.layered.thoroughness": "7",
+    "elk.layered.thoroughness": "10",
+    "elk.padding": "[top=60, left=60, bottom=60, right=60]",
 };
 
 function nodeSize(node: TableNode) {
@@ -52,22 +69,90 @@ function nodeSize(node: TableNode) {
 }
 
 function graphFromNodesAndEdges(nodes: TableNode[], edges: RelationEdge[]) {
+    // Collect which column IDs are source/target endpoints per node.
+    const sourceCols = new Map<string, Set<string>>();
+    const targetCols = new Map<string, Set<string>>();
+    for (const n of nodes) {
+        sourceCols.set(n.id, new Set());
+        targetCols.set(n.id, new Set());
+    }
+    for (const e of edges) {
+        if (e.data?.sourceColumnId) sourceCols.get(e.source)?.add(e.data.sourceColumnId);
+        if (e.data?.targetColumnId) targetCols.get(e.target)?.add(e.data.targetColumnId);
+    }
+
     return {
         id: "diagram",
         layoutOptions: ELK_ROOT_OPTIONS,
         children: nodes.map((n) => {
             const { width, height } = nodeSize(n);
+            const srcCols = sourceCols.get(n.id) ?? new Set<string>();
+            const tgtCols = targetCols.get(n.id) ?? new Set<string>();
+
+            // Create ELK ports positioned at the exact row centre of every
+            // column that is an edge endpoint.  FIXED_POS tells ELK to route
+            // edges to these exact coordinates, which lets its crossing-
+            // minimisation algorithm order adjacent layers to match the FK
+            // column ordering in the table (e.g. order_id before product_id).
+            const ports: Array<{
+                id: string;
+                x: number;
+                y: number;
+                width: number;
+                height: number;
+                properties: Record<string, string>;
+            }> = [];
+
+            for (let i = 0; i < n.data.columns.length; i++) {
+                const col = n.data.columns[i];
+                const y = colRowCenterY(i);
+                if (srcCols.has(col.id)) {
+                    ports.push({
+                        id: `${col.id}-right`,
+                        x: width,
+                        y,
+                        width: 1,
+                        height: 1,
+                        properties: { "elk.port.side": "EAST" },
+                    });
+                }
+                if (tgtCols.has(col.id)) {
+                    ports.push({
+                        id: `${col.id}-left`,
+                        x: 0,
+                        y,
+                        width: 1,
+                        height: 1,
+                        properties: { "elk.port.side": "WEST" },
+                    });
+                }
+            }
+
             return {
                 id: n.id,
                 width,
                 height,
+                ports,
+                layoutOptions: {
+                    "elk.portConstraints": ports.length > 0 ? "FIXED_POS" : "FREE",
+                },
             };
         }),
-        edges: edges.map((e) => ({
-            id: e.id,
-            sources: [e.source],
-            targets: [e.target],
-        })),
+        edges: edges.map((e) => {
+            // Wire each edge to column-level ports so ELK can route them to the
+            // correct row and use port ordering to avoid crossings.
+            const srcPort = e.data?.sourceColumnId
+                ? `${e.data.sourceColumnId}-right`
+                : e.source;
+            const tgtPort = e.data?.targetColumnId
+                ? `${e.data.targetColumnId}-left`
+                : e.target;
+            return {
+                id: e.id,
+                sources: [srcPort],
+                targets: [tgtPort],
+            };
+        }),
     };
 }
 
@@ -197,24 +282,46 @@ function translate(ids: string[], positions: LayoutPositions, dx: number, dy: nu
     }
 }
 
+/**
+ * Arrange disconnected components on the canvas.
+ * Components are sorted largest-first then placed into rows whose width is
+ * determined by the square root of the total content area (targeting a roughly
+ * 16:10 aspect ratio).  This produces a balanced grid instead of a single
+ * ever-growing horizontal strip.
+ */
 function packComponents(
     components: Array<{ nodeIds: string[]; edges: RelationEdge[] }>,
     positions: LayoutPositions,
 ) {
+    if (components.length <= 1) return;
+
     const sorted = [...components].sort(
         (a, b) =>
             b.nodeIds.length - a.nodeIds.length ||
             b.edges.length - a.edges.length,
     );
 
+    const bounds = sorted.map((c) => boundsFor(c.nodeIds, positions));
+
+    // Target canvas width: sqrt(totalArea * 1.6) approximates a 16:10 aspect ratio
+    const totalArea = bounds.reduce(
+        (acc, b) =>
+            acc +
+            (b.width + AUTO_LAYOUT.componentGapX) *
+                (b.height + AUTO_LAYOUT.componentGapY),
+        0,
+    );
+    const targetWidth = Math.sqrt(totalArea * 1.6);
+
     let cursorX = 0;
     let cursorY = 0;
     let rowHeight = 0;
-    const wrapAfter = Math.max(3, Math.ceil(Math.sqrt(components.length)));
 
     sorted.forEach((component, index) => {
-        const b = boundsFor(component.nodeIds, positions);
-        if (index > 0 && index % wrapAfter === 0) {
+        const b = bounds[index];
+        // Wrap to a new row when the next component would overflow the target
+        // width — but always place at least one component per row.
+        if (index > 0 && cursorX + b.width > targetWidth) {
             cursorX = 0;
             cursorY += rowHeight + AUTO_LAYOUT.componentGapY;
             rowHeight = 0;
@@ -225,112 +332,79 @@ function packComponents(
     });
 }
 
-function balanceJunctionGroups(positions: LayoutPositions, edges: RelationEdge[]) {
-    const junctionParents = new Map<string, Set<string>>();
-    for (const e of edges) {
-        const junctionId = e.data?.junctionTableId;
-        if (!junctionId) continue;
-        if (!junctionParents.has(junctionId)) junctionParents.set(junctionId, new Set());
-        junctionParents.get(junctionId)?.add(e.source);
-    }
-
-    const stackHeight = (group: Array<{ pos: LayoutBox }>) =>
-        group.reduce((acc, item) => acc + item.pos.h, 0) +
-        Math.max(0, group.length - 1) * LAYOUT.DAGRE_NODE_SEP;
-
-    for (const [junctionId, parentsSet] of junctionParents) {
-        if (parentsSet.size < 2) continue;
-        const junctionPos = positions.get(junctionId);
-        if (!junctionPos) continue;
-
-        const parents = [...parentsSet]
-            .map((id) => ({ id, pos: positions.get(id) }))
-            .filter((entry): entry is { id: string; pos: LayoutBox } => Boolean(entry.pos))
-            .sort((a, b) => a.pos.y - b.pos.y);
-        if (parents.length < 2) continue;
-
-        const splitAt = Math.ceil(parents.length / 2);
-        const leftGroup = parents.slice(0, splitAt);
-        const rightGroup = parents.slice(splitAt);
-        const anchorY = junctionPos.y + junctionPos.h / 2;
-
-        let y = anchorY - stackHeight(leftGroup) / 2;
-        for (const parent of leftGroup) {
-            positions.set(parent.id, { ...parent.pos, y });
-            y += parent.pos.h + LAYOUT.DAGRE_NODE_SEP;
-        }
-
-        const rightX = junctionPos.x + junctionPos.w + AUTO_LAYOUT.minColumnGap + 24;
-        y = anchorY - stackHeight(rightGroup) / 2;
-        for (const parent of rightGroup) {
-            positions.set(parent.id, { ...parent.pos, x: rightX, y });
-            y += parent.pos.h + LAYOUT.DAGRE_NODE_SEP;
-        }
-    }
-}
-
+/**
+ * Balance the visual layout when a hub node has many incoming sources all
+ * landing on its left side.  Nodes that connect *exclusively* to that hub
+ * (no other edges) are candidates — the bottom half of them get relocated to
+ * the right side of the hub, creating a symmetric fan-in / fan-out look
+ * instead of a one-sided pileup.
+ *
+ * Only exclusive leaf nodes are moved so no other edge routes are disrupted.
+ */
 function balanceHeavyFanIn(positions: LayoutPositions, edges: RelationEdge[]) {
-    const BALANCE_THRESHOLD = 3;
-    const sourcesByTarget = new Map<string, string[]>();
+    const THRESHOLD = 3;
+    const GAP = LAYOUT.DAGRE_NODE_SEP;
 
+    // For each source node, count how many distinct targets it connects to.
+    const sourceTargetCount = new Map<string, number>();
     for (const e of edges) {
-        if (!sourcesByTarget.has(e.target)) sourcesByTarget.set(e.target, []);
-        sourcesByTarget.get(e.target)?.push(e.source);
+        sourceTargetCount.set(
+            e.source,
+            (sourceTargetCount.get(e.source) ?? 0) + 1,
+        );
     }
 
-    for (const [targetId, sourceIds] of sourcesByTarget) {
+    // Collect unique sources per target (deduplicated).
+    const sourcesByTarget = new Map<string, Set<string>>();
+    for (const e of edges) {
+        if (!sourcesByTarget.has(e.target)) sourcesByTarget.set(e.target, new Set());
+        sourcesByTarget.get(e.target)?.add(e.source);
+    }
+
+    for (const [targetId, sourcesSet] of sourcesByTarget) {
         const targetPos = positions.get(targetId);
         if (!targetPos) continue;
 
-        const uniqueSources = [...new Set(sourceIds)];
-        const leftSources = uniqueSources.filter(
-            (sourceId) => (positions.get(sourceId)?.x ?? 0) < targetPos.x,
-        );
-        if (leftSources.length <= BALANCE_THRESHOLD) continue;
+        // Exclusive left-side sources: sit to the left AND only connect here.
+        const leftExclusive = [...sourcesSet].filter((sid) => {
+            const sPos = positions.get(sid);
+            if (!sPos) return false;
+            if (sPos.x >= targetPos.x) return false;           // already right
+            return (sourceTargetCount.get(sid) ?? 0) === 1;    // only this target
+        });
 
-        leftSources.sort(
+        if (leftExclusive.length <= THRESHOLD) continue;
+
+        // Sort by Y so the split is spatially contiguous.
+        leftExclusive.sort(
             (a, b) => (positions.get(a)?.y ?? 0) - (positions.get(b)?.y ?? 0),
         );
 
-        const rightHalf = leftSources.slice(Math.ceil(leftSources.length / 2));
-        const rightX =
-            targetPos.x + targetPos.w + AUTO_LAYOUT.minColumnGap + 36;
-        let rightY = targetPos.y;
+        // Move the bottom half to the right side of the hub.
+        const splitAt = Math.ceil(leftExclusive.length / 2);
+        const toMoveRight = leftExclusive.slice(splitAt);
 
-        for (const id of rightHalf) {
-            const pos = positions.get(id);
-            if (!pos) continue;
-            positions.set(id, { ...pos, x: rightX, y: rightY });
-            rightY += pos.h + LAYOUT.DAGRE_NODE_SEP;
+        const rightX = targetPos.x + targetPos.w + AUTO_LAYOUT.componentGapX / 2;
+        const totalH = toMoveRight.reduce(
+            (acc, id) => acc + (positions.get(id)?.h ?? 0) + GAP,
+            -GAP,
+        );
+        let y = targetPos.y + targetPos.h / 2 - totalH / 2;
+
+        for (const sid of toMoveRight) {
+            const sPos = positions.get(sid);
+            if (!sPos) continue;
+            positions.set(sid, { ...sPos, x: rightX, y });
+            y += sPos.h + GAP;
         }
     }
 }
 
-function compressLongEdges(positions: LayoutPositions, edges: RelationEdge[]) {
-    const touched = new Set<string>();
-    for (let i = 0; i < AUTO_LAYOUT.edgeCompressionIterations; i++) {
-        touched.clear();
-        for (const edge of edges) {
-            const source = positions.get(edge.source);
-            const target = positions.get(edge.target);
-            if (!source || !target) continue;
-            const dx = centerX(target) - centerX(source);
-            if (Math.abs(dx) <= AUTO_LAYOUT.maxEdgeSpan) continue;
-            const overflow = Math.abs(dx) - AUTO_LAYOUT.maxEdgeSpan;
-            const shift = Math.max(18, overflow * 0.45);
-            if (dx > 0) {
-                if (!touched.has(edge.target)) {
-                    positions.set(edge.target, { ...target, x: target.x - shift });
-                    touched.add(edge.target);
-                }
-            } else if (!touched.has(edge.source)) {
-                positions.set(edge.source, { ...source, x: source.x - shift });
-                touched.add(edge.source);
-            }
-        }
-    }
-}
-
+/**
+ * Safety-net pass: push apart any pair of nodes that still overlap after ELK
+ * and component packing.  ELK guarantees non-overlap within a component, but
+ * the pack step can cause inter-component collisions.
+ */
 function resolveNodeOverlaps(positions: LayoutPositions) {
     const ids = [...positions.keys()];
     for (let iter = 0; iter < AUTO_LAYOUT.overlapIterations; iter++) {
@@ -362,9 +436,7 @@ function resolveNodeOverlaps(positions: LayoutPositions) {
                 changed = true;
                 if (ox < oy) {
                     const push = ox / 2 + 1;
-                    const aCenter = centerX(a);
-                    const bCenter = centerX(b);
-                    if (aCenter <= bCenter) {
+                    if (centerX(a) <= centerX(b)) {
                         positions.set(aId, { ...a, x: a.x - push });
                         positions.set(bId, { ...b, x: b.x + push });
                     } else {
@@ -373,9 +445,7 @@ function resolveNodeOverlaps(positions: LayoutPositions) {
                     }
                 } else {
                     const push = oy / 2 + 1;
-                    const aCenter = centerY(a);
-                    const bCenter = centerY(b);
-                    if (aCenter <= bCenter) {
+                    if (centerY(a) <= centerY(b)) {
                         positions.set(aId, { ...a, y: a.y - push });
                         positions.set(bId, { ...b, y: b.y + push });
                     } else {
@@ -418,14 +488,17 @@ function toPositionChanges(nodes: TableNode[], positions: LayoutPositions) {
                 position: { x: pos.x, y: pos.y },
             };
         })
-        .filter((change): change is { id: string; type: "position"; position: { x: number; y: number } } => Boolean(change));
+        .filter(
+            (change): change is { id: string; type: "position"; position: { x: number; y: number } } =>
+                Boolean(change),
+        );
 }
 
 export async function buildAutoLayoutChanges(
     nodes: TableNode[],
     edges: RelationEdge[],
 ) {
-    let positions: LayoutPositions = new Map();
+    const positions: LayoutPositions = new Map();
     const byId = new Map(nodes.map((n) => [n.id, n]));
     const components = connectedComponents(nodes, edges);
 
@@ -450,10 +523,12 @@ export async function buildAutoLayoutChanges(
         }
     }
 
+    // 1. Pack disconnected components into a balanced grid.
     packComponents(components, positions);
-    compressLongEdges(positions, edges);
-    balanceJunctionGroups(positions, edges);
+    // 2. For hub nodes with too many left-side leaf sources, move the bottom
+    //    half to the right side to create a balanced fan-out appearance.
     balanceHeavyFanIn(positions, edges);
+    // 3. Push apart any overlaps the packing/balancing steps introduced.
     resolveNodeOverlaps(positions);
     normalizeCanvasOrigin(positions);
 
