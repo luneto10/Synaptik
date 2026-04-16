@@ -77,20 +77,20 @@ function TableNode({ id, data, selected, dragging }: NodeProps<TableNodeType>) {
     // ── Visible interaction dot (source handle, appears on selection) ──────────
     // Keep the handle center exactly on the node wall so edge endpoints
     // visually terminate on the border instead of floating outside.
-    const DOT_SIZE = 12;
+    const DOT_SIZE = 10;
     const visibleDot = (side: "left" | "right"): CSSProperties => ({
         width: DOT_SIZE,
         height: DOT_SIZE,
         borderRadius: "50%",
         background: "#fff",
-        border: "2.5px solid #6366f1",
+        border: "2px solid #6366f1",
         opacity: showHandles ? 1 : 0,
         pointerEvents: showHandles ? "all" : "none",
         transition: "opacity 120ms",
         cursor: "crosshair",
         [side]: 0,
         transform: side === "left" ? "translateX(-50%)" : "translateX(50%)",
-        boxShadow: "0 0 0 4px rgba(99,102,241,0.18)",
+        boxShadow: "0 0 0 3px rgba(99,102,241,0.16)",
     });
 
     // Invisible node-level target — large hit area so drops land easily
@@ -138,8 +138,8 @@ function TableNode({ id, data, selected, dragging }: NodeProps<TableNodeType>) {
                 minWidth={LAYOUT.MIN_NODE_WIDTH}
                 minHeight={minHeight}
                 isVisible={selected}
-                lineClassName="border-indigo-500/30! border-dashed!"
-                handleClassName="!w-4 !h-4 !rounded !bg-white !border-2 !border-indigo-500 !shadow-[0_0_8px_rgba(99,102,241,0.45)] hover:!bg-indigo-500 hover:!border-indigo-400 !transition-colors !duration-100"
+                lineClassName="border-indigo-500/20! border-solid!"
+                handleClassName="!w-[9px] !h-[9px] !rounded-full !bg-background !border !border-indigo-500/60 !ring-1 !ring-indigo-500/30 hover:!border-indigo-400 hover:!ring-indigo-500/40 !transition-colors !duration-100 !shadow-sm"
                 onResizeStart={() => {
                     endDiagramHistoryGestureIfActive();
                     setIsResizing(true);

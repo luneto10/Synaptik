@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { onInputCommit } from "../../utils/onInputCommit";
 import { cn } from "@/lib/utils";
+import { DevToolbar } from "./DevToolbar";
 
 /** Vertical rule for toolbars: avoids Radix Separator `self-stretch` fighting `h-*` in flex rows. */
 function ToolbarDivider() {
@@ -56,6 +57,12 @@ function FlowToolbar({
     const { theme, setTheme } = useTheme();
     const [projectName, setProjectName] = useState("untitled");
     const [editingName, setEditingName] = useState(false);
+    const showDevTools = useMemo(
+        () =>
+            process.env.NODE_ENV === "development" ||
+            process.env.NEXT_PUBLIC_DIAGRAM_DEV_TOOLS === "true",
+        [],
+    );
 
     return (
         <div className="h-11 border-b border-border/60 bg-card/95 backdrop-blur-sm flex items-center px-3 gap-2 shrink-0 z-10">
@@ -130,6 +137,15 @@ function FlowToolbar({
                 </TooltipTrigger>
                 <TooltipContent>Load e-commerce example</TooltipContent>
             </Tooltip>
+
+            {showDevTools && (
+                <>
+                    <ToolbarDivider />
+                    <div className="flex items-center gap-1">
+                        <DevToolbar />
+                    </div>
+                </>
+            )}
 
             {/* ── Right cluster ── */}
             <div className="ml-auto flex items-center gap-3">
