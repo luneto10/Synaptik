@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useReactFlow } from "@xyflow/react";
 import { useDiagramStore } from "../../store/diagramStore";
 import { endDiagramHistoryGestureIfActive } from "../../store/diagramHistory";
 import { onInputCommit } from "../../utils/onInputCommit";
@@ -24,6 +25,7 @@ export default function NewTableDialog({
     onOpenChange,
 }: NewTableDialogProps) {
     const addTable = useDiagramStore((s) => s.addTable);
+    const { screenToFlowPosition } = useReactFlow();
     const [name, setName] = useState("");
     const inputRef = useRef<HTMLInputElement>(null);
 
@@ -41,7 +43,12 @@ export default function NewTableDialog({
     const handleCreate = () => {
         const trimmed = name.trim();
         endDiagramHistoryGestureIfActive();
-        addTable(trimmed || "new_table");
+        // Spawn the new table near the current viewport center
+        const position = screenToFlowPosition({
+            x: window.innerWidth / 2,
+            y: window.innerHeight / 2,
+        });
+        addTable(trimmed || "new_table", position);
         setName("");
         handleOpenChange(false);
     };

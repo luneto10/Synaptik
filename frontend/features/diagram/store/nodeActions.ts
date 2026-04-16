@@ -27,18 +27,25 @@ export function createNodeActions(set: SetState) {
                 ) as TableNode[];
             }),
 
-        addTable: (name: string) =>
+        addTable: (name: string, position?: { x: number; y: number }) =>
             set((draft) => {
                 const id = crypto.randomUUID();
-                const col = draft.nodes.length;
-                const row = Math.floor(col / LAYOUT.COLS);
+                let pos: { x: number; y: number };
+                if (position) {
+                    // Offset slightly so the new table isn't exactly centred on the cursor
+                    pos = { x: position.x - LAYOUT.DEFAULT_NODE_WIDTH / 2, y: position.y - 60 };
+                } else {
+                    const col = draft.nodes.length;
+                    const row = Math.floor(col / LAYOUT.COLS);
+                    pos = {
+                        x: LAYOUT.ORIGIN_X + (col % LAYOUT.COLS) * LAYOUT.GAP_X,
+                        y: LAYOUT.ORIGIN_Y + row * LAYOUT.GAP_Y,
+                    };
+                }
                 draft.nodes.push({
                     id,
                     type: TABLE_NODE_TYPE,
-                    position: {
-                        x: LAYOUT.ORIGIN_X + (col % LAYOUT.COLS) * LAYOUT.GAP_X,
-                        y: LAYOUT.ORIGIN_Y + row * LAYOUT.GAP_Y,
-                    },
+                    position: pos,
                     data: { id, name, columns: [makePkCol()] },
                 });
             }),
@@ -149,6 +156,7 @@ export function createNodeActions(set: SetState) {
                     },
                 };
 
+                // source is to the left of junction; target is to the right
                 const edgeToSource = makeEdge(
                     sourceNodeId,
                     junctionId,
@@ -195,15 +203,8 @@ export function createNodeActions(set: SetState) {
                     const targetNode = byId.get(e.target);
                     const sourceColId = e.data?.sourceColumnId;
                     const targetColId = e.data?.targetColumnId;
-                    if (
-                        !sourceNode ||
-                        !targetNode ||
-                        !sourceColId ||
-                        !targetColId
-                    )
-                        return e;
-                    const sourceOnLeft =
-                        sourceNode.position.x <= targetNode.position.x;
+                    if (!sourceNode || !targetNode || !sourceColId || !targetColId) return e;
+                    const sourceOnLeft = sourceNode.position.x <= targetNode.position.x;
                     return {
                         ...e,
                         sourceHandle: sourceOnLeft

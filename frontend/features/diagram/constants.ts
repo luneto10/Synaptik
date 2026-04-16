@@ -17,8 +17,8 @@ export const LAYOUT = {
     /** Gap between T1, junction, and T2 when creating a M:N junction table. */
     JUNCTION_GAP: 350,
     /** Dagre graph layout spacing. */
-    DAGRE_NODE_SEP: 80,
-    DAGRE_RANK_SEP: 140,
+    DAGRE_NODE_SEP: 100,
+    DAGRE_RANK_SEP: 220,
     /** Default node dimensions used when measured size is unavailable. */
     DEFAULT_NODE_WIDTH: 280,
     DEFAULT_NODE_HEIGHT: 200,
@@ -36,11 +36,11 @@ export const DIAGRAM_COLORS = {
 
 /** Edge rendering constants. */
 export const EDGE_STYLE = {
-    borderRadius: 10,
-    baseOffset: 28,
-    laneStep: 18,
-    obstacleStep: 26,
-    obstacleYPadding: 36,
+    borderRadius: 12,
+    baseOffset: 36,
+    laneStep: 24,
+    obstacleStep: 32,
+    obstacleYPadding: 40,
     strokeWidth: 1.8,
     strokeWidthSelected: 2.5,
 } as const;

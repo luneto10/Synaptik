@@ -3,29 +3,48 @@ import type { RelationEdge, RelationshipType } from "../types/flow.types";
 import type { TableNode } from "../types/flow.types";
 import { makeEdge, makeFkCol, makeMnEdge, patchColumns, stripAutoCol, cascadeJunction, defaultFkColumnName, insertForeignKeyColumn } from "./helpers";
 import type { SetState } from "./diagramStore.types";
-import { handleIds, getHandleSide, sourceColumnIdFromHandle, targetColumnIdFromHandle } from "../utils/handleIds";
+import { handleIds, getHandleSide } from "../utils/handleIds";
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+/** Returns column-level source/target handle IDs based on relative node positions. */
+function columnHandles(
+    sourceColId: string,
+    targetColId: string,
+    sourceNodeId: string,
+    targetNodeId: string,
+    nodes: TableNode[],
+) {
+    const byId = new Map(nodes.map((n) => [n.id, n]));
+    const src = byId.get(sourceNodeId);
+    const tgt = byId.get(targetNodeId);
+    const sourceOnLeft = !src || !tgt || src.position.x <= tgt.position.x;
+    return {
+        sourceHandle: sourceOnLeft ? handleIds(sourceColId).sourceRight : handleIds(sourceColId).sourceLeft,
+        targetHandle: sourceOnLeft ? handleIds(targetColId).targetLeft  : handleIds(targetColId).targetRight,
+    };
+}
+
+const normalizeEdgeHandles = (nodes: TableNode[], edges: RelationEdge[]): RelationEdge[] => {
+    const byId = new Map(nodes.map((n) => [n.id, n]));
+    return edges.map((e) => {
+        const sourceNode = byId.get(e.source);
+        const targetNode = byId.get(e.target);
+        const sourceColId = e.data?.sourceColumnId;
+        const targetColId = e.data?.targetColumnId;
+        if (!sourceNode || !targetNode || !sourceColId || !targetColId) return e;
+        const sourceOnLeft = sourceNode.position.x <= targetNode.position.x;
+        return {
+            ...e,
+            sourceHandle: sourceOnLeft ? handleIds(sourceColId).sourceRight : handleIds(sourceColId).sourceLeft,
+            targetHandle: sourceOnLeft ? handleIds(targetColId).targetLeft  : handleIds(targetColId).targetRight,
+        };
+    });
+};
+
+// ── Actions ───────────────────────────────────────────────────────────────────
 
 export function createEdgeActions(set: SetState) {
-    const normalizeEdgeHandles = (nodes: TableNode[], edges: RelationEdge[]): RelationEdge[] => {
-        const byId = new Map(nodes.map((n) => [n.id, n]));
-        return edges.map((e) => {
-            const sourceNode = byId.get(e.source);
-            const targetNode = byId.get(e.target);
-            if (!sourceNode || !targetNode) return e;
-
-            const sourceColId = e.data?.sourceColumnId ?? sourceColumnIdFromHandle(e.sourceHandle);
-            const targetColId = e.data?.targetColumnId ?? targetColumnIdFromHandle(e.targetHandle);
-            if (!sourceColId || !targetColId) return e;
-
-            const sourceOnLeft = sourceNode.position.x <= targetNode.position.x;
-            return {
-                ...e,
-                sourceHandle: sourceOnLeft ? handleIds(sourceColId).sourceRight : handleIds(sourceColId).sourceLeft,
-                targetHandle: sourceOnLeft ? handleIds(targetColId).targetLeft : handleIds(targetColId).targetRight,
-            };
-        });
-    };
-
     return {
         onEdgesChange: (changes: EdgeChange[]) =>
             set((draft) => {
@@ -92,16 +111,19 @@ export function createEdgeActions(set: SetState) {
 
                 const fkColId = crypto.randomUUID();
                 const fkCol = makeFkCol(fkColId, resolvedName, connection.source!, pkCol.id, type === "one-to-one");
+
+                const { sourceHandle, targetHandle } = columnHandles(
+                    pkCol.id, fkColId,
+                    connection.source!, connection.target!,
+                    draft.nodes as TableNode[],
+                );
                 const edge = makeEdge(
                     connection.source!, connection.target!,
-                    handleIds(pkCol.id).sourceRight, handleIds(fkColId).targetLeft,
+                    sourceHandle, targetHandle,
                     { sourceColumnId: pkCol.id, targetColumnId: fkColId, relationshipType: type, autoCreatedColumnId: fkColId },
                 );
 
-                targetNode.data.columns = insertForeignKeyColumn(
-                    targetNode.data.columns,
-                    fkCol,
-                );
+                targetNode.data.columns = insertForeignKeyColumn(targetNode.data.columns, fkCol);
                 draft.edges.push(edge);
             }),
 
@@ -132,17 +154,22 @@ export function createEdgeActions(set: SetState) {
                 draft.edges = edges;
             }),
 
+        deleteEdgeOnly: (edgeId: string) =>
+            set((draft) => {
+                draft.edges = draft.edges.filter((e) => e.id !== edgeId);
+            }),
+
         flipColumnHandleSide: (nodeId: string, columnId: string) =>
             set((draft) => {
-                const h = handleIds(columnId);
+                const ch = handleIds(columnId);
                 for (const e of draft.edges) {
-                    if (e.source === nodeId) {
-                        if (e.sourceHandle === h.sourceRight) e.sourceHandle = h.sourceLeft;
-                        else if (e.sourceHandle === h.sourceLeft) e.sourceHandle = h.sourceRight;
+                    const isSourceCol = e.source === nodeId && e.data?.sourceColumnId === columnId;
+                    const isTargetCol = e.target === nodeId && e.data?.targetColumnId === columnId;
+                    if (isSourceCol) {
+                        e.sourceHandle = e.sourceHandle === ch.sourceRight ? ch.sourceLeft : ch.sourceRight;
                     }
-                    if (e.target === nodeId) {
-                        if (e.targetHandle === h.targetLeft)  e.targetHandle = h.targetRight;
-                        else if (e.targetHandle === h.targetRight) e.targetHandle = h.targetLeft;
+                    if (isTargetCol) {
+                        e.targetHandle = e.targetHandle === ch.targetLeft ? ch.targetRight : ch.targetLeft;
                     }
                 }
             }),
@@ -152,13 +179,17 @@ export function createEdgeActions(set: SetState) {
                 const e = draft.edges.find((e) => e.id === edgeId);
                 if (!e) return;
                 if (end === "source") {
+                    const colId = e.data?.sourceColumnId;
+                    if (!colId) return;
+                    const ch = handleIds(colId);
                     const side = getHandleSide(e.sourceHandle, "source");
-                    const colId = (e.sourceHandle ?? "").replace(/-source(-left)?$/, "");
-                    e.sourceHandle = side === "left" ? handleIds(colId).sourceRight : handleIds(colId).sourceLeft;
+                    e.sourceHandle = side === "left" ? ch.sourceRight : ch.sourceLeft;
                 } else {
+                    const colId = e.data?.targetColumnId;
+                    if (!colId) return;
+                    const ch = handleIds(colId);
                     const side = getHandleSide(e.targetHandle, "target");
-                    const colId = (e.targetHandle ?? "").replace(/-target(-right)?$/, "");
-                    e.targetHandle = side === "right" ? handleIds(colId).targetLeft : handleIds(colId).targetRight;
+                    e.targetHandle = side === "right" ? ch.targetLeft : ch.targetRight;
                 }
             }),
 
@@ -168,13 +199,11 @@ export function createEdgeActions(set: SetState) {
                 const newPk = newRefNode?.data.columns.find((c) => c.isPrimaryKey);
                 if (!newRefNode || !newPk) return;
 
-                const h = handleIds(columnId);
+                // Search by column data ID (node-level handles don't encode column IDs)
                 const oldEdge = draft.edges.find(
-                    (e) => e.target === nodeId &&
-                        (e.targetHandle === h.targetLeft || e.targetHandle === h.targetRight),
+                    (e) => e.target === nodeId && e.data?.targetColumnId === columnId,
                 );
 
-                // Update the column in-place
                 const nodes = patchColumns(draft.nodes as TableNode[], nodeId, (cols) =>
                     cols.map((c) => c.id !== columnId ? c : {
                         ...c,
@@ -184,10 +213,14 @@ export function createEdgeActions(set: SetState) {
                 );
                 draft.nodes = nodes;
 
-                const targetHandle = oldEdge?.targetHandle ?? handleIds(columnId).targetLeft;
+                const { sourceHandle, targetHandle } = columnHandles(
+                    newPk.id, columnId,
+                    newRefTableId, nodeId,
+                    nodes,
+                );
                 const newEdge = makeEdge(
                     newRefTableId, nodeId,
-                    handleIds(newPk.id).sourceRight, targetHandle,
+                    sourceHandle, targetHandle,
                     {
                         sourceColumnId: newPk.id,
                         targetColumnId: columnId,

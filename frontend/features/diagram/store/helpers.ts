@@ -138,11 +138,13 @@ export function makeMnEdge(
     const pk1 = t1?.data.columns.find((c) => c.isPrimaryKey);
     const pk2 = t2?.data.columns.find((c) => c.isPrimaryKey);
     if (!t1 || !t2 || !pk1 || !pk2) return undefined;
-    return makeEdge(t1.id, t2.id, handleIds(pk1.id).sourceRight, handleIds(pk2.id).targetLeft, {
-        sourceColumnId: pk1.id,
-        targetColumnId: pk2.id,
-        relationshipType: "many-to-many",
-    });
+    const t1OnLeft = (t1.position?.x ?? 0) <= (t2.position?.x ?? 0);
+    return makeEdge(
+        t1.id, t2.id,
+        t1OnLeft ? handleIds(pk1.id).sourceRight : handleIds(pk1.id).sourceLeft,
+        t1OnLeft ? handleIds(pk2.id).targetLeft  : handleIds(pk2.id).targetRight,
+        { sourceColumnId: pk1.id, targetColumnId: pk2.id, relationshipType: "many-to-many" },
+    );
 }
 
 /**

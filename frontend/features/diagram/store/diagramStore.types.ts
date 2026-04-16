@@ -23,7 +23,9 @@ export interface DiagramState {
     setEdgeRelationType: (edgeId: string, type: RelationshipType) => void;
     /** Deletes the edge and removes the auto-created FK column from its node. */
     deleteEdge: (edgeId: string) => void;
-    addTable: (name: string) => void;
+    /** Deletes only the edge row — no FK column cascade. */
+    deleteEdgeOnly: (edgeId: string) => void;
+    addTable: (name: string, position?: { x: number; y: number }) => void;
     updateColumn: (nodeId: string, column: DbColumn) => void;
     addColumn: (nodeId: string, columnId?: string) => void;
     removeColumn: (nodeId: string, columnId: string) => void;
