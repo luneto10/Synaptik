@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useReactFlow } from "@xyflow/react";
 
 interface FitViewTriggerProps {
@@ -15,6 +15,9 @@ interface FitViewTriggerProps {
 export function FitViewTrigger({ nodeId, onDone }: FitViewTriggerProps) {
     const { fitView } = useReactFlow();
 
+    const onDoneRef = useRef(onDone);
+    useEffect(() => { onDoneRef.current = onDone; });
+
     useEffect(() => {
         if (!nodeId) return;
         const id = setTimeout(() => {
@@ -24,10 +27,10 @@ export function FitViewTrigger({ nodeId, onDone }: FitViewTriggerProps) {
                 padding: 0.35,
                 maxZoom: 1.2,
             });
-            onDone();
+            onDoneRef.current();
         }, 80);
         return () => clearTimeout(id);
-    }, [nodeId, fitView, onDone]);
+    }, [nodeId, fitView]);
 
     return null;
 }
