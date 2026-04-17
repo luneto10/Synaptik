@@ -26,10 +26,7 @@ export function targetColumnIdFromHandle(
 }
 
 /** Derives the visual side ("left" | "right") from a handle ID string. */
-export function getHandleSide(
-    handleId: string | null | undefined,
-    _type: "source" | "target",
-): "left" | "right" {
+export function getHandleSide(handleId: string | null | undefined): "left" | "right" {
     if (!handleId) return "right";
     return handleId.endsWith("-left") ? "left" : "right";
 }

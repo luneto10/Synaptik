@@ -197,13 +197,13 @@ export function createEdgeActions(set: SetState) {
                     const colId = e.data?.sourceColumnId;
                     if (!colId) return;
                     const ch = handleIds(colId);
-                    const side = getHandleSide(e.sourceHandle, "source");
+                    const side = getHandleSide(e.sourceHandle);
                     e.sourceHandle = side === "left" ? ch.sourceRight : ch.sourceLeft;
                 } else {
                     const colId = e.data?.targetColumnId;
                     if (!colId) return;
                     const ch = handleIds(colId);
-                    const side = getHandleSide(e.targetHandle, "target");
+                    const side = getHandleSide(e.targetHandle);
                     e.targetHandle = side === "right" ? ch.targetLeft : ch.targetRight;
                 }
             }),
