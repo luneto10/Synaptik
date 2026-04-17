@@ -19,18 +19,18 @@ describe("handleIds", () => {
 
 describe("getHandleSide", () => {
     it("returns side for source handles", () => {
-        expect(getHandleSide("col-a-source-left", "source")).toBe("left");
-        expect(getHandleSide("col-a-source-right", "source")).toBe("right");
+        expect(getHandleSide("col-a-source-left")).toBe("left");
+        expect(getHandleSide("col-a-source-right")).toBe("right");
     });
 
     it("returns side for target handles", () => {
-        expect(getHandleSide("col-a-target-right", "target")).toBe("right");
-        expect(getHandleSide("col-a-target-left", "target")).toBe("left");
+        expect(getHandleSide("col-a-target-right")).toBe("right");
+        expect(getHandleSide("col-a-target-left")).toBe("left");
     });
 
     it("defaults to right when handle is missing", () => {
-        expect(getHandleSide(undefined, "source")).toBe("right");
-        expect(getHandleSide(null, "target")).toBe("right");
+        expect(getHandleSide(undefined)).toBe("right");
+        expect(getHandleSide(null)).toBe("right");
     });
 });
 

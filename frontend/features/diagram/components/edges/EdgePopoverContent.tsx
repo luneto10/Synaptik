@@ -31,8 +31,8 @@ export function EdgePopoverContent({
     onDelete,
     onCreateJunction,
 }: Props) {
-    const sourceSide = getHandleSide(sourceHandleId, "source");
-    const targetSide = getHandleSide(targetHandleId, "target");
+    const sourceSide = getHandleSide(sourceHandleId);
+    const targetSide = getHandleSide(targetHandleId);
     const hasSides = Boolean(sourceHandleId && targetHandleId);
 
     return (

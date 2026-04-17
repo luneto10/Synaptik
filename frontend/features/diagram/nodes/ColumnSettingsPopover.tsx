@@ -76,8 +76,8 @@ export default function ColumnSettingsPopover({
         if (connectedEdge) {
             currentSide =
                 connectedEdge.source === nodeId
-                    ? getHandleSide(connectedEdge.sourceHandle, "source")
-                    : getHandleSide(connectedEdge.targetHandle, "target");
+                    ? getHandleSide(connectedEdge.sourceHandle)
+                    : getHandleSide(connectedEdge.targetHandle);
         }
         return { otherNodes, connectedEdge, currentSide };
     }, [nodeId, column.id]);
