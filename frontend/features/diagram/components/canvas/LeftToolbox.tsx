@@ -15,6 +15,7 @@ import {
     RectangleHorizontal,
     Undo2,
     Redo2,
+    Focus,
 } from "lucide-react";
 import { useStore } from "zustand";
 import { useDiagramStore } from "../../store/diagramStore";
@@ -26,6 +27,8 @@ interface LeftToolboxProps {
     onToolChange: (tool: DiagramTool) => void;
     onUndo?: () => void;
     onRedo?: () => void;
+    isolateConnections: boolean;
+    onToggleIsolateConnections: () => void;
 }
 
 const TOOLS: {
@@ -65,6 +68,8 @@ function LeftToolbox({
     onToolChange,
     onUndo,
     onRedo,
+    isolateConnections,
+    onToggleIsolateConnections,
 }: LeftToolboxProps) {
     const canUndo = useStore(
         useDiagramStore.temporal,
@@ -110,6 +115,35 @@ function LeftToolbox({
                     </TooltipContent>
                 </Tooltip>
             ))}
+
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={onToggleIsolateConnections}
+                        aria-label="Isolate connections of selected table"
+                        aria-pressed={isolateConnections}
+                        className={cn(
+                            "w-8 h-8 rounded-lg transition-all",
+                            isolateConnections
+                                ? "bg-indigo-500/20 text-indigo-400 shadow-sm"
+                                : "text-muted-foreground hover:bg-muted/80 hover:text-foreground",
+                        )}
+                    >
+                        <Focus className="w-4 h-4" />
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent
+                    side="right"
+                    className="flex items-center gap-2"
+                >
+                    Isolate connections
+                    <kbd className="text-[9px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-mono border border-border">
+                        F
+                    </kbd>
+                </TooltipContent>
+            </Tooltip>
 
             <div className="w-5 h-px bg-border/60 my-0.5" />
 
