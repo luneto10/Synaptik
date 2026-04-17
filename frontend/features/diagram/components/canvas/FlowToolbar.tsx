@@ -134,7 +134,12 @@ function FlowToolbar({
                         <Wand2 className="w-3.5 h-3.5" />
                     </Button>
                 </TooltipTrigger>
-                <TooltipContent>Auto layout</TooltipContent>
+                <TooltipContent>
+                    Auto layout{" "}
+                    <kbd className="text-[9px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-mono border border-border">
+                        L
+                    </kbd>
+                </TooltipContent>
             </Tooltip>
 
             <Tooltip>

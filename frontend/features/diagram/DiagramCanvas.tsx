@@ -3,6 +3,7 @@
 import {
     useCallback,
     useEffect,
+    useMemo,
     useRef,
     useState,
 } from "react";
@@ -31,6 +32,7 @@ import { useConnectMode } from "./hooks/useConnectMode";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { useFlowCanvasChangeHandlers } from "./hooks/useFlowCanvasChangeHandlers";
 import { useGrabMode } from "./hooks/useGrabMode";
+import { useSelectedNodeId, useSelectedNodeIds } from "./hooks/useSelectedNodeId";
 import {
     edgeTypes,
     CONNECTION_LINE_STYLE,
@@ -62,6 +64,10 @@ export function DiagramCanvas() {
     const [showMinimap, setShowMinimap] = useState(false);
     const [searchOpen, setSearchOpen] = useState(false);
     const [searchTargetId, setSearchTargetId] = useState<string | null>(null);
+    const [isolateConnections, setIsolateConnections] = useState(false);
+
+    const selectedNodeId = useSelectedNodeId();
+    const selectedNodeIds = useSelectedNodeIds();
 
     const { isGrabbing, onMouseDownCapture, onMouseUpCapture, onMouseMoveCapture } =
         useGrabMode({ containerRef, activeTool, setActiveTool });
@@ -101,6 +107,20 @@ export function DiagramCanvas() {
 
     const handleToggleMinimap = useCallback(() => setShowMinimap((v) => !v), []);
     const handleToggleSearch = useCallback(() => setSearchOpen((v) => !v), []);
+    const handleToggleIsolateConnections = useCallback(
+        () => setIsolateConnections((v) => !v),
+        [],
+    );
+
+    const displayEdges = useMemo(() => {
+        if (!isolateConnections || selectedNodeIds.length === 0) return edges;
+        const selected = new Set(selectedNodeIds);
+        return edges.map((edge) =>
+            selected.has(edge.source) || selected.has(edge.target)
+                ? edge
+                : { ...edge, hidden: true },
+        );
+    }, [edges, isolateConnections, selectedNodeIds]);
 
     const handleSearchSelect = useCallback((nodeId: string) => {
         setSearchOpen(false);
@@ -118,6 +138,7 @@ export function DiagramCanvas() {
         handleToggleMinimap,
         handleAutoLayout,
         handleToggleSearch,
+        handleToggleIsolateConnections,
     });
 
     // Refocus the canvas whenever a dialog closes so keyboard shortcuts work.
@@ -159,6 +180,8 @@ export function DiagramCanvas() {
                     onToolChange={handleToolChange}
                     onUndo={handleUndo}
                     onRedo={handleRedo}
+                    isolateConnections={isolateConnections}
+                    onToggleIsolateConnections={handleToggleIsolateConnections}
                 />
 
                 {activeTool === "connect" && pendingConnectSource && (
@@ -171,7 +194,7 @@ export function DiagramCanvas() {
 
                 <ReactFlow
                     nodes={displayNodes}
-                    edges={edges}
+                    edges={displayEdges}
                     onBeforeDelete={handleBeforeDelete}
                     onNodesChange={handleNodesChange}
                     onNodeDragStart={handleNodeDragStart}
