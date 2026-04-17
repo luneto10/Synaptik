@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useMemo, useState } from "react";
+import { memo, useState } from "react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,7 @@ import {
     Command,
 } from "lucide-react";
 import { onInputCommit } from "../../utils/onInputCommit";
+import { IS_MAC } from "../../utils/isMac";
 import { cn } from "@/lib/utils";
 import { DevToolbar } from "./DevToolbar";
 
@@ -43,8 +44,11 @@ interface FlowToolbarProps {
     onAutoLayout: () => void;
     onLoadExample: () => void;
     onSearch: () => void;
-    isMac: boolean;
 }
+
+const SHOW_DEV_TOOLS =
+    process.env.NODE_ENV === "development" ||
+    process.env.NEXT_PUBLIC_DIAGRAM_DEV_TOOLS === "true";
 
 function FlowToolbar({
     nodeCount,
@@ -54,17 +58,10 @@ function FlowToolbar({
     onAutoLayout,
     onLoadExample,
     onSearch,
-    isMac,
 }: FlowToolbarProps) {
     const { theme, setTheme } = useTheme();
     const [projectName, setProjectName] = useState("untitled");
     const [editingName, setEditingName] = useState(false);
-    const showDevTools = useMemo(
-        () =>
-            process.env.NODE_ENV === "development" ||
-            process.env.NEXT_PUBLIC_DIAGRAM_DEV_TOOLS === "true",
-        [],
-    );
 
     return (
         <div className="h-11 border-b border-border/60 bg-card/95 backdrop-blur-sm flex items-center px-3 gap-2 shrink-0 z-10">
@@ -157,7 +154,7 @@ function FlowToolbar({
                 <TooltipContent>Load e-commerce example</TooltipContent>
             </Tooltip>
 
-            {showDevTools && (
+            {SHOW_DEV_TOOLS && (
                 <>
                     <ToolbarDivider />
                     <div className="flex items-center gap-1">
@@ -182,7 +179,7 @@ function FlowToolbar({
                     <Search className="w-3 h-3 shrink-0" />
                     <span className="hidden sm:inline">Search tables</span>
                     <kbd className="ml-0.5 flex items-center gap-0.5 font-mono text-[10px] opacity-60">
-                        {isMac ? (
+                        {IS_MAC ? (
                             <Command className="w-3 h-3" />
                         ) : (
                             <span>Ctrl</span>

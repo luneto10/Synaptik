@@ -1,38 +1,35 @@
 /**
- * Centralises ReactFlow handle ID construction and parsing so that
- * every file that wires connections or reads handle IDs uses the same strings.
+ * Centralises ReactFlow handle ID construction and parsing.
  *
- * Handle conventions:
- *   source-right  →  `${colId}-source`
- *   source-left   →  `${colId}-source-left`
- *   target-left   →  `${colId}-target`
- *   target-right  →  `${colId}-target-right`
+ * Handle naming is symmetric: `${colId}-{source|target}-{left|right}`.
  */
 
 export const handleIds = (colId: string) => ({
-    sourceRight: `${colId}-source`,
-    sourceLeft:  `${colId}-source-left`,
-    targetLeft:  `${colId}-target`,
+    sourceRight: `${colId}-source-right`,
+    sourceLeft: `${colId}-source-left`,
+    targetLeft: `${colId}-target-left`,
     targetRight: `${colId}-target-right`,
 });
 
-export function sourceColumnIdFromHandle(handleId: string | null | undefined): string | undefined {
+export function sourceColumnIdFromHandle(
+    handleId: string | null | undefined,
+): string | undefined {
     if (!handleId) return undefined;
-    return handleId.replace(/-source(-left)?$/, "");
+    return handleId.replace(/-source-(left|right)$/, "");
 }
 
-export function targetColumnIdFromHandle(handleId: string | null | undefined): string | undefined {
+export function targetColumnIdFromHandle(
+    handleId: string | null | undefined,
+): string | undefined {
     if (!handleId) return undefined;
-    return handleId.replace(/-target(-right)?$/, "");
+    return handleId.replace(/-target-(left|right)$/, "");
 }
 
 /** Derives the visual side ("left" | "right") from a handle ID string. */
 export function getHandleSide(
     handleId: string | null | undefined,
-    type: "source" | "target",
+    _type: "source" | "target",
 ): "left" | "right" {
     if (!handleId) return "right";
-    return type === "source"
-        ? handleId.endsWith("-source-left") ? "left" : "right"
-        : handleId.endsWith("-target-right") ? "right" : "left";
+    return handleId.endsWith("-left") ? "left" : "right";
 }

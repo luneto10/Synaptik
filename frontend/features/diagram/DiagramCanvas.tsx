@@ -1,11 +1,6 @@
 "use client";
 
-import {
-    useCallback,
-    useEffect,
-    useRef,
-    useState,
-} from "react";
+import { useEffect, useRef, useState } from "react";
 import {
     ReactFlow,
     Background,
@@ -20,7 +15,7 @@ import { useDiagramStore } from "./store/diagramStore";
 import { endDiagramHistoryGestureIfActive } from "./store/diagramHistory";
 import { nodeTypes } from "./nodes";
 import FlowToolbar from "./components/canvas/FlowToolbar";
-import LeftToolbox, { type DiagramTool } from "./components/canvas/LeftToolbox";
+import LeftToolbox from "./components/canvas/LeftToolbox";
 import NewTableDialog from "./components/canvas/NewTableDialog";
 import { TableSearch } from "./components/canvas/TableSearch";
 import { FitViewTrigger } from "./components/canvas/FitViewTrigger";
@@ -31,7 +26,10 @@ import { useConnectMode } from "./hooks/useConnectMode";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { useFlowCanvasChangeHandlers } from "./hooks/useFlowCanvasChangeHandlers";
 import { useGrabMode } from "./hooks/useGrabMode";
-import { useSelectedNodeId, useSelectedNodeIds } from "./hooks/useSelectedNodeId";
+import { useSelectedNodeIds } from "./hooks/useSelectedNodeId";
+import { useDiagramUiState } from "./hooks/useDiagramUiState";
+import { useIsolatedEdges } from "./hooks/useIsolatedEdges";
+import type { DiagramTool } from "./components/canvas/LeftToolbox";
 import {
     edgeTypes,
     CONNECTION_LINE_STYLE,
@@ -43,6 +41,7 @@ import { cn } from "@/lib/utils";
 
 export function DiagramCanvas() {
     const containerRef = useRef<HTMLDivElement>(null);
+    const [activeTool, setActiveTool] = useState<DiagramTool>("select");
 
     const nodes = useDiagramStore((s) => s.nodes);
     const edges = useDiagramStore((s) => s.edges);
@@ -58,22 +57,6 @@ export function DiagramCanvas() {
         handleSelectionDragStop,
     } = useFlowCanvasChangeHandlers({ onNodesChange, onEdgesChange });
 
-    const [activeTool, setActiveTool] = useState<DiagramTool>("select");
-    const [tableDialogOpen, setTableDialogOpen] = useState(false);
-    const [showMinimap, setShowMinimap] = useState(false);
-    const [searchOpen, setSearchOpen] = useState(false);
-    const [searchTargetId, setSearchTargetId] = useState<string | null>(null);
-    const [isolateConnections, setIsolateConnections] = useState(false);
-
-    const selectedNodeId = useSelectedNodeId();
-    const selectedNodeIds = useSelectedNodeIds();
-
-    const { isGrabbing, onMouseDownCapture, onMouseUpCapture, onMouseMoveCapture } =
-        useGrabMode({ containerRef, activeTool, setActiveTool });
-
-    const { isPending, handleSave, handleLoadExample, handleAutoLayout } =
-        useDiagramActions();
-
     const {
         pendingConn,
         setPendingConn,
@@ -87,52 +70,43 @@ export function DiagramCanvas() {
         displayNodes,
     } = useConnectMode(activeTool);
 
-    const handleToolChange = useCallback(
-        (tool: DiagramTool) => {
-            setActiveTool(tool);
-            if (tool !== "connect") setPendingConnectSource(null);
-            if (tool === "addTable") setTableDialogOpen(true);
-        },
-        [setPendingConnectSource],
-    );
+    const {
+        tableDialogOpen,
+        searchOpen,
+        setSearchOpen,
+        searchTargetId,
+        setSearchTargetId,
+        showMinimap,
+        isolateConnections,
+        handleToolChange,
+        handleTableDialogClose,
+        handleToggleMinimap,
+        handleToggleSearch,
+        handleToggleIsolateConnections,
+        handleSearchSelect,
+    } = useDiagramUiState({ setActiveTool, setPendingConnectSource });
 
-    const handleTableDialogClose = useCallback((open: boolean) => {
-        setTableDialogOpen(open);
-        if (!open) {
-            setActiveTool("select");
-            endDiagramHistoryGestureIfActive();
-        }
-    }, []);
+    const selectedNodeIds = useSelectedNodeIds();
 
-    const handleToggleMinimap = useCallback(() => setShowMinimap((v) => !v), []);
-    const handleToggleSearch = useCallback(() => setSearchOpen((v) => !v), []);
-    const handleToggleIsolateConnections = useCallback(
-        () => setIsolateConnections((v) => !v),
-        [],
-    );
+    const {
+        isGrabbing,
+        onMouseDownCapture,
+        onMouseUpCapture,
+        onMouseMoveCapture,
+    } = useGrabMode({ containerRef, activeTool, setActiveTool });
 
-    const displayEdges = useMemo(() => {
-        if (!isolateConnections || selectedNodeIds.length === 0) return edges;
-        const selected = new Set(selectedNodeIds);
-        return edges.map((edge) =>
-            selected.has(edge.source) || selected.has(edge.target)
-                ? edge
-                : { ...edge, hidden: true },
-        );
-    }, [edges, isolateConnections, selectedNodeIds]);
+    const { isPending, handleSave, handleLoadExample, handleAutoLayout } =
+        useDiagramActions();
 
-    const handleSearchSelect = useCallback((nodeId: string) => {
-        setSearchOpen(false);
-        setSearchTargetId(nodeId);
-    }, []);
-
-    const [isMac] = useState(() =>
-        typeof navigator !== "undefined" && /mac|iphone|ipad|ipod/i.test(navigator.userAgent)
+    const displayEdges = useIsolatedEdges(
+        edges,
+        selectedNodeIds,
+        isolateConnections,
     );
 
     const { handleUndo, handleRedo } = useKeyboardShortcuts({
         handleToolChange,
-        setTableDialogOpen,
+        setTableDialogOpen: handleTableDialogClose,
         setPendingConnectSource,
         handleToggleMinimap,
         handleAutoLayout,
@@ -143,7 +117,10 @@ export function DiagramCanvas() {
     // Refocus the canvas whenever a dialog closes so keyboard shortcuts work.
     useEffect(() => {
         if (tableDialogOpen || pendingConn) return;
-        const id = setTimeout(() => containerRef.current?.focus(), REFLOW_DELAY_MS);
+        const id = setTimeout(
+            () => containerRef.current?.focus(),
+            REFLOW_DELAY_MS,
+        );
         return () => clearTimeout(id);
     }, [tableDialogOpen, pendingConn]);
 
@@ -167,7 +144,6 @@ export function DiagramCanvas() {
                 onAutoLayout={handleAutoLayout}
                 onLoadExample={handleLoadExample}
                 onSearch={handleToggleSearch}
-                isMac={isMac}
             />
 
             <div
@@ -184,9 +160,11 @@ export function DiagramCanvas() {
                 />
 
                 {activeTool === "connect" && pendingConnectSource && (
-                    <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20
+                    <div
+                        className="absolute top-3 left-1/2 -translate-x-1/2 z-20
                                     text-xs bg-indigo-600 text-white px-3 py-1.5 rounded-full
-                                    shadow-lg pointer-events-none select-none">
+                                    shadow-lg pointer-events-none select-none"
+                    >
                         Click a second table to connect
                     </div>
                 )}

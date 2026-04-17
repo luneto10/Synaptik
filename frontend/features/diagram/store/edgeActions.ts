@@ -1,8 +1,9 @@
 import { applyEdgeChanges, type Connection, type EdgeChange } from "@xyflow/react";
+import type { Draft } from "immer";
 import type { RelationEdge, RelationshipType } from "../types/flow.types";
 import type { TableNode } from "../types/flow.types";
 import { makeEdge, makeFkCol, makeMnEdge, patchColumns, stripAutoCol, cascadeJunction, defaultFkColumnName, insertForeignKeyColumn } from "./helpers";
-import type { SetState } from "./diagramStore.types";
+import type { DiagramState, SetState } from "./diagramStore.types";
 import { handleIds, getHandleSide } from "../utils/handleIds";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -42,6 +43,68 @@ const normalizeEdgeHandles = (nodes: TableNode[], edges: RelationEdge[]): Relati
     });
 };
 
+/**
+ * Apply edge removals with junction cascade: strip auto-created FK columns,
+ * collapse/cascade junction tables, and queue any additional edges that need
+ * removal. Mutates the draft in place.
+ */
+function applyEdgeRemovals(
+    draft: Draft<DiagramState>,
+    changes: EdgeChange[],
+    removeIds: Set<string>,
+) {
+    let nodes = draft.nodes as TableNode[];
+    const extraRemovals: string[] = [];
+    const newEdges: RelationEdge[] = [];
+    const handledJunctions = new Set<string>();
+
+    for (const id of removeIds) {
+        const edge = draft.edges.find((e) => e.id === id);
+        if (!edge) continue;
+
+        nodes = stripAutoCol(
+            nodes,
+            edge.data?.autoCreatedColumnId,
+            edge.data?.autoCreatedColumnNodeId ?? edge.target,
+        );
+
+        const jId = edge.data?.junctionTableId;
+        if (!jId || handledJunctions.has(jId)) continue;
+        handledJunctions.add(jId);
+
+        const junctionEdges = draft.edges.filter(
+            (e) => e.data?.junctionTableId === jId,
+        ) as RelationEdge[];
+        const allBeingRemoved = junctionEdges.every((e) => removeIds.has(e.id));
+
+        if (allBeingRemoved) {
+            const mn = makeMnEdge(nodes, junctionEdges);
+            if (mn) newEdges.push(mn);
+        } else {
+            const { nodes: n, extraRemovals: extra, newEdge } = cascadeJunction(
+                nodes,
+                draft.edges as RelationEdge[],
+                jId,
+                new Set([id]),
+            );
+            nodes = n;
+            extraRemovals.push(...extra);
+            if (newEdge) newEdges.push(newEdge);
+        }
+    }
+
+    const allChanges =
+        extraRemovals.length > 0
+            ? [...changes, ...extraRemovals.map((id) => ({ type: "remove" as const, id }))]
+            : changes;
+
+    draft.nodes = nodes;
+    draft.edges = [
+        ...(applyEdgeChanges(allChanges, draft.edges) as RelationEdge[]),
+        ...newEdges,
+    ];
+}
+
 // ── Actions ───────────────────────────────────────────────────────────────────
 
 export function createEdgeActions(set: SetState) {
@@ -55,43 +118,7 @@ export function createEdgeActions(set: SetState) {
                     draft.edges = applyEdgeChanges(changes, draft.edges) as RelationEdge[];
                     return;
                 }
-
-                let nodes = draft.nodes as TableNode[];
-                const extraRemovals: string[] = [];
-                const newEdges: RelationEdge[] = [];
-                const handledJunctions = new Set<string>();
-
-                for (const id of removeIds) {
-                    const edge = draft.edges.find((e) => e.id === id);
-                    if (!edge) continue;
-
-                    nodes = stripAutoCol(nodes, edge.data?.autoCreatedColumnId, edge.data?.autoCreatedColumnNodeId ?? edge.target);
-
-                    const jId = edge.data?.junctionTableId;
-                    if (!jId || handledJunctions.has(jId)) continue;
-                    handledJunctions.add(jId);
-
-                    const junctionEdges = draft.edges.filter((e) => e.data?.junctionTableId === jId) as RelationEdge[];
-                    const allBeingRemoved = junctionEdges.every((e) => removeIds.has(e.id));
-
-                    if (allBeingRemoved) {
-                        const mn = makeMnEdge(nodes, junctionEdges);
-                        if (mn) newEdges.push(mn);
-                    } else {
-                        const { nodes: n, extraRemovals: extra, newEdge } =
-                            cascadeJunction(nodes, draft.edges as RelationEdge[], jId, new Set([id]));
-                        nodes = n;
-                        extraRemovals.push(...extra);
-                        if (newEdge) newEdges.push(newEdge);
-                    }
-                }
-
-                const allChanges = extraRemovals.length > 0
-                    ? [...changes, ...extraRemovals.map((id) => ({ type: "remove" as const, id }))]
-                    : changes;
-
-                draft.nodes = nodes;
-                draft.edges = [...(applyEdgeChanges(allChanges, draft.edges) as RelationEdge[]), ...newEdges];
+                applyEdgeRemovals(draft, changes, removeIds);
             }),
 
         addEdgeWithType: (connection: Connection, fkName: string, type: RelationshipType) =>

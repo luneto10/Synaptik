@@ -9,9 +9,9 @@ import {
 describe("handleIds", () => {
     it("builds all source/target handle IDs from a column ID", () => {
         expect(handleIds("col-1")).toEqual({
-            sourceRight: "col-1-source",
+            sourceRight: "col-1-source-right",
             sourceLeft: "col-1-source-left",
-            targetLeft: "col-1-target",
+            targetLeft: "col-1-target-left",
             targetRight: "col-1-target-right",
         });
     });
@@ -20,12 +20,12 @@ describe("handleIds", () => {
 describe("getHandleSide", () => {
     it("returns side for source handles", () => {
         expect(getHandleSide("col-a-source-left", "source")).toBe("left");
-        expect(getHandleSide("col-a-source", "source")).toBe("right");
+        expect(getHandleSide("col-a-source-right", "source")).toBe("right");
     });
 
     it("returns side for target handles", () => {
         expect(getHandleSide("col-a-target-right", "target")).toBe("right");
-        expect(getHandleSide("col-a-target", "target")).toBe("left");
+        expect(getHandleSide("col-a-target-left", "target")).toBe("left");
     });
 
     it("defaults to right when handle is missing", () => {
@@ -35,8 +35,8 @@ describe("getHandleSide", () => {
 });
 
 describe("sourceColumnIdFromHandle", () => {
-    it("strips -source suffix", () => {
-        expect(sourceColumnIdFromHandle("col-1-source")).toBe("col-1");
+    it("strips -source-right suffix", () => {
+        expect(sourceColumnIdFromHandle("col-1-source-right")).toBe("col-1");
     });
 
     it("strips -source-left suffix", () => {
@@ -50,8 +50,8 @@ describe("sourceColumnIdFromHandle", () => {
 });
 
 describe("targetColumnIdFromHandle", () => {
-    it("strips -target suffix", () => {
-        expect(targetColumnIdFromHandle("col-1-target")).toBe("col-1");
+    it("strips -target-left suffix", () => {
+        expect(targetColumnIdFromHandle("col-1-target-left")).toBe("col-1");
     });
 
     it("strips -target-right suffix", () => {
