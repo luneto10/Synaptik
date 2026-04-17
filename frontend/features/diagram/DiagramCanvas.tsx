@@ -32,7 +32,7 @@ import { useConnectMode } from "./hooks/useConnectMode";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { useFlowCanvasChangeHandlers } from "./hooks/useFlowCanvasChangeHandlers";
 import { useGrabMode } from "./hooks/useGrabMode";
-import { useSelectedNodeId } from "./hooks/useSelectedNodeId";
+import { useSelectedNodeId, useSelectedNodeIds } from "./hooks/useSelectedNodeId";
 import {
     edgeTypes,
     CONNECTION_LINE_STYLE,
@@ -67,6 +67,7 @@ export function DiagramCanvas() {
     const [isolateConnections, setIsolateConnections] = useState(false);
 
     const selectedNodeId = useSelectedNodeId();
+    const selectedNodeIds = useSelectedNodeIds();
 
     const { isGrabbing, onMouseDownCapture, onMouseUpCapture, onMouseMoveCapture } =
         useGrabMode({ containerRef, activeTool, setActiveTool });
@@ -112,13 +113,14 @@ export function DiagramCanvas() {
     );
 
     const displayEdges = useMemo(() => {
-        if (!isolateConnections || !selectedNodeId) return edges;
+        if (!isolateConnections || selectedNodeIds.length === 0) return edges;
+        const selected = new Set(selectedNodeIds);
         return edges.map((edge) =>
-            edge.source === selectedNodeId || edge.target === selectedNodeId
+            selected.has(edge.source) || selected.has(edge.target)
                 ? edge
                 : { ...edge, hidden: true },
         );
-    }, [edges, isolateConnections, selectedNodeId]);
+    }, [edges, isolateConnections, selectedNodeIds]);
 
     const handleSearchSelect = useCallback((nodeId: string) => {
         setSearchOpen(false);
