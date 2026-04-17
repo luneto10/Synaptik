@@ -4,6 +4,7 @@ import { useDiagramStore } from "../store/diagramStore";
 import { endDiagramHistoryGestureIfActive } from "../store/diagramHistory";
 import type { DiagramTool } from "../components/canvas/LeftToolbox";
 import { useSelectedNodeId } from "./useSelectedNodeId";
+import { useSelectedNodeId } from "./useSelectedNodeId";
 
 interface Options {
     handleToolChange: (tool: DiagramTool) => void;
@@ -24,6 +25,7 @@ export function useKeyboardShortcuts({
     handleToggleSearch,
     handleToggleIsolateConnections,
 }: Options) {
+    const selectedNodeId = useSelectedNodeId();
     const selectedNodeId = useSelectedNodeId();
 
     const handleUndo = useCallback(() => {
