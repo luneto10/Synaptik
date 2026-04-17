@@ -548,8 +548,8 @@ describe("diagram store actions integration", () => {
                     source: "users",
                     target: "orders",
                     type: "relation",
-                    sourceHandle: "pk-users-source",
-                    targetHandle: "pk-orders-target",
+                    sourceHandle: "pk-users-source-right",
+                    targetHandle: "pk-orders-target-left",
                     data: {
                         sourceColumnId: "pk-users",
                         targetColumnId: "pk-orders",
@@ -575,7 +575,7 @@ describe("diagram store actions integration", () => {
         edge = useDiagramStore
             .getState()
             .edges.find((e) => e.id === "edge-users-orders");
-        expect(edge?.sourceHandle).toBe("pk-users-source");
+        expect(edge?.sourceHandle).toBe("pk-users-source-right");
     });
 
     it("loadDiagram, addTable, and deleteTable work together", () => {

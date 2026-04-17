@@ -285,8 +285,8 @@
             "id": "edge-cat-prod",
             "source": "tbl-categories",
             "target": "tbl-products",
-            "sourceHandle": "col-cat-id-source",
-            "targetHandle": "col-prd-category-id-target",
+            "sourceHandle": "col-cat-id-source-right",
+            "targetHandle": "col-prd-category-id-target-left",
             "type": "relation",
             "data": {
                 "sourceColumnId": "col-cat-id",
@@ -300,8 +300,8 @@
             "id": "edge-usr-ord",
             "source": "tbl-users",
             "target": "tbl-orders",
-            "sourceHandle": "col-usr-id-source",
-            "targetHandle": "col-ord-user-id-target",
+            "sourceHandle": "col-usr-id-source-right",
+            "targetHandle": "col-ord-user-id-target-left",
             "type": "relation",
             "data": {
                 "sourceColumnId": "col-usr-id",
@@ -315,8 +315,8 @@
             "id": "edge-ord-oi",
             "source": "tbl-orders",
             "target": "tbl-order_product",
-            "sourceHandle": "col-ord-id-source",
-            "targetHandle": "col-oi-order-id-target",
+            "sourceHandle": "col-ord-id-source-right",
+            "targetHandle": "col-oi-order-id-target-left",
             "type": "relation",
             "data": {
                 "sourceColumnId": "col-ord-id",
