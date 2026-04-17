@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import {
     ReactFlow,
     Background,
@@ -27,11 +28,17 @@ import {
 import { DIAGRAM_COLORS } from "./constants";
 import { cn } from "@/lib/utils";
 
+const DELETE_KEYS = ["Delete", "Backspace"];
+const PRO_OPTIONS = { hideAttribution: true };
+const MINIMAP_STYLE: CSSProperties = { bottom: 56, right: 12 };
+const PAN_ON_DRAG_ALL: number[] = [0, 1, 2];
+const PAN_ON_DRAG_MIDDLE_RIGHT: number[] = [1, 2];
+
 export function DiagramCanvas() {
     const {
         containerRef,
-        nodes,
-        edges,
+        nodeCount,
+        edgeCount,
         displayNodes,
         displayEdges,
         activeTool,
@@ -43,7 +50,6 @@ export function DiagramCanvas() {
         showMinimap,
         searchOpen,
         searchTargetId,
-        isolateConnections,
         handleNodesChange,
         handleEdgesChange,
         handleBeforeDelete,
@@ -60,7 +66,6 @@ export function DiagramCanvas() {
         handleTableDialogClose,
         handleToggleMinimap,
         handleToggleSearch,
-        handleToggleIsolateConnections,
         handleSearchSelect,
         handleUndo,
         handleRedo,
@@ -76,6 +81,9 @@ export function DiagramCanvas() {
         SelectionMode,
     } = useDiagramCanvas();
 
+    const isAreaOrConnect =
+        activeTool === "areaSelect" || activeTool === "connect";
+
     return (
         <div
             ref={containerRef}
@@ -87,8 +95,8 @@ export function DiagramCanvas() {
             onMouseMoveCapture={onMouseMoveCapture}
         >
             <FlowToolbar
-                nodeCount={nodes.length}
-                edgeCount={edges.length}
+                nodeCount={nodeCount}
+                edgeCount={edgeCount}
                 isPending={isPending}
                 onSave={handleSave}
                 onAutoLayout={handleAutoLayout}
@@ -97,16 +105,16 @@ export function DiagramCanvas() {
             />
 
             <div
-                className="flex-1 relative bg-background overflow-hidden"
-                style={isGrabbing ? { cursor: "grabbing" } : undefined}
+                className={cn(
+                    "flex-1 relative bg-background overflow-hidden",
+                    isGrabbing && "cursor-grabbing",
+                )}
             >
                 <LeftToolbox
                     activeTool={activeTool}
                     onToolChange={handleToolChange}
                     onUndo={handleUndo}
                     onRedo={handleRedo}
-                    isolateConnections={isolateConnections}
-                    onToggleIsolateConnections={handleToggleIsolateConnections}
                 />
 
                 {activeTool === "connect" && pendingConnectSource && (
@@ -141,16 +149,16 @@ export function DiagramCanvas() {
                     maxZoom={2}
                     selectionOnDrag={activeTool === "areaSelect"}
                     panOnDrag={
-                        activeTool === "areaSelect" || activeTool === "connect"
-                            ? [1, 2]
-                            : [0, 1, 2]
+                        isAreaOrConnect
+                            ? PAN_ON_DRAG_MIDDLE_RIGHT
+                            : PAN_ON_DRAG_ALL
                     }
                     selectionMode={SelectionMode.Partial}
-                    deleteKeyCode={["Delete", "Backspace"]}
+                    deleteKeyCode={DELETE_KEYS}
                     connectionLineStyle={CONNECTION_LINE_STYLE}
                     defaultEdgeOptions={DEFAULT_EDGE_OPTIONS}
-                    style={{ width: "100%", height: "100%" }}
-                    proOptions={{ hideAttribution: true }}
+                    className="w-full h-full"
+                    proOptions={PRO_OPTIONS}
                 >
                     <EdgeMarkerDefs />
                     <FitViewTrigger
@@ -186,7 +194,7 @@ export function DiagramCanvas() {
                             nodeColor={DIAGRAM_COLORS.minimap}
                             maskColor="rgba(0,0,0,0.4)"
                             position="bottom-right"
-                            style={{ bottom: 56, right: 12 }}
+                            style={MINIMAP_STYLE}
                             className="bg-card! border! border-border! rounded-lg shadow-sm"
                             pannable
                             zoomable

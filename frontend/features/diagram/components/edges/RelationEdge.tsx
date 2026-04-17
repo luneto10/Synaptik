@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { memo, useCallback, useMemo, useState, type CSSProperties } from "react";
 import {
     getSmoothStepPath,
     EdgeLabelRenderer,
@@ -20,6 +20,7 @@ import type {
     RelationshipType,
 } from "../../types/flow.types";
 import { useDiagramStore } from "../../store/diagramStore";
+import { useEdgeOffset } from "../../store/edgeLayout";
 import { RELATION_LABELS, DIAGRAM_COLORS, EDGE_STYLE } from "../../constants";
 import { cn } from "@/lib/utils";
 import { JunctionPrompt } from "./JunctionPrompt";
@@ -34,11 +35,35 @@ const MARKERS: Record<RelationshipType, [string, string]> = {
     "many-to-many": ["url(#ms-arrow)", "url(#me-arrow)"],
 };
 
-function edgeDirection(sourceX: number, targetX: number) {
-    return sourceX <= targetX ? "right" : "left";
-}
+const EDGE_STYLES: Record<"default" | "selected", CSSProperties> = {
+    default: {
+        stroke: DIAGRAM_COLORS.edge,
+        strokeWidth: EDGE_STYLE.strokeWidth,
+    },
+    selected: {
+        stroke: DIAGRAM_COLORS.edgeSelected,
+        strokeWidth: EDGE_STYLE.strokeWidthSelected,
+    },
+};
 
-export default function RelationEdge({
+const LABEL_BUTTON_STYLE: CSSProperties = {
+    display: "flex",
+    padding: 0,
+    margin: 0,
+    border: "none",
+    background: "none",
+    lineHeight: 0,
+    cursor: "inherit",
+};
+
+const LABEL_WRAPPER_BASE: CSSProperties = {
+    position: "absolute",
+    transformOrigin: "center",
+    pointerEvents: "all",
+    display: "flex",
+};
+
+function RelationEdge({
     id,
     source,
     target,
@@ -53,69 +78,7 @@ export default function RelationEdge({
     data,
     selected = false,
 }: EdgeProps<RelationEdgeType>) {
-    const nodes = useDiagramStore((s) => s.nodes);
-    const edges = useDiagramStore((s) => s.edges);
-
-    const edgeOffset = useMemo(() => {
-        const byId = new Map(nodes.map((n) => [n.id, n]));
-        const sourceNode = byId.get(source);
-        const targetNode = byId.get(target);
-        if (!sourceNode || !targetNode) return EDGE_STYLE.baseOffset;
-
-        const currentDirection = edgeDirection(sourceX, targetX);
-
-        const siblings = edges
-            .filter((e) => e.source === source && e.id !== id)
-            .map((e) => {
-                const s = byId.get(e.source);
-                const t = byId.get(e.target);
-                if (!s || !t) return null;
-                return {
-                    id: e.id,
-                    targetY: t.position.y,
-                    direction: edgeDirection(s.position.x, t.position.x),
-                };
-            })
-            .filter(
-                (
-                    entry,
-                ): entry is {
-                    id: string;
-                    targetY: number;
-                    direction: "left" | "right";
-                } => entry !== null && entry.direction === currentDirection,
-            );
-
-        const currentTargetY = targetNode.position.y;
-        const sortedTargets = [
-            ...siblings.map((s) => ({ id: s.id, y: s.targetY })),
-            { id, y: currentTargetY },
-        ].sort((a, b) => a.y - b.y);
-        const idx = sortedTargets.findIndex((entry) => entry.id === id);
-        const centeredLane = idx - (sortedTargets.length - 1) / 2;
-        const lanePenalty = Math.abs(centeredLane) * EDGE_STYLE.laneStep;
-
-        const xMin = Math.min(sourceX, targetX);
-        const xMax = Math.max(sourceX, targetX);
-        const yMid = (sourceY + targetY) / 2;
-        const obstacleCount = nodes.filter((n) => {
-            if (n.id === source || n.id === target) return false;
-            const width = n.measured?.width ?? 280;
-            const height = n.measured?.height ?? 200;
-            const overlapsX =
-                n.position.x <= xMax && n.position.x + width >= xMin;
-            const overlapsY =
-                yMid >= n.position.y - EDGE_STYLE.obstacleYPadding &&
-                yMid <= n.position.y + height + EDGE_STYLE.obstacleYPadding;
-            return overlapsX && overlapsY;
-        }).length;
-
-        return (
-            EDGE_STYLE.baseOffset +
-            lanePenalty +
-            obstacleCount * EDGE_STYLE.obstacleStep
-        );
-    }, [nodes, edges, id, source, target, sourceX, sourceY, targetX, targetY]);
+    const edgeOffset = useEdgeOffset(id);
 
     const [edgePath, labelX, labelY] = useMemo(
         () =>
@@ -184,39 +147,32 @@ export default function RelationEdge({
     }, [id, deleteEdge]);
 
     const [markerStart, markerEnd] = MARKERS[relType];
-    const color = selected ? DIAGRAM_COLORS.edgeSelected : DIAGRAM_COLORS.edge;
     const { zoom } = useViewport();
     const safeZoom = Math.max(zoom, 0.05);
     // Partial inverse scaling: badges get a readability boost when zoomed out
     // without becoming screen-constant (too large at extreme zoom-out).
     const labelScale = safeZoom < 1 ? 1 / Math.sqrt(safeZoom) : 1;
 
+    const labelWrapperStyle = useMemo<CSSProperties>(
+        () => ({
+            ...LABEL_WRAPPER_BASE,
+            transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px) scale(${labelScale})`,
+        }),
+        [labelX, labelY, labelScale],
+    );
+
     return (
         <>
             <BaseEdge
                 id={id}
                 path={edgePath}
-                style={{
-                    stroke: color,
-                    strokeWidth: selected
-                        ? EDGE_STYLE.strokeWidthSelected
-                        : EDGE_STYLE.strokeWidth,
-                }}
+                style={selected ? EDGE_STYLES.selected : EDGE_STYLES.default}
                 markerStart={markerStart}
                 markerEnd={markerEnd}
             />
 
             <EdgeLabelRenderer>
-                <div
-                    style={{
-                        position: "absolute",
-                        transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px) scale(${labelScale})`,
-                        transformOrigin: "center",
-                        pointerEvents: "all",
-                        display: "flex",
-                    }}
-                    className="nodrag nopan"
-                >
+                <div style={labelWrapperStyle} className="nodrag nopan">
                     <Popover
                         open={open}
                         onOpenChange={(v) => {
@@ -225,18 +181,7 @@ export default function RelationEdge({
                         }}
                     >
                         <PopoverTrigger asChild>
-                            <button
-                                type="button"
-                                style={{
-                                    display: "flex",
-                                    padding: 0,
-                                    margin: 0,
-                                    border: "none",
-                                    background: "none",
-                                    lineHeight: 0,
-                                    cursor: "inherit",
-                                }}
-                            >
+                            <button type="button" style={LABEL_BUTTON_STYLE}>
                                 <Badge
                                     variant={selected ? "default" : "secondary"}
                                     className={cn(
@@ -287,3 +232,5 @@ export default function RelationEdge({
         </>
     );
 }
+
+export default memo(RelationEdge);

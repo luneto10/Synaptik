@@ -17,6 +17,8 @@ const HINTS: Record<RelationshipType, string> = {
     "many-to-many": "Many to Many",
 };
 
+const RELATION_TYPES = Object.keys(RELATION_LABELS) as RelationshipType[];
+
 export function RelationTypePicker({ value, onValueChange, withHints }: RelationTypePickerProps) {
     return (
         <ToggleGroup
@@ -25,7 +27,7 @@ export function RelationTypePicker({ value, onValueChange, withHints }: Relation
             onValueChange={onValueChange}
             className={withHints ? "grid grid-cols-3 gap-1" : "gap-1"}
         >
-            {(Object.keys(RELATION_LABELS) as RelationshipType[]).map((v) => (
+            {RELATION_TYPES.map((v) => (
                 <ToggleGroupItem
                     key={v}
                     value={v}
