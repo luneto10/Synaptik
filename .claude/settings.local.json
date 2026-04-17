@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc *)",
+      "Bash(xargs wc *)",
+      "Bash(npx shadcn@latest add command --yes)",
+      "Bash(git fetch *)",
+      "Bash(npm run *)",
+      "Bash(npm test *)"
+    ]
+  }
+}
