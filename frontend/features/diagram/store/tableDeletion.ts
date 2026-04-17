@@ -9,7 +9,7 @@ export function removeTableAndCascadeInDraft(
     nodeId: string,
 ): void {
     for (const edge of draft.edges.filter((e) => e.source === nodeId)) {
-        draft.nodes = stripAutoCol(
+        stripAutoCol(
             draft.nodes as TableNode[],
             edge.data?.autoCreatedColumnId,
             edge.data?.autoCreatedColumnNodeId ?? edge.target,

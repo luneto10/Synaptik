@@ -1,18 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import {
     ReactFlow,
     Background,
     Controls,
     MiniMap,
     BackgroundVariant,
-    SelectionMode,
     ControlButton,
 } from "@xyflow/react";
 import { Map } from "lucide-react";
-import { useDiagramStore } from "./store/diagramStore";
-import { endDiagramHistoryGestureIfActive } from "./store/diagramHistory";
 import { nodeTypes } from "./nodes";
 import FlowToolbar from "./components/canvas/FlowToolbar";
 import LeftToolbox from "./components/canvas/LeftToolbox";
@@ -21,110 +17,64 @@ import { TableSearch } from "./components/canvas/TableSearch";
 import { FitViewTrigger } from "./components/canvas/FitViewTrigger";
 import ConnectionDialog from "./components/edges/ConnectionDialog";
 import { EdgeMarkerDefs } from "./components/edges/EdgeMarkerDefs";
-import { useDiagramActions } from "./hooks/useDiagramActions";
-import { useConnectMode } from "./hooks/useConnectMode";
-import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
-import { useFlowCanvasChangeHandlers } from "./hooks/useFlowCanvasChangeHandlers";
-import { useGrabMode } from "./hooks/useGrabMode";
-import { useSelectedNodeIds } from "./hooks/useSelectedNodeId";
-import { useDiagramUiState } from "./hooks/useDiagramUiState";
-import { useIsolatedEdges } from "./hooks/useIsolatedEdges";
-import type { DiagramTool } from "./components/canvas/LeftToolbox";
+import { useDiagramCanvas } from "./hooks/useDiagramCanvas";
 import {
     edgeTypes,
     CONNECTION_LINE_STYLE,
     FIT_VIEW_OPTIONS,
     DEFAULT_EDGE_OPTIONS,
 } from "./FlowCanvas.constants";
-import { DIAGRAM_COLORS, REFLOW_DELAY_MS } from "./constants";
+import { DIAGRAM_COLORS } from "./constants";
 import { cn } from "@/lib/utils";
 
 export function DiagramCanvas() {
-    const containerRef = useRef<HTMLDivElement>(null);
-    const [activeTool, setActiveTool] = useState<DiagramTool>("select");
-
-    const nodes = useDiagramStore((s) => s.nodes);
-    const edges = useDiagramStore((s) => s.edges);
-    const onNodesChange = useDiagramStore((s) => s.onNodesChange);
-    const onEdgesChange = useDiagramStore((s) => s.onEdgesChange);
     const {
-        handleBeforeDelete,
+        containerRef,
+        nodes,
+        edges,
+        displayNodes,
+        displayEdges,
+        activeTool,
+        isGrabbing,
+        isPending,
+        tableDialogOpen,
+        pendingConn,
+        pendingConnectSource,
+        showMinimap,
+        searchOpen,
+        searchTargetId,
+        isolateConnections,
         handleNodesChange,
         handleEdgesChange,
+        handleBeforeDelete,
         handleNodeDragStart,
         handleNodeDragStop,
         handleSelectionDragStart,
         handleSelectionDragStop,
-    } = useFlowCanvasChangeHandlers({ onNodesChange, onEdgesChange });
-
-    const {
-        pendingConn,
-        setPendingConn,
-        pendingConnectSource,
-        setPendingConnectSource,
         handleConnect,
         handleConnectStart,
         handleConnectEnd,
         handleNodeClick,
         handleConfirmRelation,
-        displayNodes,
-    } = useConnectMode(activeTool);
-
-    const {
-        tableDialogOpen,
-        searchOpen,
-        setSearchOpen,
-        searchTargetId,
-        setSearchTargetId,
-        showMinimap,
-        isolateConnections,
         handleToolChange,
         handleTableDialogClose,
         handleToggleMinimap,
         handleToggleSearch,
         handleToggleIsolateConnections,
         handleSearchSelect,
-    } = useDiagramUiState({ setActiveTool, setPendingConnectSource });
-
-    const selectedNodeIds = useSelectedNodeIds();
-
-    const {
-        isGrabbing,
+        handleUndo,
+        handleRedo,
+        handleSave,
+        handleAutoLayout,
+        handleLoadExample,
         onMouseDownCapture,
         onMouseUpCapture,
         onMouseMoveCapture,
-    } = useGrabMode({ containerRef, activeTool, setActiveTool });
-
-    const { isPending, handleSave, handleLoadExample, handleAutoLayout } =
-        useDiagramActions();
-
-    const displayEdges = useIsolatedEdges(
-        edges,
-        selectedNodeIds,
-        isolateConnections,
-    );
-
-    const { handleUndo, handleRedo } = useKeyboardShortcuts({
-        handleToolChange,
-        setTableDialogOpen: handleTableDialogClose,
-        setPendingConnectSource,
-        handleToggleMinimap,
-        handleAutoLayout,
-        handleToggleSearch,
-        handleToggleIsolateConnections,
-    });
-
-    // Refocus the canvas whenever a dialog closes so keyboard shortcuts work.
-    useEffect(() => {
-        if (tableDialogOpen || pendingConn) return;
-        const id = setTimeout(
-            () => containerRef.current?.focus(),
-            REFLOW_DELAY_MS,
-        );
-        return () => clearTimeout(id);
-    }, [tableDialogOpen, pendingConn]);
-
-    useEffect(() => () => endDiagramHistoryGestureIfActive(), []);
+        setPendingConn,
+        setSearchOpen,
+        setSearchTargetId,
+        SelectionMode,
+    } = useDiagramCanvas();
 
     return (
         <div
