@@ -20,7 +20,6 @@ export function useDiagramUiState({
     const [showMinimap, setShowMinimap] = useState(false);
     const [searchOpen, setSearchOpen] = useState(false);
     const [searchTargetId, setSearchTargetId] = useState<string | null>(null);
-    const [isolateConnections, setIsolateConnections] = useState(false);
 
     const handleToolChange = useCallback(
         (tool: DiagramTool) => {
@@ -47,10 +46,6 @@ export function useDiagramUiState({
         [],
     );
     const handleToggleSearch = useCallback(() => setSearchOpen((v) => !v), []);
-    const handleToggleIsolateConnections = useCallback(
-        () => setIsolateConnections((v) => !v),
-        [],
-    );
     const handleSearchSelect = useCallback((nodeId: string) => {
         setSearchOpen(false);
         setSearchTargetId(nodeId);
@@ -64,12 +59,10 @@ export function useDiagramUiState({
         setSearchOpen,
         searchTargetId,
         setSearchTargetId,
-        isolateConnections,
         handleToolChange,
         handleTableDialogClose,
         handleToggleMinimap,
         handleToggleSearch,
-        handleToggleIsolateConnections,
         handleSearchSelect,
     };
 }

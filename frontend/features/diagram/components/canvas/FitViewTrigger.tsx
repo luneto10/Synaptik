@@ -15,8 +15,12 @@ interface FitViewTriggerProps {
 export function FitViewTrigger({ nodeId, onDone }: FitViewTriggerProps) {
     const { fitView } = useReactFlow();
 
+    // Keep `onDone` in a ref so the zoom effect doesn't re-run when the caller
+    // passes a fresh function each render.
     const onDoneRef = useRef(onDone);
-    useEffect(() => { onDoneRef.current = onDone; });
+    useEffect(() => {
+        onDoneRef.current = onDone;
+    }, [onDone]);
 
     useEffect(() => {
         if (!nodeId) return;

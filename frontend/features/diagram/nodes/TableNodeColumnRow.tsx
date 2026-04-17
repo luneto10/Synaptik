@@ -25,12 +25,11 @@ import ColumnBadges from "./ColumnBadges";
 import ColumnSettingsPopover from "./ColumnSettingsPopover";
 import { onInputCommit } from "../utils/onInputCommit";
 import InlineFieldError from "../components/common/InlineFieldError";
-import { hasDuplicateColumnName } from "../utils/nameValidation";
 
 interface Props {
     nodeId: string;
     column: DbColumn;
-    siblingColumns: DbColumn[];
+    hasDuplicateName: (candidate: string, excludeColumnId: string) => boolean;
     autoFocus?: boolean;
     onFocusConsumed?: () => void;
     onUpdate: (column: DbColumn) => void;
@@ -40,7 +39,7 @@ interface Props {
 function TableNodeColumnRow({
     nodeId,
     column,
-    siblingColumns,
+    hasDuplicateName,
     autoFocus,
     onFocusConsumed,
     onUpdate,
@@ -68,11 +67,7 @@ function TableNodeColumnRow({
             setError(null);
             return "applied";
         }
-        const hasDuplicate = hasDuplicateColumnName(
-            siblingColumns,
-            next,
-            column.id,
-        );
+        const hasDuplicate = hasDuplicateName(next, column.id);
         if (hasDuplicate) {
             const shouldDiscardFreshColumn =
                 isFreshColumnRef.current && source === "blur";
@@ -94,11 +89,7 @@ function TableNodeColumnRow({
     };
 
     const cancelName = () => {
-        const isDuplicateDraft = hasDuplicateColumnName(
-            siblingColumns,
-            draftName,
-            column.id,
-        );
+        const isDuplicateDraft = hasDuplicateName(draftName, column.id);
         if (isFreshColumnRef.current && isDuplicateDraft) {
             onRemove(column.id);
             return;

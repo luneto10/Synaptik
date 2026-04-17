@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { SelectionMode } from "@xyflow/react";
 import { useDiagramStore } from "../store/diagramStore";
 import { endDiagramHistoryGestureIfActive } from "../store/diagramHistory";
@@ -17,7 +17,8 @@ export function useDiagramCanvas() {
     const containerRef = useRef<HTMLDivElement>(null);
     const [activeTool, setActiveTool] = useState<DiagramTool>("select");
 
-    const nodes = useDiagramStore((s) => s.nodes);
+    const nodeCount = useDiagramStore((s) => s.nodes.length);
+    const edgeCount = useDiagramStore((s) => s.edges.length);
     const edges = useDiagramStore((s) => s.edges);
     const onNodesChange = useDiagramStore((s) => s.onNodesChange);
     const onEdgesChange = useDiagramStore((s) => s.onEdgesChange);
@@ -52,14 +53,19 @@ export function useDiagramCanvas() {
         searchTargetId,
         setSearchTargetId,
         showMinimap,
-        isolateConnections,
         handleToolChange,
         handleTableDialogClose,
         handleToggleMinimap,
         handleToggleSearch,
-        handleToggleIsolateConnections,
         handleSearchSelect,
     } = useDiagramUiState({ setActiveTool, setPendingConnectSource });
+
+    const isolateConnections = activeTool === "isolateConnections";
+    const handleToggleIsolateConnections = useCallback(() => {
+        setActiveTool((prev) =>
+            prev === "isolateConnections" ? "select" : "isolateConnections",
+        );
+    }, []);
 
     const selectedNodeIds = useSelectedNodeIds();
 
@@ -103,8 +109,8 @@ export function useDiagramCanvas() {
 
     return {
         containerRef,
-        nodes,
-        edges,
+        nodeCount,
+        edgeCount,
         displayNodes,
         displayEdges,
         activeTool,
@@ -116,7 +122,6 @@ export function useDiagramCanvas() {
         showMinimap,
         searchOpen,
         searchTargetId,
-        isolateConnections,
         handleNodesChange,
         handleEdgesChange,
         handleBeforeDelete,
@@ -133,7 +138,6 @@ export function useDiagramCanvas() {
         handleTableDialogClose,
         handleToggleMinimap,
         handleToggleSearch,
-        handleToggleIsolateConnections,
         handleSearchSelect,
         handleUndo,
         handleRedo,
