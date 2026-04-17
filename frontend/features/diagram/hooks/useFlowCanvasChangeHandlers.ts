@@ -15,6 +15,50 @@ type ChangeHandlersArgs = {
     onEdgesChange?: (changes: EdgeChange[]) => void;
 };
 
+type NodeChangePhase =
+    | "selection-only"
+    | "passive-dims"
+    | "gesture-start"
+    | "gesture-continue"
+    | "gesture-end"
+    | "other";
+
+function hasResizingFlag(c: NodeChange): c is NodeChange & { resizing: boolean } {
+    return c.type === "dimensions" && "resizing" in c;
+}
+
+/**
+ * Classify a batch of node changes into a single phase — one place to reason
+ * about React Flow's change types. Keeps the handler top-down.
+ */
+function classifyNodeChanges(changes: NodeChange[]): NodeChangePhase {
+    if (changes.length === 0) return "other";
+    if (changes.every((c) => c.type === "select")) return "selection-only";
+
+    const isPassiveDimsOnly = changes.every(
+        (c) => c.type === "dimensions" && !("resizing" in c),
+    );
+    if (isPassiveDimsOnly) return "passive-dims";
+
+    const dragging = changes.some(
+        (c) => c.type === "position" && c.dragging === true,
+    );
+    const resizing = changes.some((c) => hasResizingFlag(c) && c.resizing === true);
+    if (dragging || resizing) {
+        return historyPausedRef.current ? "gesture-continue" : "gesture-start";
+    }
+
+    const dropped = changes.some(
+        (c) => c.type === "position" && c.dragging === false,
+    );
+    const resizeEnd = changes.some(
+        (c) => hasResizingFlag(c) && c.resizing === false,
+    );
+    if (dropped || resizeEnd) return "gesture-end";
+
+    return "other";
+}
+
 export function useFlowCanvasChangeHandlers({
     onNodesChange,
     onEdgesChange,
@@ -31,9 +75,7 @@ export function useFlowCanvasChangeHandlers({
         }: {
             nodes: TableNode[];
             edges: RelationEdge[];
-        }): Promise<
-            boolean | { nodes: TableNode[]; edges: RelationEdge[] }
-        > => {
+        }): Promise<boolean | { nodes: TableNode[]; edges: RelationEdge[] }> => {
             if (nodesToRemove.length === 0) return true;
             endDiagramHistoryGestureIfActive();
             suppressNextRemovalsRef.current.nodeIds = new Set(
@@ -56,79 +98,50 @@ export function useFlowCanvasChangeHandlers({
 
     const handleNodesChange = useCallback(
         (incomingChanges: NodeChange[]) => {
-            let changes = incomingChanges;
             const suppressedNodeIds = suppressNextRemovalsRef.current.nodeIds;
+            let changes = incomingChanges;
             if (suppressedNodeIds.size > 0) {
-                const filtered = changes.filter(
+                changes = changes.filter(
                     (c) => c.type !== "remove" || !suppressedNodeIds.has(c.id),
                 );
-                if (filtered.length === 0) return;
-                changes = filtered;
+                if (changes.length === 0) return;
             }
 
-            // Pure selection changes must not create history entries
-            if (changes.every((c) => c.type === "select")) {
-                withoutHistory(() => onNodesChange?.(changes));
-                return;
-            }
+            const phase = classifyNodeChanges(changes);
 
-            // Passive dimension updates (initial measurement) — never recorded
-            const isPassiveDimensionsOnly =
-                changes.length > 0 &&
-                changes.every(
-                    (c) =>
-                        c.type === "dimensions" &&
-                        (!("resizing" in c) ||
-                            (c as NodeChange & { resizing?: boolean }).resizing ===
-                                undefined),
-                );
-            if (isPassiveDimensionsOnly && !historyPausedRef.current) {
-                withoutHistory(() => onNodesChange?.(changes));
-                return;
-            }
+            switch (phase) {
+                case "selection-only":
+                case "passive-dims":
+                    withoutHistory(() => onNodesChange?.(changes));
+                    return;
 
-            const isDragging = changes.some(
-                (c) => c.type === "position" && c.dragging === true,
-            );
-            const isResizing = changes.some(
-                (c) =>
-                    c.type === "dimensions" &&
-                    "resizing" in c &&
-                    c.resizing === true,
-            );
-            const isDropped = changes.some(
-                (c) => c.type === "position" && c.dragging === false,
-            );
-            const isResizeEnd = changes.some(
-                (c) =>
-                    c.type === "dimensions" &&
-                    "resizing" in c &&
-                    c.resizing === false,
-            );
-
-            if (isDragging || isResizing) {
-                if (!historyPausedRef.current) {
-                    // Apply BEFORE pausing so this first change records the pre-gesture state.
+                case "gesture-start":
+                    // Apply BEFORE pausing so the first change records pre-gesture state.
                     onNodesChange?.(changes);
                     beginDiagramHistoryGesture();
                     return;
-                }
-                onNodesChange?.(changes);
-                return;
-            }
 
-            // Final event of a drag / resize — apply while the gesture is still paused
-            // (so this change is NOT a separate history entry), then commit.
-            // For drops specifically, also re-normalize edge handles so that moving a node
-            // past another one auto-flips the arrow direction — all in the same undo step.
-            if (isDropped || isResizeEnd) {
-                onNodesChange?.(changes);
-                if (isDropped) useDiagramStore.getState().normalizeEdgeHandleDirections();
-                endDiagramHistoryGestureIfActive();
-                return;
-            }
+                case "gesture-end":
+                    // Apply while gesture is still paused — this change is not a separate
+                    // history entry. Re-normalise handle directions on drop so moving a
+                    // node past another auto-flips arrows in the same undo step.
+                    onNodesChange?.(changes);
+                    if (
+                        changes.some(
+                            (c) => c.type === "position" && c.dragging === false,
+                        )
+                    ) {
+                        useDiagramStore.getState().normalizeEdgeHandleDirections();
+                    }
+                    endDiagramHistoryGestureIfActive();
+                    return;
 
-            onNodesChange?.(changes);
+                case "gesture-continue":
+                case "other":
+                default:
+                    onNodesChange?.(changes);
+                    return;
+            }
         },
         [onNodesChange],
     );
@@ -143,7 +156,6 @@ export function useFlowCanvasChangeHandlers({
                 if (filtered.length === 0) return;
                 changes = filtered;
             }
-            // Pure edge-selection changes must not create history entries
             if (changes.every((c) => c.type === "select")) {
                 withoutHistory(() => onEdgesChange?.(changes));
                 return;
@@ -154,12 +166,10 @@ export function useFlowCanvasChangeHandlers({
     );
 
     const handleNodeDragStart = useCallback(() => {
-        // End any lingering gesture from a previous drag before starting a new one.
         endDiagramHistoryGestureIfActive();
     }, []);
 
     const handleNodeDragStop = useCallback(() => {
-        // Deferred fallback: ends the gesture if React Flow never emits dragging:false.
         endDiagramHistoryGestureDeferred();
     }, []);
 
@@ -168,7 +178,6 @@ export function useFlowCanvasChangeHandlers({
     }, []);
 
     const handleSelectionDragStop = useCallback(() => {
-        // Deferred fallback only — gesture is normally ended inside handleNodesChange.
         endDiagramHistoryGestureDeferred();
     }, []);
 

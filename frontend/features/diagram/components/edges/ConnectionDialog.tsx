@@ -1,9 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
-import { useForm, Controller, useWatch } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { useEffect, useMemo, useState } from "react";
 import {
     Dialog,
     DialogContent,
@@ -20,22 +17,9 @@ import { Switch } from "@/components/ui/switch";
 import { ArrowRight, TableProperties, KeyRound } from "lucide-react";
 import type { Connection } from "@xyflow/react";
 import type { RelationshipType } from "../../types/flow.types";
-import type { DbColumn } from "../../types/db.types";
 import { useDiagramStore } from "../../store/diagramStore";
 import { RelationTypePicker } from "./RelationTypePicker";
 import { defaultFkColumnName } from "../../store/helpers";
-
-// ── Schema ────────────────────────────────────────────────────────────────────
-
-const schema = z.object({
-    relType: z.enum(["one-to-one", "one-to-many", "many-to-many"]),
-    fkName: z.string(),
-    createJunction: z.boolean(),
-});
-
-type FormData = z.infer<typeof schema>;
-
-// ── Props ─────────────────────────────────────────────────────────────────────
 
 interface ConnectionDialogProps {
     open: boolean;
@@ -43,8 +27,6 @@ interface ConnectionDialogProps {
     onConfirm: (type: RelationshipType, fkName: string, createJunction: boolean) => void;
     onCancel: () => void;
 }
-
-// ── Component ─────────────────────────────────────────────────────────────────
 
 export default function ConnectionDialog({
     open,
@@ -54,11 +36,6 @@ export default function ConnectionDialog({
 }: ConnectionDialogProps) {
     const nodes = useDiagramStore((s) => s.nodes);
 
-    const { control, register, handleSubmit, reset } = useForm<FormData>({
-        resolver: zodResolver(schema),
-        defaultValues: { relType: "one-to-many", fkName: "", createJunction: false },
-    });
-
     const sourceNode = useMemo(
         () => nodes.find((n) => n.id === connection?.source),
         [nodes, connection?.source],
@@ -67,29 +44,24 @@ export default function ConnectionDialog({
         () => nodes.find((n) => n.id === connection?.target),
         [nodes, connection?.target],
     );
-    const sourcePk = useMemo<DbColumn | undefined>(
-        () => sourceNode?.data.columns.find((c) => c.isPrimaryKey),
-        [sourceNode],
-    );
-    const defaultFkName = useMemo(
-        () => (sourceNode ? defaultFkColumnName(sourceNode.data.name) : ""),
-        [sourceNode],
-    );
+    const sourcePk = sourceNode?.data.columns.find((c) => c.isPrimaryKey);
+    const defaultFkName = sourceNode ? defaultFkColumnName(sourceNode.data.name) : "";
 
-    // Reset form each time the dialog opens with the latest derived defaults.
+    const [relType, setRelType] = useState<RelationshipType>("one-to-many");
+    const [fkName, setFkName] = useState("");
+    const [createJunction, setCreateJunction] = useState(false);
+
     useEffect(() => {
         if (!open) return;
-        reset({
-            relType: "one-to-many",
-            fkName: defaultFkName,
-            createJunction: false,
-        });
-    }, [open, defaultFkName, reset]);
+        setRelType("one-to-many");
+        setFkName(defaultFkName);
+        setCreateJunction(false);
+    }, [open, defaultFkName]);
 
-    const relType = useWatch({ control, name: "relType" }) ?? "one-to-many";
-    const isMany  = relType === "many-to-many";
+    const isMany = relType === "many-to-many";
 
-    const onSubmit = ({ relType, fkName, createJunction }: FormData) => {
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
         onConfirm(relType, fkName.trim() || defaultFkName, isMany && createJunction);
     };
 
@@ -105,33 +77,24 @@ export default function ConnectionDialog({
                     </DialogTitle>
                 </DialogHeader>
 
-                {/* Table route header */}
                 <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
                     <span className="font-mono font-semibold text-foreground">{sourceNode.data.name}</span>
                     <ArrowRight className="w-4 h-4 shrink-0" />
                     <span className="font-mono font-semibold text-foreground">{targetNode.data.name}</span>
                 </div>
 
-                <form onSubmit={handleSubmit(onSubmit)} className="contents">
-                    {/* Relationship type */}
+                <form onSubmit={handleSubmit} className="contents">
                     <div className="space-y-2">
                         <Label className="text-xs text-muted-foreground">Relationship type</Label>
-                        <Controller
-                            control={control}
-                            name="relType"
-                            render={({ field }) => (
-                                <RelationTypePicker
-                                    value={field.value}
-                                    onValueChange={(v) => v && field.onChange(v)}
-                                    withHints
-                                />
-                            )}
+                        <RelationTypePicker
+                            value={relType}
+                            onValueChange={(v) => v && setRelType(v as RelationshipType)}
+                            withHints
                         />
                     </div>
 
                     <Separator />
 
-                    {/* FK column name — shown for 1:1 and 1:N only */}
                     {!isMany && (
                         <div className="space-y-1.5">
                             <Label className="text-xs text-muted-foreground">
@@ -150,7 +113,8 @@ export default function ConnectionDialog({
                                     autoFocus
                                     placeholder={defaultFkName}
                                     className="h-8 text-xs font-mono"
-                                    {...register("fkName")}
+                                    value={fkName}
+                                    onChange={(e) => setFkName(e.target.value)}
                                 />
                             </div>
                             <p className="text-[10px] text-muted-foreground">
@@ -163,7 +127,6 @@ export default function ConnectionDialog({
                         </div>
                     )}
 
-                    {/* M:N — junction table option */}
                     {isMany && (
                         <div className="rounded-lg border border-indigo-500/30 bg-indigo-500/5 px-3 py-2.5 space-y-1.5">
                             <div className="flex items-center justify-between">
@@ -175,12 +138,9 @@ export default function ConnectionDialog({
                                         with FK columns to both tables
                                     </p>
                                 </div>
-                                <Controller
-                                    control={control}
-                                    name="createJunction"
-                                    render={({ field }) => (
-                                        <Switch checked={field.value} onCheckedChange={field.onChange} />
-                                    )}
+                                <Switch
+                                    checked={createJunction}
+                                    onCheckedChange={setCreateJunction}
                                 />
                             </div>
                         </div>
