@@ -12,6 +12,7 @@ interface Options {
     handleToggleMinimap: () => void;
     handleAutoLayout: () => void;
     handleToggleSearch: () => void;
+    handleToggleIsolateConnections: () => void;
 }
 
 export function useKeyboardShortcuts({
@@ -21,6 +22,7 @@ export function useKeyboardShortcuts({
     handleToggleMinimap,
     handleAutoLayout,
     handleToggleSearch,
+    handleToggleIsolateConnections,
 }: Options) {
     const selectedNodeId = useSelectedNodeId();
 
@@ -45,6 +47,7 @@ export function useKeyboardShortcuts({
 
     useHotkeys("l", handleAutoLayout, { preventDefault: true });
     useHotkeys("m", handleToggleMinimap, { preventDefault: true });
+    useHotkeys("f", handleToggleIsolateConnections, { preventDefault: true });
     useHotkeys("mod+k", handleToggleSearch, {
         preventDefault: true,
         enableOnFormTags: true,
