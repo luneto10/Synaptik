@@ -140,7 +140,7 @@ function TableNodeColumnRow({
                     }}
                     aria-invalid={!!error}
                     aria-describedby={error ? errorId : undefined}
-                    className="h-7 text-sm border-0 bg-transparent! dark:bg-transparent! shadow-none p-0 font-mono text-foreground
+                    className="nodrag h-7 text-sm border-0 bg-transparent! dark:bg-transparent! shadow-none p-0 font-mono text-foreground
                                focus-visible:ring-0! focus-visible:ring-offset-0! focus-visible:border-0!
                                focus-visible:bg-indigo-500/10 focus-visible:rounded focus-visible:px-1 w-full"
                 />

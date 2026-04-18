@@ -12,7 +12,6 @@ import {
     MousePointer2,
     Table2,
     Spline,
-    RectangleHorizontal,
     Undo2,
     Redo2,
     Focus,
@@ -24,7 +23,6 @@ export type DiagramTool =
     | "select"
     | "addTable"
     | "connect"
-    | "areaSelect"
     | "isolateConnections";
 
 interface LeftToolboxProps {
@@ -59,12 +57,6 @@ export const TOOLS: ToolDescriptor[] = [
         icon: <Spline className="w-4 h-4" />,
         label: "Connect",
         shortcut: "C",
-    },
-    {
-        value: "areaSelect",
-        icon: <RectangleHorizontal className="w-4 h-4" />,
-        label: "Area select",
-        shortcut: "A",
     },
     {
         value: "isolateConnections",
