@@ -3,8 +3,10 @@ import { endDiagramHistoryGestureIfActive } from "../store/diagramHistory";
 import type { DiagramTool } from "../components/canvas/LeftToolbox";
 
 type UiStateArgs = {
+    activeTool: DiagramTool;
     setActiveTool: (tool: DiagramTool) => void;
     setPendingConnectSource: (id: string | null) => void;
+    selectedNodeId: string | undefined;
 };
 
 /**
@@ -13,8 +15,10 @@ type UiStateArgs = {
  * `useConnectMode` can read it without a circular hook dependency.
  */
 export function useDiagramUiState({
+    activeTool,
     setActiveTool,
     setPendingConnectSource,
+    selectedNodeId,
 }: UiStateArgs) {
     const [tableDialogOpen, setTableDialogOpen] = useState(false);
     const [showMinimap, setShowMinimap] = useState(false);
@@ -23,11 +27,23 @@ export function useDiagramUiState({
 
     const handleToolChange = useCallback(
         (tool: DiagramTool) => {
-            setActiveTool(tool);
-            if (tool !== "connect") setPendingConnectSource(null);
-            if (tool === "addTable") setTableDialogOpen(true);
+            // Isolate mode toggles off if clicked while active; others are standard switches.
+            const nextTool =
+                tool === "isolateConnections" && activeTool === "isolateConnections"
+                    ? "select"
+                    : tool;
+
+            setActiveTool(nextTool);
+
+            // Side-effect: Auto-fill connection source if exactly one node is selected.
+            setPendingConnectSource(
+                nextTool === "connect" ? (selectedNodeId ?? null) : null,
+            );
+
+            // Side-effect: Trigger the table configuration dialog.
+            if (nextTool === "addTable") setTableDialogOpen(true);
         },
-        [setActiveTool, setPendingConnectSource],
+        [activeTool, setActiveTool, setPendingConnectSource, selectedNodeId],
     );
 
     const handleTableDialogClose = useCallback(

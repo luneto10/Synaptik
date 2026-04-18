@@ -34,14 +34,14 @@ interface LeftToolboxProps {
     onRedo?: () => void;
 }
 
-interface ToolDescriptor {
+export interface ToolDescriptor {
     value: DiagramTool;
     icon: React.ReactNode;
     label: string;
     shortcut: string;
 }
 
-const TOOLS: ToolDescriptor[] = [
+export const TOOLS: ToolDescriptor[] = [
     {
         value: "select",
         icon: <MousePointer2 className="w-4 h-4" />,
