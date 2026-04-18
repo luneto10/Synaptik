@@ -46,6 +46,9 @@ export function useDiagramCanvas() {
         displayNodes,
     } = useConnectMode(activeTool);
 
+    const selectedNodeIds = useSelectedNodeIds();
+    const selectedNodeId = selectedNodeIds.length === 1 ? selectedNodeIds[0] : undefined;
+
     const {
         tableDialogOpen,
         searchOpen,
@@ -58,16 +61,14 @@ export function useDiagramCanvas() {
         handleToggleMinimap,
         handleToggleSearch,
         handleSearchSelect,
-    } = useDiagramUiState({ setActiveTool, setPendingConnectSource });
+    } = useDiagramUiState({
+        activeTool,
+        setActiveTool,
+        setPendingConnectSource,
+        selectedNodeId,
+    });
 
     const isolateConnections = activeTool === "isolateConnections";
-    const handleToggleIsolateConnections = useCallback(() => {
-        setActiveTool((prev) =>
-            prev === "isolateConnections" ? "select" : "isolateConnections",
-        );
-    }, []);
-
-    const selectedNodeIds = useSelectedNodeIds();
 
     const {
         isGrabbing,
@@ -92,7 +93,6 @@ export function useDiagramCanvas() {
         handleToggleMinimap,
         handleAutoLayout,
         handleToggleSearch,
-        handleToggleIsolateConnections,
     });
 
     // Refocus the canvas whenever a dialog closes so keyboard shortcuts work.
