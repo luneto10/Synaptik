@@ -5,36 +5,47 @@ import pluralize from "pluralize";
 
 // ── Node patchers ─────────────────────────────────────────────────────────────
 
-/** Spread-merge a patch into a single node's `data`. */
+/** 
+ * Mutates a node's `data` by spread-merging a patch.
+ * Works on Immer drafts or plain objects.
+ */
 export function patchNode(
     nodes: TableNode[],
     id: string,
     patch: Partial<TableNode["data"]>,
-): TableNode[] {
-    return nodes.map((n) =>
-        n.id !== id ? n : { ...n, data: { ...n.data, ...patch } },
-    );
+): void {
+    const node = nodes.find((n) => n.id === id);
+    if (node) {
+        node.data = { ...node.data, ...patch };
+    }
 }
 
-/** Map over the columns of a single node. */
+/** 
+ * Mutates a node's columns by applying a transformation function.
+ * Works on Immer drafts or plain objects.
+ */
 export function patchColumns(
     nodes: TableNode[],
     id: string,
     fn: (cols: DbColumn[]) => DbColumn[],
-): TableNode[] {
-    return nodes.map((n) =>
-        n.id !== id ? n : { ...n, data: { ...n.data, columns: fn(n.data.columns) } },
-    );
+): void {
+    const node = nodes.find((n) => n.id === id);
+    if (node) {
+        node.data.columns = fn(node.data.columns);
+    }
 }
 
-/** Remove one auto-created FK column from the node that owns it. */
+/** 
+ * Mutates nodes by removing an auto-created FK column from the owning node.
+ * Works on Immer drafts or plain objects.
+ */
 export function stripAutoCol(
     nodes: TableNode[],
     autoColId: string | undefined,
     colNodeId: string | undefined,
-): TableNode[] {
-    if (!autoColId || !colNodeId) return nodes;
-    return patchColumns(nodes, colNodeId, (cols) => cols.filter((c) => c.id !== autoColId));
+): void {
+    if (!autoColId || !colNodeId) return;
+    patchColumns(nodes, colNodeId, (cols) => cols.filter((c) => c.id !== autoColId));
 }
 
 // ── Naming helpers ────────────────────────────────────────────────────────────
@@ -51,6 +62,7 @@ export const defaultFkColumnName = (tableName: string) =>
 /**
  * Inserts a new FK column right after the PK/FK block.
  * Order becomes: PK(s), FK(s), then user-defined non-key columns.
+ * Returns a NEW array for use with assignment.
  */
 export function insertForeignKeyColumn(
     columns: DbColumn[],
@@ -151,21 +163,21 @@ export function makeMnEdge(
  * Cascade-delete a junction table: strip FK columns from surviving junction
  * edges, remove the junction node, queue those edges for removal, and produce
  * the replacement direct M:N edge.
+ * Mutates the draft in-place where possible, but returns necessary info for edges.
  */
 export function cascadeJunction(
     nodes: TableNode[],
     edges: RelationEdge[],
     junctionId: string,
     alreadyHandled: Set<string>,
-): { nodes: TableNode[]; extraRemovals: string[]; newEdge: RelationEdge | undefined } {
+): { extraRemovals: string[]; newEdge: RelationEdge | undefined } {
     const junctionEdges = edges.filter((e) => e.data?.junctionTableId === junctionId);
-    let updatedNodes = nodes.filter((n) => n.id !== junctionId);
     const extraRemovals: string[] = [];
 
     for (const je of junctionEdges) {
         if (alreadyHandled.has(je.id)) continue;
-        updatedNodes = stripAutoCol(
-            updatedNodes,
+        stripAutoCol(
+            nodes,
             je.data?.autoCreatedColumnId,
             je.data?.autoCreatedColumnNodeId ?? je.target,
         );
@@ -173,8 +185,7 @@ export function cascadeJunction(
     }
 
     return {
-        nodes: updatedNodes,
         extraRemovals,
-        newEdge: makeMnEdge(nodes, junctionEdges), // use pre-filter nodes for T1/T2 lookup
+        newEdge: makeMnEdge(nodes, junctionEdges),
     };
 }

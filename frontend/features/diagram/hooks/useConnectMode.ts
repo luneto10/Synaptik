@@ -33,7 +33,6 @@ export function useConnectMode(activeTool: DiagramTool) {
         setPendingConn(conn);
     }, []);
 
-    // Capture which node the drag started from
     const handleConnectStart = useCallback(
         (_: MouseEvent | TouchEvent, { nodeId }: OnConnectStartParams) => {
             draggingFromNodeId.current = nodeId;
@@ -42,8 +41,6 @@ export function useConnectMode(activeTool: DiagramTool) {
         [],
     );
 
-    // If the user drops the line on a node body (not a specific handle),
-    // ReactFlow won't fire onConnect — we catch it here instead.
     const handleConnectEnd = useCallback((event: MouseEvent | TouchEvent) => {
         const sourceId = draggingFromNodeId.current;
         draggingFromNodeId.current = null;
@@ -64,7 +61,6 @@ export function useConnectMode(activeTool: DiagramTool) {
         }
     }, []);
 
-    // Two-click connect mode: click first table, then second
     const handleNodeClick = useCallback<NodeMouseHandler>(
         (_, node) => {
             if (activeTool !== "connect") return;
@@ -96,19 +92,18 @@ export function useConnectMode(activeTool: DiagramTool) {
         [pendingConn, addEdgeWithType, createJunctionTable],
     );
 
-    // Highlight the pending source node visually
+    /**
+     * Enhances nodes with transient selection state for the connect source.
+     * This avoids permanently modifying the store for temporary UI highlights.
+     */
     const displayNodes = useMemo(() => {
         if (!pendingConnectSource) return nodes;
 
-        const idx = nodes.findIndex((n) => n.id === pendingConnectSource);
-        if (idx === -1) return nodes;
-
-        const node = nodes[idx];
-        if (node.selected) return nodes;
-
-        const next = [...nodes];
-        next[idx] = { ...node, selected: true };
-        return next;
+        return nodes.map((n) =>
+            n.id === pendingConnectSource && !n.selected
+                ? { ...n, selected: true }
+                : n
+        );
     }, [nodes, pendingConnectSource]);
 
     return {

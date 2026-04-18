@@ -1,10 +1,18 @@
 "use client";
 
-import { memo, useEffect, useRef, useState } from "react";
+import {
+    memo,
+    useCallback,
+    useEffect,
+    useLayoutEffect,
+    useRef,
+    useState,
+} from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import type { DbColumn } from "../types/db.types";
+import { hasDuplicateColumnName } from "../utils/nameValidation";
 import TableNodeColumnRow from "./TableNodeColumnRow";
 
 interface TableNodeColumnsProps {
@@ -26,11 +34,6 @@ function TableNodeColumns({
 }: TableNodeColumnsProps) {
     const wrapperRef = useRef<HTMLDivElement>(null);
     const [hasOverflow, setHasOverflow] = useState(false);
-
-    // Only block canvas wheel-zoom when the column list actually overflows the
-    // visible area.  A ResizeObserver on the wrapper catches node resize events;
-    // columns.length as a dependency re-runs the check when columns are added or
-    // removed (the viewport's scrollHeight changes, not the wrapper's).
     useEffect(() => {
         const wrapper = wrapperRef.current;
         if (!wrapper) return;
@@ -48,6 +51,20 @@ function TableNodeColumns({
         ro.observe(wrapper);
         return () => ro.disconnect();
     }, [columns.length]);
+
+    const columnsRef = useRef(columns);
+    useLayoutEffect(() => {
+        columnsRef.current = columns;
+    }, [columns]);
+    const hasDuplicateName = useCallback(
+        (candidate: string, excludeColumnId: string) =>
+            hasDuplicateColumnName(
+                columnsRef.current,
+                candidate,
+                excludeColumnId,
+            ),
+        [],
+    );
 
     return (
         <div
@@ -67,7 +84,7 @@ function TableNodeColumns({
                             key={col.id}
                             nodeId={nodeId}
                             column={col}
-                            siblingColumns={columns}
+                            hasDuplicateName={hasDuplicateName}
                             autoFocus={col.id === focusColId}
                             onFocusConsumed={onFocusConsumed}
                             onUpdate={onUpdate}

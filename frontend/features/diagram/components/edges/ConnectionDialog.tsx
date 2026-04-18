@@ -43,7 +43,10 @@ function ConnectionDialogForm({
     onConfirm,
     onCancel,
 }: ConnectionDialogFormProps) {
-    const sourcePk = sourceNode.data.columns.find((c) => c.isPrimaryKey);
+    const sourcePk = useMemo(
+        () => sourceNode.data.columns.find((c) => c.isPrimaryKey),
+        [sourceNode],
+    );
 
     const [relType, setRelType] = useState<RelationshipType>("one-to-many");
     const [fkName, setFkName] = useState(defaultFkName);

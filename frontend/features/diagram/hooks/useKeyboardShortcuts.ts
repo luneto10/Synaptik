@@ -3,7 +3,7 @@ import { useHotkeys } from "react-hotkeys-hook";
 import { useDiagramStore } from "../store/diagramStore";
 import { endDiagramHistoryGestureIfActive } from "../store/diagramHistory";
 import type { DiagramTool } from "../components/canvas/LeftToolbox";
-import { useSelectedNodeId } from "./useSelectedNodeId";
+import { TOOLS } from "../components/canvas/LeftToolbox";
 
 interface Options {
     handleToolChange: (tool: DiagramTool) => void;
@@ -12,20 +12,15 @@ interface Options {
     handleToggleMinimap: () => void;
     handleAutoLayout: () => void;
     handleToggleSearch: () => void;
-    handleToggleIsolateConnections: () => void;
 }
 
 export function useKeyboardShortcuts({
     handleToolChange,
-    setTableDialogOpen,
     setPendingConnectSource,
     handleToggleMinimap,
     handleAutoLayout,
     handleToggleSearch,
-    handleToggleIsolateConnections,
 }: Options) {
-    const selectedNodeId = useSelectedNodeId();
-
     const handleUndo = useCallback(() => {
         endDiagramHistoryGestureIfActive();
         useDiagramStore.temporal.getState().undo();
@@ -47,25 +42,23 @@ export function useKeyboardShortcuts({
 
     useHotkeys("l", handleAutoLayout, { preventDefault: true });
     useHotkeys("m", handleToggleMinimap, { preventDefault: true });
-    useHotkeys("f", handleToggleIsolateConnections, { preventDefault: true });
     useHotkeys("mod+k", handleToggleSearch, {
         preventDefault: true,
         enableOnFormTags: true,
     });
-    useHotkeys("t", () => setTableDialogOpen(true), { preventDefault: true });
-    useHotkeys("s", () => handleToolChange("select"), { preventDefault: true });
-    useHotkeys("a", () => handleToolChange("areaSelect"), {
-        preventDefault: true,
-    });
+
     useHotkeys(
-        "c",
-        () => {
-            handleToolChange("connect");
-            if (selectedNodeId) setPendingConnectSource(selectedNodeId);
+        TOOLS.map((t) => t.shortcut).join(","),
+        (_event, handler) => {
+            const pressed = handler.keys?.[0]?.toLowerCase();
+            const tool = TOOLS.find(
+                (t) => t.shortcut.toLowerCase() === pressed,
+            );
+            if (tool) handleToolChange(tool.value);
         },
         { preventDefault: true },
-        [selectedNodeId, handleToolChange, setPendingConnectSource],
     );
+
     useHotkeys(
         "escape",
         () => {

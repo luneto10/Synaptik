@@ -3,8 +3,10 @@ import { endDiagramHistoryGestureIfActive } from "../store/diagramHistory";
 import type { DiagramTool } from "../components/canvas/LeftToolbox";
 
 type UiStateArgs = {
+    activeTool: DiagramTool;
     setActiveTool: (tool: DiagramTool) => void;
     setPendingConnectSource: (id: string | null) => void;
+    selectedNodeId: string | undefined;
 };
 
 /**
@@ -13,22 +15,35 @@ type UiStateArgs = {
  * `useConnectMode` can read it without a circular hook dependency.
  */
 export function useDiagramUiState({
+    activeTool,
     setActiveTool,
     setPendingConnectSource,
+    selectedNodeId,
 }: UiStateArgs) {
     const [tableDialogOpen, setTableDialogOpen] = useState(false);
     const [showMinimap, setShowMinimap] = useState(false);
     const [searchOpen, setSearchOpen] = useState(false);
     const [searchTargetId, setSearchTargetId] = useState<string | null>(null);
-    const [isolateConnections, setIsolateConnections] = useState(false);
 
     const handleToolChange = useCallback(
         (tool: DiagramTool) => {
-            setActiveTool(tool);
-            if (tool !== "connect") setPendingConnectSource(null);
-            if (tool === "addTable") setTableDialogOpen(true);
+            // Isolate mode toggles off if clicked while active; others are standard switches.
+            const nextTool =
+                tool === "isolateConnections" && activeTool === "isolateConnections"
+                    ? "select"
+                    : tool;
+
+            setActiveTool(nextTool);
+
+            // Side-effect: Auto-fill connection source if exactly one node is selected.
+            setPendingConnectSource(
+                nextTool === "connect" ? (selectedNodeId ?? null) : null,
+            );
+
+            // Side-effect: Trigger the table configuration dialog.
+            if (nextTool === "addTable") setTableDialogOpen(true);
         },
-        [setActiveTool, setPendingConnectSource],
+        [activeTool, setActiveTool, setPendingConnectSource, selectedNodeId],
     );
 
     const handleTableDialogClose = useCallback(
@@ -47,10 +62,6 @@ export function useDiagramUiState({
         [],
     );
     const handleToggleSearch = useCallback(() => setSearchOpen((v) => !v), []);
-    const handleToggleIsolateConnections = useCallback(
-        () => setIsolateConnections((v) => !v),
-        [],
-    );
     const handleSearchSelect = useCallback((nodeId: string) => {
         setSearchOpen(false);
         setSearchTargetId(nodeId);
@@ -64,12 +75,10 @@ export function useDiagramUiState({
         setSearchOpen,
         searchTargetId,
         setSearchTargetId,
-        isolateConnections,
         handleToolChange,
         handleTableDialogClose,
         handleToggleMinimap,
         handleToggleSearch,
-        handleToggleIsolateConnections,
         handleSearchSelect,
     };
 }

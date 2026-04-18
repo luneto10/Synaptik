@@ -5,43 +5,9 @@ import type { TableNode } from "../types/flow.types";
 import { makeEdge, makeFkCol, makeMnEdge, patchColumns, stripAutoCol, cascadeJunction, defaultFkColumnName, insertForeignKeyColumn } from "./helpers";
 import type { DiagramState, SetState } from "./diagramStore.types";
 import { handleIds, getHandleSide } from "../utils/handleIds";
+import { columnHandles, normalizeEdgeHandles } from "../utils/handleNormalization";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-/** Returns column-level source/target handle IDs based on relative node positions. */
-function columnHandles(
-    sourceColId: string,
-    targetColId: string,
-    sourceNodeId: string,
-    targetNodeId: string,
-    nodes: TableNode[],
-) {
-    const byId = new Map(nodes.map((n) => [n.id, n]));
-    const src = byId.get(sourceNodeId);
-    const tgt = byId.get(targetNodeId);
-    const sourceOnLeft = !src || !tgt || src.position.x <= tgt.position.x;
-    return {
-        sourceHandle: sourceOnLeft ? handleIds(sourceColId).sourceRight : handleIds(sourceColId).sourceLeft,
-        targetHandle: sourceOnLeft ? handleIds(targetColId).targetLeft  : handleIds(targetColId).targetRight,
-    };
-}
-
-const normalizeEdgeHandles = (nodes: TableNode[], edges: RelationEdge[]): RelationEdge[] => {
-    const byId = new Map(nodes.map((n) => [n.id, n]));
-    return edges.map((e) => {
-        const sourceNode = byId.get(e.source);
-        const targetNode = byId.get(e.target);
-        const sourceColId = e.data?.sourceColumnId;
-        const targetColId = e.data?.targetColumnId;
-        if (!sourceNode || !targetNode || !sourceColId || !targetColId) return e;
-        const sourceOnLeft = sourceNode.position.x <= targetNode.position.x;
-        return {
-            ...e,
-            sourceHandle: sourceOnLeft ? handleIds(sourceColId).sourceRight : handleIds(sourceColId).sourceLeft,
-            targetHandle: sourceOnLeft ? handleIds(targetColId).targetLeft  : handleIds(targetColId).targetRight,
-        };
-    });
-};
 
 /**
  * Apply edge removals with junction cascade: strip auto-created FK columns,
@@ -53,7 +19,6 @@ function applyEdgeRemovals(
     changes: EdgeChange[],
     removeIds: Set<string>,
 ) {
-    let nodes = draft.nodes as TableNode[];
     const extraRemovals: string[] = [];
     const newEdges: RelationEdge[] = [];
     const handledJunctions = new Set<string>();
@@ -62,8 +27,8 @@ function applyEdgeRemovals(
         const edge = draft.edges.find((e) => e.id === id);
         if (!edge) continue;
 
-        nodes = stripAutoCol(
-            nodes,
+        stripAutoCol(
+            draft.nodes as TableNode[],
             edge.data?.autoCreatedColumnId,
             edge.data?.autoCreatedColumnNodeId ?? edge.target,
         );
@@ -78,16 +43,15 @@ function applyEdgeRemovals(
         const allBeingRemoved = junctionEdges.every((e) => removeIds.has(e.id));
 
         if (allBeingRemoved) {
-            const mn = makeMnEdge(nodes, junctionEdges);
+            const mn = makeMnEdge(draft.nodes as TableNode[], junctionEdges);
             if (mn) newEdges.push(mn);
         } else {
-            const { nodes: n, extraRemovals: extra, newEdge } = cascadeJunction(
-                nodes,
+            const { extraRemovals: extra, newEdge } = cascadeJunction(
+                draft.nodes as TableNode[],
                 draft.edges as RelationEdge[],
                 jId,
                 new Set([id]),
             );
-            nodes = n;
             extraRemovals.push(...extra);
             if (newEdge) newEdges.push(newEdge);
         }
@@ -98,7 +62,6 @@ function applyEdgeRemovals(
             ? [...changes, ...extraRemovals.map((id) => ({ type: "remove" as const, id }))]
             : changes;
 
-    draft.nodes = nodes;
     draft.edges = [
         ...(applyEdgeChanges(allChanges, draft.edges) as RelationEdge[]),
         ...newEdges,
@@ -165,7 +128,7 @@ export function createEdgeActions(set: SetState) {
                 const edge = draft.edges.find((e) => e.id === edgeId);
                 if (!edge) return;
 
-                draft.nodes = stripAutoCol(draft.nodes as TableNode[], edge.data?.autoCreatedColumnId, edge.data?.autoCreatedColumnNodeId ?? edge.target) as typeof draft.nodes;
+                stripAutoCol(draft.nodes as TableNode[], edge.data?.autoCreatedColumnId, edge.data?.autoCreatedColumnNodeId ?? edge.target);
                 draft.edges = draft.edges.filter((e) => e.id !== edgeId) as RelationEdge[];
             }),
 
@@ -219,19 +182,18 @@ export function createEdgeActions(set: SetState) {
                     (e) => e.target === nodeId && e.data?.targetColumnId === columnId,
                 );
 
-                const nodes = patchColumns(draft.nodes as TableNode[], nodeId, (cols) =>
+                patchColumns(draft.nodes as TableNode[], nodeId, (cols) =>
                     cols.map((c) => c.id !== columnId ? c : {
                         ...c,
                         name: defaultFkColumnName(newRefNode.data.name),
                         references: { tableId: newRefTableId, columnId: newPk.id },
                     }),
                 );
-                draft.nodes = nodes;
 
                 const { sourceHandle, targetHandle } = columnHandles(
                     newPk.id, columnId,
                     newRefTableId, nodeId,
-                    nodes,
+                    draft.nodes as TableNode[],
                 );
                 const newEdge = makeEdge(
                     newRefTableId, nodeId,
