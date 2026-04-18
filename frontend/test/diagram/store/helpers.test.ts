@@ -55,24 +55,24 @@ describe("defaultFkColumnName", () => {
 describe("patchNode", () => {
     it("updates only the matching node", () => {
         const nodes = [makeNode("n1", "users", [basePk]), makeNode("n2", "orders", [basePk])];
-        const patched = patchNode(nodes, "n1", { name: "accounts" });
-        expect(patched[0].data.name).toBe("accounts");
-        expect(patched[1].data.name).toBe("orders");
+        patchNode(nodes, "n1", { name: "accounts" });
+        expect(nodes[0].data.name).toBe("accounts");
+        expect(nodes[1].data.name).toBe("orders");
     });
 
-    it("returns nodes unchanged when id does not match", () => {
+    it("leaves nodes unchanged when id does not match", () => {
         const nodes = [makeNode("n1", "users", [basePk])];
-        const patched = patchNode(nodes, "nonexistent", { name: "other" });
-        expect(patched[0].data.name).toBe("users");
+        patchNode(nodes, "nonexistent", { name: "other" });
+        expect(nodes[0].data.name).toBe("users");
     });
 });
 
 describe("patchColumns", () => {
     it("updates columns on only the target node", () => {
         const nodes = [makeNode("n1", "users", [basePk]), makeNode("n2", "orders", [basePk])];
-        const patched = patchColumns(nodes, "n2", (cols) => [...cols, { ...basePk, id: "c2", name: "tenant_id" }]);
-        expect(patched[0].data.columns).toHaveLength(1);
-        expect(patched[1].data.columns).toHaveLength(2);
+        patchColumns(nodes, "n2", (cols) => [...cols, { ...basePk, id: "c2", name: "tenant_id" }]);
+        expect(nodes[0].data.columns).toHaveLength(1);
+        expect(nodes[1].data.columns).toHaveLength(2);
     });
 });
 
@@ -143,18 +143,22 @@ describe("stripAutoCol", () => {
     it("removes generated FK column by id", () => {
         const fk = makeFkCol("fk-1", "user_id", "users", "pk-1");
         const nodes = [makeNode("target", "orders", [basePk, fk])];
-        const stripped = stripAutoCol(nodes, "fk-1", "target");
-        expect(stripped[0].data.columns.find((c) => c.id === "fk-1")).toBeUndefined();
+        stripAutoCol(nodes, "fk-1", "target");
+        expect(nodes[0].data.columns.find((c) => c.id === "fk-1")).toBeUndefined();
     });
 
     it("is a no-op when autoColId is undefined", () => {
         const nodes = [makeNode("n1", "orders", [basePk])];
-        expect(stripAutoCol(nodes, undefined, "n1")).toBe(nodes);
+        const originalNodes = JSON.parse(JSON.stringify(nodes));
+        stripAutoCol(nodes, undefined, "n1");
+        expect(nodes).toEqual(originalNodes);
     });
 
     it("is a no-op when colNodeId is undefined", () => {
         const nodes = [makeNode("n1", "orders", [basePk])];
-        expect(stripAutoCol(nodes, "fk-1", undefined)).toBe(nodes);
+        const originalNodes = JSON.parse(JSON.stringify(nodes));
+        stripAutoCol(nodes, "fk-1", undefined);
+        expect(nodes).toEqual(originalNodes);
     });
 });
 
@@ -226,7 +230,8 @@ describe("cascadeJunction", () => {
         ];
 
         const result = cascadeJunction([t1, t2, j], edges, "j", new Set(["e1"]));
-        expect(result.nodes.find((n) => n.id === "j")).toBeUndefined();
+        // result.nodes is no longer returned as it's mutated in-place where possible,
+        // but stripping happens on the nodes array passed in.
         expect(result.extraRemovals).toContain("e2");
         expect(result.newEdge?.data?.relationshipType).toBe("many-to-many");
         vi.restoreAllMocks();

@@ -1,6 +1,14 @@
 "use client";
 
+import { memo, type CSSProperties } from "react";
 import { DIAGRAM_COLORS } from "../../constants";
+
+const DEFS_STYLE: CSSProperties = {
+    position: "absolute",
+    width: 0,
+    height: 0,
+    overflow: "hidden",
+};
 
 function ArrowMarker({ id, orient }: { id: string; orient: string }) {
     return (
@@ -39,16 +47,9 @@ function BarMarker({ id, orient }: { id: string; orient: string }) {
     );
 }
 
-export function EdgeMarkerDefs() {
+export const EdgeMarkerDefs = memo(function EdgeMarkerDefs() {
     return (
-        <svg
-            style={{
-                position: "absolute",
-                width: 0,
-                height: 0,
-                overflow: "hidden",
-            }}
-        >
+        <svg style={DEFS_STYLE}>
             <defs>
                 <ArrowMarker id="me-arrow" orient="auto" />
                 <ArrowMarker id="ms-arrow" orient="auto-start-reverse" />
@@ -57,4 +58,4 @@ export function EdgeMarkerDefs() {
             </defs>
         </svg>
     );
-}
+});

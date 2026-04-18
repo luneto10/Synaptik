@@ -1,18 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import {
     ReactFlow,
     Background,
     Controls,
     MiniMap,
     BackgroundVariant,
-    SelectionMode,
     ControlButton,
 } from "@xyflow/react";
 import { Map } from "lucide-react";
-import { useDiagramStore } from "./store/diagramStore";
-import { endDiagramHistoryGestureIfActive } from "./store/diagramHistory";
 import { nodeTypes } from "./nodes";
 import FlowToolbar from "./components/canvas/FlowToolbar";
 import LeftToolbox from "./components/canvas/LeftToolbox";
@@ -21,110 +18,71 @@ import { TableSearch } from "./components/canvas/TableSearch";
 import { FitViewTrigger } from "./components/canvas/FitViewTrigger";
 import ConnectionDialog from "./components/edges/ConnectionDialog";
 import { EdgeMarkerDefs } from "./components/edges/EdgeMarkerDefs";
-import { useDiagramActions } from "./hooks/useDiagramActions";
-import { useConnectMode } from "./hooks/useConnectMode";
-import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
-import { useFlowCanvasChangeHandlers } from "./hooks/useFlowCanvasChangeHandlers";
-import { useGrabMode } from "./hooks/useGrabMode";
-import { useSelectedNodeIds } from "./hooks/useSelectedNodeId";
-import { useDiagramUiState } from "./hooks/useDiagramUiState";
-import { useIsolatedEdges } from "./hooks/useIsolatedEdges";
-import type { DiagramTool } from "./components/canvas/LeftToolbox";
+import { useDiagramCanvas } from "./hooks/useDiagramCanvas";
 import {
     edgeTypes,
     CONNECTION_LINE_STYLE,
     FIT_VIEW_OPTIONS,
     DEFAULT_EDGE_OPTIONS,
 } from "./FlowCanvas.constants";
-import { DIAGRAM_COLORS, REFLOW_DELAY_MS } from "./constants";
+import { DIAGRAM_COLORS } from "./constants";
 import { cn } from "@/lib/utils";
 
-export function DiagramCanvas() {
-    const containerRef = useRef<HTMLDivElement>(null);
-    const [activeTool, setActiveTool] = useState<DiagramTool>("select");
+const DELETE_KEYS = ["Delete", "Backspace"];
+const PRO_OPTIONS = { hideAttribution: true };
+const MINIMAP_STYLE: CSSProperties = { bottom: 56, right: 12 };
+const PAN_ON_DRAG_ALL: number[] = [0, 1, 2];
+const PAN_ON_DRAG_MIDDLE_RIGHT: number[] = [1, 2];
 
-    const nodes = useDiagramStore((s) => s.nodes);
-    const edges = useDiagramStore((s) => s.edges);
-    const onNodesChange = useDiagramStore((s) => s.onNodesChange);
-    const onEdgesChange = useDiagramStore((s) => s.onEdgesChange);
+export function DiagramCanvas() {
     const {
-        handleBeforeDelete,
+        containerRef,
+        nodeCount,
+        edgeCount,
+        displayNodes,
+        displayEdges,
+        activeTool,
+        isGrabbing,
+        isPending,
+        tableDialogOpen,
+        pendingConn,
+        pendingConnectSource,
+        showMinimap,
+        searchOpen,
+        searchTargetId,
         handleNodesChange,
         handleEdgesChange,
+        handleBeforeDelete,
         handleNodeDragStart,
         handleNodeDragStop,
         handleSelectionDragStart,
         handleSelectionDragStop,
-    } = useFlowCanvasChangeHandlers({ onNodesChange, onEdgesChange });
-
-    const {
-        pendingConn,
-        setPendingConn,
-        pendingConnectSource,
-        setPendingConnectSource,
         handleConnect,
         handleConnectStart,
         handleConnectEnd,
         handleNodeClick,
         handleConfirmRelation,
-        displayNodes,
-    } = useConnectMode(activeTool);
-
-    const {
-        tableDialogOpen,
-        searchOpen,
-        setSearchOpen,
-        searchTargetId,
-        setSearchTargetId,
-        showMinimap,
-        isolateConnections,
         handleToolChange,
         handleTableDialogClose,
         handleToggleMinimap,
         handleToggleSearch,
-        handleToggleIsolateConnections,
         handleSearchSelect,
-    } = useDiagramUiState({ setActiveTool, setPendingConnectSource });
-
-    const selectedNodeIds = useSelectedNodeIds();
-
-    const {
-        isGrabbing,
+        handleUndo,
+        handleRedo,
+        handleSave,
+        handleAutoLayout,
+        handleLoadExample,
         onMouseDownCapture,
         onMouseUpCapture,
         onMouseMoveCapture,
-    } = useGrabMode({ containerRef, activeTool, setActiveTool });
+        setPendingConn,
+        setSearchOpen,
+        setSearchTargetId,
+        SelectionMode,
+    } = useDiagramCanvas();
 
-    const { isPending, handleSave, handleLoadExample, handleAutoLayout } =
-        useDiagramActions();
-
-    const displayEdges = useIsolatedEdges(
-        edges,
-        selectedNodeIds,
-        isolateConnections,
-    );
-
-    const { handleUndo, handleRedo } = useKeyboardShortcuts({
-        handleToolChange,
-        setTableDialogOpen: handleTableDialogClose,
-        setPendingConnectSource,
-        handleToggleMinimap,
-        handleAutoLayout,
-        handleToggleSearch,
-        handleToggleIsolateConnections,
-    });
-
-    // Refocus the canvas whenever a dialog closes so keyboard shortcuts work.
-    useEffect(() => {
-        if (tableDialogOpen || pendingConn) return;
-        const id = setTimeout(
-            () => containerRef.current?.focus(),
-            REFLOW_DELAY_MS,
-        );
-        return () => clearTimeout(id);
-    }, [tableDialogOpen, pendingConn]);
-
-    useEffect(() => () => endDiagramHistoryGestureIfActive(), []);
+    const isAreaOrConnect =
+        activeTool === "areaSelect" || activeTool === "connect";
 
     return (
         <div
@@ -137,8 +95,8 @@ export function DiagramCanvas() {
             onMouseMoveCapture={onMouseMoveCapture}
         >
             <FlowToolbar
-                nodeCount={nodes.length}
-                edgeCount={edges.length}
+                nodeCount={nodeCount}
+                edgeCount={edgeCount}
                 isPending={isPending}
                 onSave={handleSave}
                 onAutoLayout={handleAutoLayout}
@@ -147,16 +105,16 @@ export function DiagramCanvas() {
             />
 
             <div
-                className="flex-1 relative bg-background overflow-hidden"
-                style={isGrabbing ? { cursor: "grabbing" } : undefined}
+                className={cn(
+                    "flex-1 relative bg-background overflow-hidden",
+                    isGrabbing && "cursor-grabbing",
+                )}
             >
                 <LeftToolbox
                     activeTool={activeTool}
                     onToolChange={handleToolChange}
                     onUndo={handleUndo}
                     onRedo={handleRedo}
-                    isolateConnections={isolateConnections}
-                    onToggleIsolateConnections={handleToggleIsolateConnections}
                 />
 
                 {activeTool === "connect" && pendingConnectSource && (
@@ -191,16 +149,16 @@ export function DiagramCanvas() {
                     maxZoom={2}
                     selectionOnDrag={activeTool === "areaSelect"}
                     panOnDrag={
-                        activeTool === "areaSelect" || activeTool === "connect"
-                            ? [1, 2]
-                            : [0, 1, 2]
+                        isAreaOrConnect
+                            ? PAN_ON_DRAG_MIDDLE_RIGHT
+                            : PAN_ON_DRAG_ALL
                     }
                     selectionMode={SelectionMode.Partial}
-                    deleteKeyCode={["Delete", "Backspace"]}
+                    deleteKeyCode={DELETE_KEYS}
                     connectionLineStyle={CONNECTION_LINE_STYLE}
                     defaultEdgeOptions={DEFAULT_EDGE_OPTIONS}
-                    style={{ width: "100%", height: "100%" }}
-                    proOptions={{ hideAttribution: true }}
+                    className="w-full h-full"
+                    proOptions={PRO_OPTIONS}
                 >
                     <EdgeMarkerDefs />
                     <FitViewTrigger
@@ -236,7 +194,7 @@ export function DiagramCanvas() {
                             nodeColor={DIAGRAM_COLORS.minimap}
                             maskColor="rgba(0,0,0,0.4)"
                             position="bottom-right"
-                            style={{ bottom: 56, right: 12 }}
+                            style={MINIMAP_STYLE}
                             className="bg-card! border! border-border! rounded-lg shadow-sm"
                             pannable
                             zoomable
