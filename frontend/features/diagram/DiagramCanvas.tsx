@@ -31,7 +31,6 @@ import { cn } from "@/lib/utils";
 const DELETE_KEYS = ["Delete", "Backspace"];
 const PRO_OPTIONS = { hideAttribution: true };
 const MINIMAP_STYLE: CSSProperties = { bottom: 56, right: 12 };
-const PAN_ON_DRAG_ALL: number[] = [0, 1, 2];
 const PAN_ON_DRAG_MIDDLE_RIGHT: number[] = [1, 2];
 
 export function DiagramCanvas() {
@@ -80,9 +79,6 @@ export function DiagramCanvas() {
         setSearchTargetId,
         SelectionMode,
     } = useDiagramCanvas();
-
-    const isAreaOrConnect =
-        activeTool === "areaSelect" || activeTool === "connect";
 
     return (
         <div
@@ -147,12 +143,8 @@ export function DiagramCanvas() {
                     fitViewOptions={FIT_VIEW_OPTIONS}
                     minZoom={0.2}
                     maxZoom={2}
-                    selectionOnDrag={activeTool === "areaSelect"}
-                    panOnDrag={
-                        isAreaOrConnect
-                            ? PAN_ON_DRAG_MIDDLE_RIGHT
-                            : PAN_ON_DRAG_ALL
-                    }
+                    selectionOnDrag={activeTool === "select"}
+                    panOnDrag={PAN_ON_DRAG_MIDDLE_RIGHT}
                     selectionMode={SelectionMode.Partial}
                     deleteKeyCode={DELETE_KEYS}
                     connectionLineStyle={CONNECTION_LINE_STYLE}
