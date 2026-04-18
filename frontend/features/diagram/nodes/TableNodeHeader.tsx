@@ -54,7 +54,7 @@ function TableNodeHeader({ nodeId, tableName, columnCount, isJunction }: TableNo
                         defaultValue={tableName}
                         onBlur={commit}
                         onKeyDown={(e) => onInputCommit(e, { onCommit: commit })}
-                        className={`bg-transparent border-0 rounded-none text-white text-sm font-semibold outline-none p-0 h-auto focus-visible:ring-0 focus-visible:ring-offset-0 w-full font-mono ${isJunction ? "border-b border-violet-300/60" : "border-b border-indigo-300/60"}`}
+                        className={`nodrag bg-transparent border-0 rounded-none text-white text-sm font-semibold outline-none p-0 h-auto focus-visible:ring-0 focus-visible:ring-offset-0 w-full font-mono ${isJunction ? "border-b border-violet-300/60" : "border-b border-indigo-300/60"}`}
                     />
                 ) : (
                     <Button
