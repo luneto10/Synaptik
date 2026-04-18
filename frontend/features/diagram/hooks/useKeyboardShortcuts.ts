@@ -47,12 +47,17 @@ export function useKeyboardShortcuts({
         enableOnFormTags: true,
     });
 
-    // Register shortcuts for all tools in the toolbox
-    TOOLS.forEach((tool) => {
-        useHotkeys(tool.shortcut, () => handleToolChange(tool.value), {
-            preventDefault: true,
-        });
-    });
+    useHotkeys(
+        TOOLS.map((t) => t.shortcut).join(","),
+        (_event, handler) => {
+            const pressed = handler.keys?.[0]?.toLowerCase();
+            const tool = TOOLS.find(
+                (t) => t.shortcut.toLowerCase() === pressed,
+            );
+            if (tool) handleToolChange(tool.value);
+        },
+        { preventDefault: true },
+    );
 
     useHotkeys(
         "escape",
