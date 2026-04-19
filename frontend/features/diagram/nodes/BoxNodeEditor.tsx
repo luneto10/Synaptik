@@ -31,18 +31,9 @@ interface BoxNodeEditorProps {
 }
 
 const PRESETS = [
-    "#6366f1",
-    "#8b5cf6",
-    "#ec4899",
-    "#ef4444",
-    "#f97316",
-    "#eab308",
-    "#22c55e",
-    "#14b8a6",
-    "#0ea5e9",
-    "#64748b",
-    "#1e293b",
-    "#ffffff",
+    "#6366f1", "#8b5cf6", "#ec4899", "#ef4444",
+    "#f97316", "#eab308", "#22c55e", "#14b8a6",
+    "#0ea5e9", "#64748b", "#1e293b", "#ffffff",
 ];
 
 export const BoxNodeEditor = memo(function BoxNodeEditor({
@@ -52,19 +43,31 @@ export const BoxNodeEditor = memo(function BoxNodeEditor({
     opacity,
 }: BoxNodeEditorProps) {
     const updateBox = useDiagramStore((s) => s.updateBox);
-    const boxes = useDiagramStore(useShallow((s) => s.nodes.filter(isBoxNode)));
+    const boxes = useDiagramStore(
+        useShallow((s) => s.nodes.filter(isBoxNode)),
+    );
     const [open, setOpen] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
+    const [isDragging, setIsDragging] = useState(false);
+    const [titleFocused, setTitleFocused] = useState(false);
+    
+    const [prevProps, setPrevProps] = useState({ color, opacity, title });
+    
     const [draftColor, setDraftColor] = useState(color);
     const [draftOpacity, setDraftOpacity] = useState(opacity);
-    const isDraggingRef = useRef(false);
-
-    useEffect(() => {
-        if (!isDraggingRef.current) setDraftColor(color);
-    }, [color]);
-    useEffect(() => {
-        if (!isDraggingRef.current) setDraftOpacity(opacity);
-    }, [opacity]);
+    const [draftTitle, setDraftTitle] = useState(title);
+    
+    if (color !== prevProps.color || opacity !== prevProps.opacity || title !== prevProps.title) {
+        setPrevProps({ color, opacity, title });
+        if (!isDragging) {
+            setDraftColor(color);
+            setDraftOpacity(opacity);
+        }
+        if (!titleFocused) {
+            setDraftTitle(title);
+        }
+    }
 
     const commitColor = useRafThrottle((next: string) => {
         updateBox(nodeId, { color: next });
@@ -72,13 +75,6 @@ export const BoxNodeEditor = memo(function BoxNodeEditor({
     const commitOpacity = useRafThrottle((next: number) => {
         updateBox(nodeId, { opacity: next });
     });
-
-    const [draftTitle, setDraftTitle] = useState(title);
-    const [error, setError] = useState<string | null>(null);
-    const titleFocusedRef = useRef(false);
-    useEffect(() => {
-        if (!titleFocusedRef.current) setDraftTitle(title);
-    }, [title]);
 
     const commitTitle = useCallback(() => {
         const next = draftTitle.trim();
@@ -116,11 +112,11 @@ export const BoxNodeEditor = memo(function BoxNodeEditor({
     );
 
     const startDrag = useCallback(() => {
-        isDraggingRef.current = true;
+        setIsDragging(true);
         beginDiagramHistoryGesture();
     }, []);
     const endDrag = useCallback(() => {
-        isDraggingRef.current = false;
+        setIsDragging(false);
         endDiagramHistoryGestureDeferred();
     }, []);
 
@@ -129,9 +125,22 @@ export const BoxNodeEditor = memo(function BoxNodeEditor({
     const [hexDraft, setHexDraft] = useState(draftColor);
     const hexInputRef = useRef<HTMLInputElement>(null);
 
-    useEffect(() => {
-        if (!editingHex) setHexDraft(draftColor);
-    }, [draftColor, editingHex]);
+    // Sync hexDraft with draftColor when not editing
+    const [lastDraftColor, setLastDraftColor] = useState(draftColor);
+    if (draftColor !== lastDraftColor) {
+        setLastDraftColor(draftColor);
+        if (!editingHex) {
+            setHexDraft(draftColor);
+        }
+    }
+    // Also sync when editing starts/stops
+    const [prevEditingHex, setPrevEditingHex] = useState(editingHex);
+    if (editingHex !== prevEditingHex) {
+        setPrevEditingHex(editingHex);
+        if (!editingHex) {
+            setHexDraft(draftColor);
+        }
+    }
 
     useEffect(() => {
         if (editingHex) {
@@ -166,11 +175,11 @@ export const BoxNodeEditor = memo(function BoxNodeEditor({
                             if (error) setError(null);
                         }}
                         onFocus={() => {
-                            titleFocusedRef.current = true;
+                            setTitleFocused(true);
                             beginDiagramHistoryGesture();
                         }}
                         onBlur={() => {
-                            titleFocusedRef.current = false;
+                            setTitleFocused(false);
                             commitTitle();
                             endDiagramHistoryGestureDeferred();
                         }}
@@ -185,7 +194,7 @@ export const BoxNodeEditor = memo(function BoxNodeEditor({
                             }
                         }}
                         placeholder="Untitled category"
-                        className="h-8 w-64 text-sm font-semibold border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
+                        className="h-8 w-64 text-base font-semibold border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
                     />
                     <InlineFieldError
                         message={error}
@@ -221,10 +230,7 @@ export const BoxNodeEditor = memo(function BoxNodeEditor({
                             onPointerCancel={endDrag}
                             className="flex justify-center"
                         >
-                            <HexColorPicker
-                                color={draftColor}
-                                onChange={onColorChange}
-                            />
+                            <HexColorPicker color={draftColor} onChange={onColorChange} />
                         </div>
 
                         <div className="mt-2 flex items-center justify-between gap-2">
@@ -235,9 +241,7 @@ export const BoxNodeEditor = memo(function BoxNodeEditor({
                                 <Input
                                     ref={hexInputRef}
                                     value={hexDraft}
-                                    onChange={(e) =>
-                                        setHexDraft(e.target.value)
-                                    }
+                                    onChange={(e) => setHexDraft(e.target.value)}
                                     onBlur={commitHex}
                                     onKeyDown={(e) => {
                                         if (e.key === "Enter") commitHex();
@@ -292,9 +296,7 @@ export const BoxNodeEditor = memo(function BoxNodeEditor({
                                 max={1}
                                 step={0.01}
                                 value={draftOpacity}
-                                onChange={(e) =>
-                                    onOpacityChange(Number(e.target.value))
-                                }
+                                onChange={(e) => onOpacityChange(Number(e.target.value))}
                                 onPointerDown={startDrag}
                                 onPointerUp={endDrag}
                                 className="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-indigo-500 bg-muted"
