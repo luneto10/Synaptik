@@ -43,15 +43,20 @@ export function useGrabMode({
             ".react-flow__pane",
         ) as HTMLElement | null;
         if (!pane) return;
-        pane.style.cursor = isGrabbing ? "grabbing" : "";
+        pane.style.cursor = isGrabbing ? "grabbing" : "default";
     }, [isGrabbing, containerRef]);
 
     useEffect(() => {
         const onDocMouseUp = (e: MouseEvent) => {
             if (e.button === 1 || e.button === 2) restoreToolAfterGrab();
         };
+        const onDocPointerUp = () => restoreToolAfterGrab();
         document.addEventListener("mouseup", onDocMouseUp);
-        return () => document.removeEventListener("mouseup", onDocMouseUp);
+        document.addEventListener("pointerup", onDocPointerUp);
+        return () => {
+            document.removeEventListener("mouseup", onDocMouseUp);
+            document.removeEventListener("pointerup", onDocPointerUp);
+        };
     }, [restoreToolAfterGrab]);
 
     const onMouseDownCapture = useCallback(
