@@ -52,6 +52,11 @@ export interface DiagramState {
     /** Snapshots the currently selected nodes (and edges between them) into the clipboard. No-op when nothing is selected. */
     copySelection: () => void;
     /**
+     * Duplicates the currently selected nodes (and edges between them) in place,
+     * offsetting clones to the right. Single undo step. No-op when nothing is selected.
+     */
+    duplicateSelection: () => void;
+    /**
      * Pastes the clipboard contents as new nodes/edges with fresh ids and unique names.
      * When `anchor` is provided (flow coords), the top-left of the clipboard's bounding
      * box lands at that point; otherwise a constant diagonal offset is applied.

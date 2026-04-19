@@ -56,6 +56,16 @@ export function useKeyboardShortcuts({
         });
     }, [getPasteAnchor, reactFlowStore]);
 
+    const handleDuplicate = useCallback((event: KeyboardEvent) => {
+        const { nodes, duplicateSelection } = useDiagramStore.getState();
+        if (!nodes.some((n) => n.selected)) return;
+        event.preventDefault();
+        duplicateSelection();
+        queueMicrotask(() => {
+            reactFlowStore.setState({ nodesSelectionActive: true });
+        });
+    }, [reactFlowStore]);
+
     useHotkeys("mod+z", handleUndo, {
         preventDefault: true,
         enableOnFormTags: true,
@@ -66,6 +76,7 @@ export function useKeyboardShortcuts({
     });
     useHotkeys("mod+c", handleCopy, { preventDefault: false });
     useHotkeys("mod+v", handlePaste, { preventDefault: false });
+    useHotkeys("mod+d", handleDuplicate, { preventDefault: true });
 
     useHotkeys("l", handleAutoLayout, { preventDefault: true });
     useHotkeys("m", handleToggleMinimap, { preventDefault: true });
