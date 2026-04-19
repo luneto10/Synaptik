@@ -1,6 +1,7 @@
 import { applyNodeChanges, type NodeChange } from "@xyflow/react";
 import {
     TABLE_NODE_TYPE,
+    isBoxNode,
     isTableNode,
     type TableNode,
     type DiagramNode,
@@ -13,6 +14,7 @@ import {
     makeEdge,
     defaultFkColumnName,
     singularizeTableName,
+    findTable,
 } from "./helpers";
 import { removeTableAndCascadeInDraft } from "./tableDeletion";
 import type { SetState } from "./diagramStore.types";
@@ -27,12 +29,6 @@ import { findSpawnPosition } from "../utils/geometry";
 import { normalizeEdgeHandles } from "../utils/handleNormalization";
 import { createBoxActions } from "./boxActions";
 import { hasMeaningfulNodeChanges } from "./nodeChangeGuards";
-
-/** Narrow a draft node to TableNode, or null if it's a box. */
-function findTable(nodes: DiagramNode[], id: string): TableNode | null {
-    const node = nodes.find((n) => n.id === id);
-    return node && isTableNode(node) ? node : null;
-}
 
 export function createNodeActions(set: SetState) {
     return {
@@ -256,7 +252,15 @@ export function createNodeActions(set: SetState) {
 
         loadDiagram: (nodes: DiagramNode[], edges: RelationEdge[]) =>
             set((draft) => {
-                draft.nodes = nodes;
+                draft.nodes = nodes.map((node) => {
+                    if (isBoxNode(node) && node.zIndex === undefined) {
+                        return { ...node, zIndex: -1 };
+                    }
+                    if (isTableNode(node) && node.zIndex === undefined) {
+                        return { ...node, zIndex: 1 };
+                    }
+                    return node;
+                });
                 draft.edges = normalizeEdgeHandles(
                     nodes.filter(isTableNode),
                     edges,

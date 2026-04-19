@@ -1,7 +1,32 @@
-import type { TableNode, RelationEdge, RelationEdgeData } from "../types/flow.types";
+import type {
+    BoxNode,
+    DiagramNode,
+    RelationEdge,
+    RelationEdgeData,
+    TableNode,
+} from "../types/flow.types";
+import { isBoxNode, isTableNode } from "../types/flow.types";
 import type { DbColumn } from "../types/db.types";
 import { handleIds } from "../utils/handleIds";
 import pluralize from "pluralize";
+
+// ── Node lookup ───────────────────────────────────────────────────────────────
+
+/** Find a node by id and narrow to TableNode. Returns null on miss or on a box. */
+export function findTable(nodes: DiagramNode[], id: string): TableNode | null {
+    const node = nodes.find((n) => n.id === id);
+    return node && isTableNode(node) ? node : null;
+}
+
+/** Find a node by id and narrow to BoxNode. Returns null on miss or on a table. */
+export function findBox(nodes: DiagramNode[], id: string): BoxNode | null {
+    const node = nodes.find((n) => n.id === id);
+    return node && isBoxNode(node) ? node : null;
+}
+
+/** Table-only view of the node list. Most store helpers don't understand boxes. */
+export const tablesOf = (nodes: DiagramNode[]): TableNode[] =>
+    nodes.filter(isTableNode);
 
 // ── Node patchers ─────────────────────────────────────────────────────────────
 

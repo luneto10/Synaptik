@@ -1,12 +1,6 @@
 import { applyEdgeChanges, type Connection, type EdgeChange } from "@xyflow/react";
 import type { Draft } from "immer";
-import type {
-    DiagramNode,
-    RelationEdge,
-    RelationshipType,
-    TableNode,
-} from "../types/flow.types";
-import { isTableNode } from "../types/flow.types";
+import type { RelationEdge, RelationshipType } from "../types/flow.types";
 import {
     makeEdge,
     makeFkCol,
@@ -16,13 +10,12 @@ import {
     cascadeJunction,
     defaultFkColumnName,
     insertForeignKeyColumn,
+    findTable,
+    tablesOf,
 } from "./helpers";
 import type { DiagramState, SetState } from "./diagramStore.types";
 import { handleIds, getHandleSide } from "../utils/handleIds";
 import { columnHandles, normalizeEdgeHandles } from "../utils/handleNormalization";
-
-/** Table-only view of the current draft nodes. Helpers don't understand boxes. */
-const tablesOf = (nodes: DiagramNode[]): TableNode[] => nodes.filter(isTableNode);
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -103,10 +96,10 @@ export function createEdgeActions(set: SetState) {
 
         addEdgeWithType: (connection: Connection, fkName: string, type: RelationshipType) =>
             set((draft) => {
-                const sourceNode = draft.nodes.find((n) => n.id === connection.source);
-                const targetNode = draft.nodes.find((n) => n.id === connection.target);
-                if (!sourceNode || !isTableNode(sourceNode)) return;
-                if (!targetNode || !isTableNode(targetNode)) return;
+                if (!connection.source || !connection.target) return;
+                const sourceNode = findTable(draft.nodes, connection.source);
+                const targetNode = findTable(draft.nodes, connection.target);
+                if (!sourceNode || !targetNode) return;
 
                 const pkCol = sourceNode.data.columns.find((c) => c.isPrimaryKey);
                 if (!pkCol) return;
@@ -191,8 +184,8 @@ export function createEdgeActions(set: SetState) {
 
         retargetFkColumn: (nodeId: string, columnId: string, newRefTableId: string) =>
             set((draft) => {
-                const newRefNode = draft.nodes.find((n) => n.id === newRefTableId);
-                if (!newRefNode || !isTableNode(newRefNode)) return;
+                const newRefNode = findTable(draft.nodes, newRefTableId);
+                if (!newRefNode) return;
                 const newPk = newRefNode.data.columns.find((c) => c.isPrimaryKey);
                 if (!newPk) return;
 

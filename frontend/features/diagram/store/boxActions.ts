@@ -1,6 +1,8 @@
 import { BOX } from "../constants";
 import { BOX_NODE_TYPE, isBoxNode, type BoxNode } from "../types/flow.types";
 import type { DiagramState, SetState } from "./diagramStore.types";
+import { findBox } from "./helpers";
+import { hasDuplicateCategoryTitle } from "../utils/nameValidation";
 
 type BoxActions = Pick<DiagramState, "addBox" | "updateBox">;
 
@@ -25,7 +27,7 @@ export function createBoxActions(set: SetState): BoxActions {
                     id: crypto.randomUUID(),
                     type: BOX_NODE_TYPE,
                     position,
-                    zIndex: 0,
+                    zIndex: -1,
                     selected: true,
                     width: Math.max(size.width, BOX.MIN_WIDTH),
                     height: Math.max(size.height, BOX.MIN_HEIGHT),
@@ -44,11 +46,23 @@ export function createBoxActions(set: SetState): BoxActions {
             patch: Partial<{ title: string; color: string; opacity: number }>,
         ) =>
             set((draft) => {
-                const node = draft.nodes.find((candidate) => candidate.id === nodeId);
-                if (!node || !isBoxNode(node)) return;
-                if (patch.title !== undefined) node.data.title = patch.title;
+                const node = findBox(draft.nodes, nodeId);
+                if (!node) return;
+                if (patch.title !== undefined) {
+                    const trimmed = patch.title.trim();
+                    if (
+                        hasDuplicateCategoryTitle(
+                            draft.nodes.filter(isBoxNode),
+                            trimmed,
+                            nodeId,
+                        )
+                    )
+                        return;
+                    node.data.title = trimmed;
+                }
                 if (patch.color !== undefined) node.data.color = patch.color;
-                if (patch.opacity !== undefined) node.data.opacity = patch.opacity;
+                if (patch.opacity !== undefined)
+                    node.data.opacity = patch.opacity;
             }),
     };
 }
