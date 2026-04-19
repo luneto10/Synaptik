@@ -19,46 +19,50 @@ import {
 import { useStore } from "zustand";
 import { useDiagramStore } from "../../store/diagramStore";
 
-export type DiagramTool =
-    | "select"
-    | "addTable"
-    | "connect"
-    | "isolateConnections";
+export type DiagramTool = "select" | "addTable" | "connect";
+export type DiagramToggle = "isolateConnections";
+export type ToolValue = DiagramTool | DiagramToggle;
 
-interface LeftToolboxProps {
-    activeTool: DiagramTool;
-    onToolChange: (tool: DiagramTool) => void;
-    onUndo?: () => void;
-    onRedo?: () => void;
-}
-
-export interface ToolDescriptor {
-    value: DiagramTool;
-    icon: React.ReactNode;
-    label: string;
-    shortcut: string;
-}
+export type ToolDescriptor =
+    | {
+          kind: "tool";
+          value: DiagramTool;
+          icon: React.ReactNode;
+          label: string;
+          shortcut: string;
+      }
+    | {
+          kind: "toggle";
+          value: DiagramToggle;
+          icon: React.ReactNode;
+          label: string;
+          shortcut: string;
+      };
 
 export const TOOLS: ToolDescriptor[] = [
     {
+        kind: "tool",
         value: "select",
         icon: <MousePointer2 className="w-4 h-4" />,
         label: "Select",
         shortcut: "S",
     },
     {
+        kind: "tool",
         value: "addTable",
         icon: <Table2 className="w-4 h-4" />,
         label: "Add table",
         shortcut: "T",
     },
     {
+        kind: "tool",
         value: "connect",
         icon: <Spline className="w-4 h-4" />,
         label: "Connect",
         shortcut: "C",
     },
     {
+        kind: "toggle",
         value: "isolateConnections",
         icon: <Focus className="w-4 h-4" />,
         label: "Isolate connections",
@@ -66,9 +70,18 @@ export const TOOLS: ToolDescriptor[] = [
     },
 ];
 
+interface LeftToolboxProps {
+    activeTool: DiagramTool;
+    toggles: Record<DiagramToggle, boolean>;
+    onToolAction: (value: ToolValue) => void;
+    onUndo?: () => void;
+    onRedo?: () => void;
+}
+
 function LeftToolbox({
     activeTool,
-    onToolChange,
+    toggles,
+    onToolAction,
     onUndo,
     onRedo,
 }: LeftToolboxProps) {
@@ -87,35 +100,45 @@ function LeftToolbox({
                         flex flex-col items-center gap-0.5 p-1.5 rounded-xl
                         bg-card/90 backdrop-blur-md border border-border/60 shadow-lg shadow-black/10"
         >
-            {TOOLS.map((tool) => (
-                <Tooltip key={tool.value}>
-                    <TooltipTrigger asChild>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => onToolChange(tool.value)}
-                            aria-label={`${tool.label} tool`}
-                            className={cn(
-                                "w-8 h-8 rounded-lg transition-all",
-                                activeTool === tool.value
-                                    ? "bg-indigo-500/20 text-indigo-400 shadow-sm"
-                                    : "text-muted-foreground hover:bg-muted/80 hover:text-foreground",
-                            )}
+            {TOOLS.map((tool) => {
+                const active =
+                    tool.kind === "tool"
+                        ? activeTool === tool.value
+                        : toggles[tool.value];
+                return (
+                    <Tooltip key={tool.value}>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => onToolAction(tool.value)}
+                                aria-label={tool.label}
+                                aria-pressed={
+                                    tool.kind === "toggle" ? active : undefined
+                                }
+                                className={cn(
+                                    "w-8 h-8 rounded-lg transition-all",
+                                    active
+                                        ? "bg-indigo-500/20 text-indigo-400 shadow-sm"
+                                        : "text-muted-foreground hover:bg-muted/80 hover:text-foreground",
+                                )}
+                            >
+                                {tool.icon}
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent
+                            side="right"
+                            className="flex items-center gap-2"
                         >
-                            {tool.icon}
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent
-                        side="right"
-                        className="flex items-center gap-2"
-                    >
-                        {tool.label}
-                        <kbd className="text-[9px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-mono border border-border">
-                            {tool.shortcut}
-                        </kbd>
-                    </TooltipContent>
-                </Tooltip>
-            ))}
+                            {tool.label}
+                            <kbd className="text-[9px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-mono border border-border">
+                                {tool.shortcut}
+                            </kbd>
+                        </TooltipContent>
+                    </Tooltip>
+                );
+            })}
+
             <div className="w-5 h-px bg-border/60 my-0.5" />
 
             <Tooltip>

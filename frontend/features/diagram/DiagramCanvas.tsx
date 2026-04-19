@@ -41,6 +41,7 @@ export function DiagramCanvas() {
         displayNodes,
         displayEdges,
         activeTool,
+        toggles,
         isGrabbing,
         isPending,
         tableDialogOpen,
@@ -61,7 +62,7 @@ export function DiagramCanvas() {
         handleConnectEnd,
         handleNodeClick,
         handleConfirmRelation,
-        handleToolChange,
+        handleToolAction,
         handleTableDialogClose,
         handleToggleMinimap,
         handleToggleSearch,
@@ -108,7 +109,8 @@ export function DiagramCanvas() {
             >
                 <LeftToolbox
                     activeTool={activeTool}
-                    onToolChange={handleToolChange}
+                    toggles={toggles}
+                    onToolAction={handleToolAction}
                     onUndo={handleUndo}
                     onRedo={handleRedo}
                 />
