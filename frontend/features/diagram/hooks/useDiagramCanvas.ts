@@ -56,19 +56,18 @@ export function useDiagramCanvas() {
         searchTargetId,
         setSearchTargetId,
         showMinimap,
-        handleToolChange,
+        toggles,
+        isolateConnections,
+        handleToolAction,
         handleTableDialogClose,
         handleToggleMinimap,
         handleToggleSearch,
         handleSearchSelect,
     } = useDiagramUiState({
-        activeTool,
         setActiveTool,
         setPendingConnectSource,
         selectedNodeId,
     });
-
-    const isolateConnections = activeTool === "isolateConnections";
 
     const {
         isGrabbing,
@@ -87,7 +86,7 @@ export function useDiagramCanvas() {
     );
 
     const { handleUndo, handleRedo } = useKeyboardShortcuts({
-        handleToolChange,
+        handleToolAction,
         setTableDialogOpen: handleTableDialogClose,
         setPendingConnectSource,
         handleToggleMinimap,
@@ -114,6 +113,7 @@ export function useDiagramCanvas() {
         displayNodes,
         displayEdges,
         activeTool,
+        toggles,
         isGrabbing,
         isPending,
         tableDialogOpen,
@@ -134,7 +134,7 @@ export function useDiagramCanvas() {
         handleConnectEnd,
         handleNodeClick,
         handleConfirmRelation,
-        handleToolChange,
+        handleToolAction,
         handleTableDialogClose,
         handleToggleMinimap,
         handleToggleSearch,

@@ -2,11 +2,10 @@ import { useCallback } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useDiagramStore } from "../store/diagramStore";
 import { endDiagramHistoryGestureIfActive } from "../store/diagramHistory";
-import type { DiagramTool } from "../components/canvas/LeftToolbox";
-import { TOOLS } from "../components/canvas/LeftToolbox";
+import { TOOLS, type ToolValue } from "../components/canvas/LeftToolbox";
 
 interface Options {
-    handleToolChange: (tool: DiagramTool) => void;
+    handleToolAction: (value: ToolValue) => void;
     setTableDialogOpen: (open: boolean) => void;
     setPendingConnectSource: (id: string | null) => void;
     handleToggleMinimap: () => void;
@@ -15,7 +14,7 @@ interface Options {
 }
 
 export function useKeyboardShortcuts({
-    handleToolChange,
+    handleToolAction,
     setPendingConnectSource,
     handleToggleMinimap,
     handleAutoLayout,
@@ -54,7 +53,7 @@ export function useKeyboardShortcuts({
             const tool = TOOLS.find(
                 (t) => t.shortcut.toLowerCase() === pressed,
             );
-            if (tool) handleToolChange(tool.value);
+            if (tool) handleToolAction(tool.value);
         },
         { preventDefault: true },
     );
@@ -62,7 +61,7 @@ export function useKeyboardShortcuts({
     useHotkeys(
         "escape",
         () => {
-            handleToolChange("select");
+            handleToolAction("select");
             setPendingConnectSource(null);
         },
         { preventDefault: true },
