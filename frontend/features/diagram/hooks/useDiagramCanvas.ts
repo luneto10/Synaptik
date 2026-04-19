@@ -8,6 +8,7 @@ import { useKeyboardShortcuts } from "./useKeyboardShortcuts";
 import { useFlowCanvasChangeHandlers } from "./useFlowCanvasChangeHandlers";
 import { useGrabMode } from "./useGrabMode";
 import { useAddBoxMode } from "./useAddBoxMode";
+import { useCanvasPointer } from "./useCanvasPointer";
 import { useSelectedNodeIds } from "./useSelectedNodeId";
 import { useDiagramUiState } from "./useDiagramUiState";
 import { useIsolatedEdges } from "./useIsolatedEdges";
@@ -83,6 +84,8 @@ export function useDiagramCanvas() {
         setActiveTool,
     });
 
+    const { getFlowPosition: getPasteAnchor } = useCanvasPointer(containerRef);
+
     const { isPending, handleSave, handleLoadExample, handleAutoLayout } =
         useDiagramActions();
 
@@ -99,6 +102,7 @@ export function useDiagramCanvas() {
         handleToggleMinimap,
         handleAutoLayout,
         handleToggleSearch,
+        getPasteAnchor,
     });
 
     // Refocus the canvas whenever a dialog closes so keyboard shortcuts work.

@@ -52,6 +52,9 @@ export const RELATION_LABELS: Record<RelationshipType, string> = {
     "many-to-many": "N : M",
 };
 
+/** Pixel offset applied to pasted nodes so they don't overlap their source. */
+export const PASTE_OFFSET = 40;
+
 /** Category box defaults. Resized freely, but clamped to MIN values. */
 export const BOX = {
     /** Hex RGB (no alpha). Fill alpha comes from DEFAULT_OPACITY; border is always opaque. */

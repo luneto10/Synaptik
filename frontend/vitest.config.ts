@@ -18,6 +18,8 @@ export default defineConfig({
                 "features/diagram/store/helpers.ts",
                 "features/diagram/store/nodeActions.ts",
                 "features/diagram/store/edgeActions.ts",
+                "features/diagram/store/clipboard.ts",
+                "features/diagram/store/clipboardActions.ts",
                 "features/diagram/utils/*.ts",
                 "features/diagram/hooks/useConnectMode.ts",
                 "features/diagram/components/edges/ConnectionDialog.tsx",

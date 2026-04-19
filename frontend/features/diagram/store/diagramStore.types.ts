@@ -49,6 +49,15 @@ export interface DiagramState {
     createJunctionTable: (sourceNodeId: string, targetNodeId: string) => void;
     /** Replaces the entire diagram state — used for loading saved or mock data. */
     loadDiagram: (nodes: DiagramNode[], edges: RelationEdge[]) => void;
+    /** Snapshots the currently selected nodes (and edges between them) into the clipboard. No-op when nothing is selected. */
+    copySelection: () => void;
+    /**
+     * Pastes the clipboard contents as new nodes/edges with fresh ids and unique names.
+     * When `anchor` is provided (flow coords), the top-left of the clipboard's bounding
+     * box lands at that point; otherwise a constant diagonal offset is applied.
+     * Single undo step.
+     */
+    pasteClipboard: (anchor?: { x: number; y: number }) => void;
     /** Toggles the handle side (left ↔ right) for all edges connected to a specific column. */
     flipColumnHandleSide: (nodeId: string, columnId: string) => void;
     /** Toggles the source or target handle of a single edge between left and right. */
