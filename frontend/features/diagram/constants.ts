@@ -51,3 +51,14 @@ export const RELATION_LABELS: Record<RelationshipType, string> = {
     "one-to-many": "1 : N",
     "many-to-many": "N : M",
 };
+
+/** Category box defaults. Resized freely, but clamped to MIN values. */
+export const BOX = {
+    /** Hex RGB (no alpha). Fill alpha comes from DEFAULT_OPACITY; border is always opaque. */
+    DEFAULT_COLOR: "#6366f1",
+    DEFAULT_OPACITY: 0.1,
+    MIN_WIDTH: 160,
+    MIN_HEIGHT: 120,
+    /** Minimum drag distance (px) before drag-to-create commits a box. */
+    CREATE_THRESHOLD: 24,
+} as const;

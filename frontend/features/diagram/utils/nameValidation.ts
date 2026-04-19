@@ -1,5 +1,5 @@
 import type { DbColumn } from "../types/db.types";
-import type { TableNode } from "../types/flow.types";
+import type { BoxNode, TableNode } from "../types/flow.types";
 
 export function normalizeName(value: string) {
     return value.trim().toLowerCase();
@@ -16,6 +16,20 @@ export function hasDuplicateTableName(
         (node) =>
             node.id !== excludeNodeId &&
             normalizeName(node.data.name) === normalized,
+    );
+}
+
+export function hasDuplicateCategoryTitle(
+    boxes: BoxNode[],
+    candidate: string,
+    excludeNodeId?: string,
+) {
+    const normalized = normalizeName(candidate);
+    if (!normalized) return false;
+    return boxes.some(
+        (box) =>
+            box.id !== excludeNodeId &&
+            normalizeName(box.data.title) === normalized,
     );
 }
 

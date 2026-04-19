@@ -1,13 +1,13 @@
 import type { Connection, EdgeChange, NodeChange } from "@xyflow/react";
 import type {
-    TableNode,
+    DiagramNode,
     RelationEdge,
     RelationshipType,
 } from "../types/flow.types";
 import type { DbColumn } from "../types/db.types";
 
 export interface DiagramState {
-    nodes: TableNode[];
+    nodes: DiagramNode[];
     edges: RelationEdge[];
     onNodesChange: (changes: NodeChange[]) => void;
     onEdgesChange: (changes: EdgeChange[]) => void;
@@ -26,6 +26,18 @@ export interface DiagramState {
     /** Deletes only the edge row — no FK column cascade. */
     deleteEdgeOnly: (edgeId: string) => void;
     addTable: (name: string, position?: { x: number; y: number }) => void;
+    /** Creates a category box at the given position/size. */
+    addBox: (
+        position: { x: number; y: number },
+        size: { width: number; height: number },
+        color?: string,
+        opacity?: number,
+    ) => void;
+    /** Patches title/color/opacity on a category box. Ignored if the id is not a box. */
+    updateBox: (
+        nodeId: string,
+        patch: Partial<{ title: string; color: string; opacity: number }>,
+    ) => void;
     updateColumn: (nodeId: string, column: DbColumn) => void;
     addColumn: (nodeId: string, columnId?: string) => void;
     removeColumn: (nodeId: string, columnId: string) => void;
@@ -36,7 +48,7 @@ export interface DiagramState {
     /** Creates a junction table for M:N and wires it with 1:N edges to both parent tables. */
     createJunctionTable: (sourceNodeId: string, targetNodeId: string) => void;
     /** Replaces the entire diagram state — used for loading saved or mock data. */
-    loadDiagram: (nodes: TableNode[], edges: RelationEdge[]) => void;
+    loadDiagram: (nodes: DiagramNode[], edges: RelationEdge[]) => void;
     /** Toggles the handle side (left ↔ right) for all edges connected to a specific column. */
     flipColumnHandleSide: (nodeId: string, columnId: string) => void;
     /** Toggles the source or target handle of a single edge between left and right. */

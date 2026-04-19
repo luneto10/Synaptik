@@ -6,7 +6,9 @@
       "Bash(npx shadcn@latest add command --yes)",
       "Bash(git fetch *)",
       "Bash(npm run *)",
-      "Bash(npm test *)"
+      "Bash(npm test *)",
+      "Bash(npx vitest *)",
+      "Bash(npm install *)"
     ]
   }
 }

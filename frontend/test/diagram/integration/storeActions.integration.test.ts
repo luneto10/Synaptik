@@ -1,8 +1,24 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Connection } from "@xyflow/react";
 import type { DbColumn } from "../../../features/diagram/types/db.types";
-import type { TableNode } from "../../../features/diagram/types/flow.types";
+import type {
+    DiagramNode,
+    TableNode,
+} from "../../../features/diagram/types/flow.types";
+import {
+    isBoxNode,
+    isTableNode,
+} from "../../../features/diagram/types/flow.types";
 import { useDiagramStore } from "../../../features/diagram/store/diagramStore";
+
+/** Locate a table node by id and narrow its type. Tests only create tables. */
+const findTable = (
+    nodes: DiagramNode[],
+    id: string,
+): TableNode | undefined => {
+    const n = nodes.find((n) => n.id === id);
+    return n && isTableNode(n) ? n : undefined;
+};
 import {
     beginDiagramHistoryGesture,
     endDiagramHistoryGestureIfActive,
@@ -211,6 +227,32 @@ describe("diagram store actions integration", () => {
         expect(useDiagramStore.getState().nodes.length).toBe(0);
     });
 
+    it("addBox selects the new box and clears prior selection", () => {
+        useDiagramStore.setState({
+            nodes: [
+                {
+                    ...node("users", "Users", [pk("pk-users")]),
+                    selected: true,
+                },
+            ],
+            edges: [],
+        });
+
+        useDiagramStore.getState().addBox(
+            { x: 100, y: 120 },
+            { width: 40, height: 32 },
+        );
+
+        const state = useDiagramStore.getState();
+        expect(state.nodes).toHaveLength(2);
+        expect(state.nodes.find((n) => n.id === "users")?.selected).toBe(false);
+
+        const createdBox = state.nodes.find(isBoxNode);
+        expect(createdBox?.selected).toBe(true);
+        expect(createdBox?.width).toBeGreaterThanOrEqual(40);
+        expect(createdBox?.height).toBeGreaterThanOrEqual(32);
+    });
+
     it("temporal undo and redo with empty stacks do not throw", () => {
         const history = useDiagramStore.temporal.getState();
         history.clear?.();
@@ -381,9 +423,9 @@ describe("diagram store actions integration", () => {
         const afterCreate = useDiagramStore.getState();
         expect(afterCreate.edges.length).toBe(1);
         expect(
-            afterCreate.nodes
-                .find((n) => n.id === "orders")
-                ?.data.columns.some((c) => c.name === "user_id"),
+            findTable(afterCreate.nodes, "orders")?.data.columns.some(
+                (c) => c.name === "user_id",
+            ),
         ).toBe(true);
 
         const edgeId = afterCreate.edges[0]?.id;
@@ -393,9 +435,9 @@ describe("diagram store actions integration", () => {
         const afterDelete = useDiagramStore.getState();
         expect(afterDelete.edges.length).toBe(0);
         expect(
-            afterDelete.nodes
-                .find((n) => n.id === "orders")
-                ?.data.columns.some((c) => c.name === "user_id"),
+            findTable(afterDelete.nodes, "orders")?.data.columns.some(
+                (c) => c.name === "user_id",
+            ),
         ).toBe(false);
     });
 
@@ -436,7 +478,7 @@ describe("diagram store actions integration", () => {
 
         // The auto-created FK column for that edge was stripped from the junction table
         const strippedColId = deletedEdge.data?.autoCreatedColumnId;
-        const junctionNode = finalState.nodes.find((n) => n.id === junction?.id);
+        const junctionNode = findTable(finalState.nodes, junction!.id);
         expect(
             junctionNode?.data.columns.some((c) => c.id === strippedColId),
         ).toBe(false);
@@ -489,9 +531,9 @@ describe("diagram store actions integration", () => {
             .retargetFkColumn("orders", "fk-user-id", "products");
         const state = useDiagramStore.getState();
 
-        const updatedFk = state.nodes
-            .find((n) => n.id === "orders")
-            ?.data.columns.find((c) => c.id === "fk-user-id");
+        const updatedFk = findTable(state.nodes, "orders")?.data.columns.find(
+            (c) => c.id === "fk-user-id",
+        );
 
         expect(updatedFk?.name).toBe("product_id");
         expect(updatedFk?.references?.tableId).toBe("products");
@@ -508,9 +550,7 @@ describe("diagram store actions integration", () => {
         });
 
         useDiagramStore.getState().addColumn("users", "col-a");
-        let users = useDiagramStore
-            .getState()
-            .nodes.find((n) => n.id === "users");
+        let users = findTable(useDiagramStore.getState().nodes, "users");
         expect(users?.data.columns.some((c) => c.id === "col-a")).toBe(true);
 
         useDiagramStore.getState().updateColumn("users", {
@@ -522,17 +562,17 @@ describe("diagram store actions integration", () => {
             isNullable: false,
             isUnique: true,
         });
-        users = useDiagramStore.getState().nodes.find((n) => n.id === "users");
+        users = findTable(useDiagramStore.getState().nodes, "users");
         expect(users?.data.columns.find((c) => c.id === "col-a")?.name).toBe(
             "email",
         );
 
         useDiagramStore.getState().renameTable("users", "AppUsers");
-        users = useDiagramStore.getState().nodes.find((n) => n.id === "users");
+        users = findTable(useDiagramStore.getState().nodes, "users");
         expect(users?.data.name).toBe("AppUsers");
 
         useDiagramStore.getState().removeColumn("users", "col-a");
-        users = useDiagramStore.getState().nodes.find((n) => n.id === "users");
+        users = findTable(useDiagramStore.getState().nodes, "users");
         expect(users?.data.columns.some((c) => c.id === "col-a")).toBe(false);
     });
 
@@ -628,9 +668,7 @@ describe("diagram store actions integration", () => {
             .getState()
             .addEdgeWithType(conn("users", "orders"), "user_id", "one-to-many");
 
-        const orders = useDiagramStore
-            .getState()
-            .nodes.find((n) => n.id === "orders");
+        const orders = findTable(useDiagramStore.getState().nodes, "orders");
         const names = orders?.data.columns.map((c) => c.name) ?? [];
         expect(names).toEqual(["id", "account_id", "user_id", "note"]);
     });
@@ -708,7 +746,7 @@ describe("diagram store actions integration", () => {
             isUnique: false,
         });
 
-        const users = useDiagramStore.getState().nodes.find((n) => n.id === "users");
+        const users = findTable(useDiagramStore.getState().nodes, "users");
         expect(users?.data.columns.find((c) => c.id === "col-b")?.name).toBe("column_name");
     });
 
@@ -733,7 +771,7 @@ describe("diagram store actions integration", () => {
 
         useDiagramStore.getState().addEdgeWithType(conn("users", "orders"), "user_id", "one-to-many");
 
-        const orders = useDiagramStore.getState().nodes.find((n) => n.id === "orders");
+        const orders = findTable(useDiagramStore.getState().nodes, "orders");
         expect(orders?.data.columns.some((c) => c.name === "user_id_2")).toBe(true);
     });
 
@@ -765,7 +803,7 @@ describe("diagram store actions integration", () => {
         useDiagramStore.getState().deleteEdgeOnly(edgeId!);
 
         expect(useDiagramStore.getState().edges.length).toBe(0);
-        const orders = useDiagramStore.getState().nodes.find((n) => n.id === "orders");
+        const orders = findTable(useDiagramStore.getState().nodes, "orders");
         expect(orders?.data.columns.some((c) => c.name === "user_id")).toBe(true);
     });
 
@@ -777,7 +815,7 @@ describe("diagram store actions integration", () => {
 
         useDiagramStore.getState().addEdgeWithType(conn("users", "profiles"), "user_id", "one-to-one");
 
-        const profiles = useDiagramStore.getState().nodes.find((n) => n.id === "profiles");
+        const profiles = findTable(useDiagramStore.getState().nodes, "profiles");
         const fkCol = profiles?.data.columns.find((c) => c.name === "user_id");
         expect(fkCol?.isUnique).toBe(true);
     });

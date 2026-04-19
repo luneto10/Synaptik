@@ -1,8 +1,8 @@
 import axios from "axios";
-import type { TableNode, RelationEdge } from "../types/flow.types";
+import type { DiagramNode, RelationEdge } from "../types/flow.types";
 
 export interface DiagramPayload {
-    nodes: TableNode[];
+    nodes: DiagramNode[];
     edges: RelationEdge[];
 }
 

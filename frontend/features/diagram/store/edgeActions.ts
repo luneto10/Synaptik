@@ -1,8 +1,18 @@
 import { applyEdgeChanges, type Connection, type EdgeChange } from "@xyflow/react";
 import type { Draft } from "immer";
 import type { RelationEdge, RelationshipType } from "../types/flow.types";
-import type { TableNode } from "../types/flow.types";
-import { makeEdge, makeFkCol, makeMnEdge, patchColumns, stripAutoCol, cascadeJunction, defaultFkColumnName, insertForeignKeyColumn } from "./helpers";
+import {
+    makeEdge,
+    makeFkCol,
+    makeMnEdge,
+    patchColumns,
+    stripAutoCol,
+    cascadeJunction,
+    defaultFkColumnName,
+    insertForeignKeyColumn,
+    findTable,
+    tablesOf,
+} from "./helpers";
 import type { DiagramState, SetState } from "./diagramStore.types";
 import { handleIds, getHandleSide } from "../utils/handleIds";
 import { columnHandles, normalizeEdgeHandles } from "../utils/handleNormalization";
@@ -28,7 +38,7 @@ function applyEdgeRemovals(
         if (!edge) continue;
 
         stripAutoCol(
-            draft.nodes as TableNode[],
+            tablesOf(draft.nodes),
             edge.data?.autoCreatedColumnId,
             edge.data?.autoCreatedColumnNodeId ?? edge.target,
         );
@@ -43,11 +53,11 @@ function applyEdgeRemovals(
         const allBeingRemoved = junctionEdges.every((e) => removeIds.has(e.id));
 
         if (allBeingRemoved) {
-            const mn = makeMnEdge(draft.nodes as TableNode[], junctionEdges);
+            const mn = makeMnEdge(tablesOf(draft.nodes), junctionEdges);
             if (mn) newEdges.push(mn);
         } else {
             const { extraRemovals: extra, newEdge } = cascadeJunction(
-                draft.nodes as TableNode[],
+                tablesOf(draft.nodes),
                 draft.edges as RelationEdge[],
                 jId,
                 new Set([id]),
@@ -86,8 +96,9 @@ export function createEdgeActions(set: SetState) {
 
         addEdgeWithType: (connection: Connection, fkName: string, type: RelationshipType) =>
             set((draft) => {
-                const sourceNode = draft.nodes.find((n) => n.id === connection.source);
-                const targetNode = draft.nodes.find((n) => n.id === connection.target);
+                if (!connection.source || !connection.target) return;
+                const sourceNode = findTable(draft.nodes, connection.source);
+                const targetNode = findTable(draft.nodes, connection.target);
                 if (!sourceNode || !targetNode) return;
 
                 const pkCol = sourceNode.data.columns.find((c) => c.isPrimaryKey);
@@ -105,7 +116,7 @@ export function createEdgeActions(set: SetState) {
                 const { sourceHandle, targetHandle } = columnHandles(
                     pkCol.id, fkColId,
                     connection.source!, connection.target!,
-                    draft.nodes as TableNode[],
+                    tablesOf(draft.nodes),
                 );
                 const edge = makeEdge(
                     connection.source!, connection.target!,
@@ -128,7 +139,7 @@ export function createEdgeActions(set: SetState) {
                 const edge = draft.edges.find((e) => e.id === edgeId);
                 if (!edge) return;
 
-                stripAutoCol(draft.nodes as TableNode[], edge.data?.autoCreatedColumnId, edge.data?.autoCreatedColumnNodeId ?? edge.target);
+                stripAutoCol(tablesOf(draft.nodes), edge.data?.autoCreatedColumnId, edge.data?.autoCreatedColumnNodeId ?? edge.target);
                 draft.edges = draft.edges.filter((e) => e.id !== edgeId) as RelationEdge[];
             }),
 
@@ -173,16 +184,17 @@ export function createEdgeActions(set: SetState) {
 
         retargetFkColumn: (nodeId: string, columnId: string, newRefTableId: string) =>
             set((draft) => {
-                const newRefNode = draft.nodes.find((n) => n.id === newRefTableId);
-                const newPk = newRefNode?.data.columns.find((c) => c.isPrimaryKey);
-                if (!newRefNode || !newPk) return;
+                const newRefNode = findTable(draft.nodes, newRefTableId);
+                if (!newRefNode) return;
+                const newPk = newRefNode.data.columns.find((c) => c.isPrimaryKey);
+                if (!newPk) return;
 
                 // Search by column data ID (node-level handles don't encode column IDs)
                 const oldEdge = draft.edges.find(
                     (e) => e.target === nodeId && e.data?.targetColumnId === columnId,
                 );
 
-                patchColumns(draft.nodes as TableNode[], nodeId, (cols) =>
+                patchColumns(tablesOf(draft.nodes), nodeId, (cols) =>
                     cols.map((c) => c.id !== columnId ? c : {
                         ...c,
                         name: defaultFkColumnName(newRefNode.data.name),
@@ -193,7 +205,7 @@ export function createEdgeActions(set: SetState) {
                 const { sourceHandle, targetHandle } = columnHandles(
                     newPk.id, columnId,
                     newRefTableId, nodeId,
-                    draft.nodes as TableNode[],
+                    tablesOf(draft.nodes),
                 );
                 const newEdge = makeEdge(
                     newRefTableId, nodeId,
@@ -213,7 +225,7 @@ export function createEdgeActions(set: SetState) {
 
         normalizeEdgeHandleDirections: () =>
             set((draft) => {
-                draft.edges = normalizeEdgeHandles(draft.nodes as TableNode[], draft.edges as RelationEdge[]);
+                draft.edges = normalizeEdgeHandles(tablesOf(draft.nodes), draft.edges as RelationEdge[]);
             }),
     };
 }
