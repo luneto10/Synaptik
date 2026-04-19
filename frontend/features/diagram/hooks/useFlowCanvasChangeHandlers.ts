@@ -8,7 +8,7 @@ import {
     historyPausedRef,
     withoutHistory,
 } from "../store/diagramHistory";
-import type { RelationEdge, TableNode } from "../types/flow.types";
+import type { DiagramNode, RelationEdge } from "../types/flow.types";
 
 type ChangeHandlersArgs = {
     onNodesChange?: (changes: NodeChange[]) => void;
@@ -73,9 +73,9 @@ export function useFlowCanvasChangeHandlers({
             nodes: nodesToRemove,
             edges: edgesToRemove,
         }: {
-            nodes: TableNode[];
+            nodes: DiagramNode[];
             edges: RelationEdge[];
-        }): Promise<boolean | { nodes: TableNode[]; edges: RelationEdge[] }> => {
+        }): Promise<boolean | { nodes: DiagramNode[]; edges: RelationEdge[] }> => {
             if (nodesToRemove.length === 0) return true;
             endDiagramHistoryGestureIfActive();
             suppressNextRemovalsRef.current.nodeIds = new Set(

@@ -15,11 +15,12 @@ import {
     Undo2,
     Redo2,
     Focus,
+    SquareDashed,
 } from "lucide-react";
 import { useStore } from "zustand";
 import { useDiagramStore } from "../../store/diagramStore";
 
-export type DiagramTool = "select" | "addTable" | "connect";
+export type DiagramTool = "select" | "addTable" | "connect" | "addBox";
 export type DiagramToggle = "isolateConnections";
 export type ToolValue = DiagramTool | DiagramToggle;
 
@@ -60,6 +61,13 @@ export const TOOLS: ToolDescriptor[] = [
         icon: <Spline className="w-4 h-4" />,
         label: "Connect",
         shortcut: "C",
+    },
+    {
+        kind: "tool",
+        value: "addBox",
+        icon: <SquareDashed className="w-4 h-4" />,
+        label: "Add category box",
+        shortcut: "B",
     },
     {
         kind: "toggle",

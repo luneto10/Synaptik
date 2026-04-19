@@ -1,12 +1,11 @@
-import { useState, useCallback, useMemo, useRef } from "react";
+import { useState, useCallback, useRef } from "react";
 import type {
     Connection,
-    NodeChange,
     NodeMouseHandler,
     OnConnectStartParams,
 } from "@xyflow/react";
 import { useDiagramStore } from "../store/diagramStore";
-import { withoutHistory } from "../store/diagramHistory";
+import { replaceSelection } from "../store/nodeSelection";
 import type { RelationshipType } from "../types/flow.types";
 import type { DiagramTool } from "../components/canvas/LeftToolbox";
 
@@ -17,20 +16,6 @@ const makePendingConn = (source: string, target: string): Connection => ({
     targetHandle: null,
 });
 
-/** Replaces the current node selection with exactly the given ids. No history entry. */
-function replaceSelection(ids: string[]) {
-    withoutHistory(() => {
-        const { nodes, onNodesChange } = useDiagramStore.getState();
-        const keep = new Set(ids);
-        const changes: NodeChange[] = nodes.map((n) => ({
-            type: "select",
-            id: n.id,
-            selected: keep.has(n.id),
-        }));
-        onNodesChange(changes);
-    });
-}
-
 /** Reads the React Flow node id from a raw mouse event's target element. */
 function nodeIdFromEvent(event: MouseEvent | TouchEvent): string | null {
     const el = event.target;
@@ -39,7 +24,7 @@ function nodeIdFromEvent(event: MouseEvent | TouchEvent): string | null {
 }
 
 export function useConnectMode(activeTool: DiagramTool) {
-    const nodes = useDiagramStore((s) => s.nodes);
+    const displayNodes = useDiagramStore((s) => s.nodes);
     const addEdgeWithType = useDiagramStore((s) => s.addEdgeWithType);
     const createJunctionTable = useDiagramStore((s) => s.createJunctionTable);
 
@@ -104,6 +89,7 @@ export function useConnectMode(activeTool: DiagramTool) {
 
             // First click: remember source. Clicking the same node again cancels.
             if (!pendingConnectSource) {
+                replaceSelection([node.id]);
                 setPendingConnectSource(node.id);
                 return;
             }
@@ -130,16 +116,6 @@ export function useConnectMode(activeTool: DiagramTool) {
         },
         [pendingConn, addEdgeWithType, createJunctionTable],
     );
-
-    /** Visual-only highlight for the first picked node in click-to-connect mode. */
-    const displayNodes = useMemo(() => {
-        if (!pendingConnectSource) return nodes;
-        return nodes.map((n) =>
-            n.id === pendingConnectSource && !n.selected
-                ? { ...n, selected: true }
-                : n,
-        );
-    }, [nodes, pendingConnectSource]);
 
     return {
         pendingConn,

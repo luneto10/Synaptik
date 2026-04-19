@@ -3,6 +3,7 @@ import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { DbColumn } from "../../../features/diagram/types/db.types";
 import type { TableNode } from "../../../features/diagram/types/flow.types";
+import { isTableNode } from "../../../features/diagram/types/flow.types";
 import { useDiagramStore } from "../../../features/diagram/store/diagramStore";
 import { useConnectMode } from "../../../features/diagram/hooks/useConnectMode";
 
@@ -89,7 +90,10 @@ describe("useConnectMode integration", () => {
 
         const state = useDiagramStore.getState();
         expect(state.edges.length).toBe(1);
-        expect(state.nodes.find((n) => n.id === "orders")?.data.columns.some((c) => c.name === "user_id")).toBe(true);
+        const ordersTable = state.nodes.find(
+            (n): n is TableNode => n.id === "orders" && isTableNode(n),
+        );
+        expect(ordersTable?.data.columns.some((c) => c.name === "user_id")).toBe(true);
         expect(result.current.pendingConn).toBeNull();
     });
 

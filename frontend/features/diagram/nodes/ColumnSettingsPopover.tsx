@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Settings2, KeyRound } from "lucide-react";
 import type { DbColumn } from "../types/db.types";
 import type { TableNode, RelationEdge } from "../types/flow.types";
+import { isTableNode } from "../types/flow.types";
 import { useDiagramStore } from "../store/diagramStore";
 import { SidePicker } from "../components/SidePicker";
 import { getHandleSide } from "../utils/handleIds";
@@ -65,7 +66,9 @@ export default function ColumnSettingsPopover({
 
     const readSnapshot = useCallback((): Snapshot => {
         const { nodes, edges } = useDiagramStore.getState();
-        const otherNodes = nodes.filter((n) => n.id !== nodeId);
+        const otherNodes = nodes.filter(
+            (n): n is TableNode => n.id !== nodeId && isTableNode(n),
+        );
         // Find edge by column data IDs (works with node-level handles)
         const connectedEdge = edges.find(
             (e) =>

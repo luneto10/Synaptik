@@ -42,6 +42,7 @@ export function DiagramCanvas() {
         displayEdges,
         activeTool,
         toggles,
+        addBoxPreview,
         isGrabbing,
         isPending,
         tableDialogOpen,
@@ -125,6 +126,28 @@ export function DiagramCanvas() {
                     </div>
                 )}
 
+                {activeTool === "addBox" && !addBoxPreview && (
+                    <div
+                        className="absolute top-3 left-1/2 -translate-x-1/2 z-20
+                                    text-xs bg-indigo-600 text-white px-3 py-1.5 rounded-full
+                                    shadow-lg pointer-events-none select-none"
+                    >
+                        Drag to draw a category box
+                    </div>
+                )}
+
+                {addBoxPreview && (
+                    <div
+                        className="fixed z-30 pointer-events-none rounded-xl border-2 border-dashed border-indigo-500/70 bg-indigo-500/10"
+                        style={{
+                            left: addBoxPreview.x,
+                            top: addBoxPreview.y,
+                            width: addBoxPreview.w,
+                            height: addBoxPreview.h,
+                        }}
+                    />
+                )}
+
                 <ReactFlow
                     nodes={displayNodes}
                     edges={displayEdges}
@@ -145,6 +168,7 @@ export function DiagramCanvas() {
                     fitViewOptions={FIT_VIEW_OPTIONS}
                     minZoom={0.2}
                     maxZoom={2}
+                    elevateNodesOnSelect={false}
                     selectionOnDrag={activeTool === "select"}
                     panOnDrag={PAN_ON_DRAG_MIDDLE_RIGHT}
                     selectionMode={SelectionMode.Partial}

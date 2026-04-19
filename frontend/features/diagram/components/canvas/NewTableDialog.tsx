@@ -16,6 +16,7 @@ import { endDiagramHistoryGestureIfActive } from "../../store/diagramHistory";
 import { onInputCommit } from "../../utils/onInputCommit";
 import InlineFieldError from "../common/InlineFieldError";
 import { hasDuplicateTableName } from "../../utils/nameValidation";
+import { isTableNode } from "../../types/flow.types";
 
 interface NewTableDialogProps {
     open: boolean;
@@ -50,7 +51,7 @@ export default function NewTableDialog({
     const handleCreate = () => {
         const trimmed = name.trim();
         const nextName = trimmed || "new_table";
-        const nodes = useDiagramStore.getState().nodes;
+        const nodes = useDiagramStore.getState().nodes.filter(isTableNode);
         if (hasDuplicateTableName(nodes, nextName)) {
             setError("A table with this name already exists.");
             requestAnimationFrame(() => inputRef.current?.focus());
