@@ -212,7 +212,7 @@ function TableNode({ id, data, selected, dragging }: NodeProps<TableNodeType>) {
 
             <div
                 className={cn(
-                    "bg-card rounded-xl border w-full h-full flex flex-col overflow-hidden",
+                    "bg-card rounded-xl border w-full h-full flex flex-col overflow-hidden cursor-grab active:cursor-grabbing",
                     "transition-all duration-150",
                     selected && data.isJunction
                         ? "border-violet-500/70 shadow-xl shadow-violet-500/15 ring-1 ring-violet-500/20"

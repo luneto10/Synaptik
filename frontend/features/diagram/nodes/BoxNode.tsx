@@ -55,7 +55,7 @@ function BoxNode({ id, data, selected }: NodeProps<BoxNodeType>) {
             />
 
             <div
-                className="w-full h-full rounded-xl border-2 transition-colors duration-150"
+                className="w-full h-full rounded-xl border-2 transition-colors duration-150 cursor-grab active:cursor-grabbing"
                 style={{
                     backgroundColor: fill,
                     borderColor,
