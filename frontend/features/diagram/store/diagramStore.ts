@@ -4,6 +4,7 @@ import { immer } from "zustand/middleware/immer";
 import type { DiagramState, SetState } from "./diagramStore.types";
 import { createNodeActions } from "./nodeActions";
 import { createEdgeActions } from "./edgeActions";
+import { createClipboardActions } from "./clipboardActions";
 import { HISTORY_LIMIT } from "../constants";
 
 // ── Store ──────────────────
@@ -20,6 +21,7 @@ export const useDiagramStore = create<DiagramState>()(
                 edges: [],
                 ...createNodeActions(s),
                 ...createEdgeActions(s),
+                ...createClipboardActions(s),
             };
         }),
         {
