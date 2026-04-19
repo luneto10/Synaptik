@@ -7,6 +7,7 @@ import { useConnectMode } from "./useConnectMode";
 import { useKeyboardShortcuts } from "./useKeyboardShortcuts";
 import { useFlowCanvasChangeHandlers } from "./useFlowCanvasChangeHandlers";
 import { useGrabMode } from "./useGrabMode";
+import { useAddBoxMode } from "./useAddBoxMode";
 import { useSelectedNodeIds } from "./useSelectedNodeId";
 import { useDiagramUiState } from "./useDiagramUiState";
 import { useIsolatedEdges } from "./useIsolatedEdges";
@@ -76,6 +77,12 @@ export function useDiagramCanvas() {
         onMouseMoveCapture,
     } = useGrabMode({ containerRef, activeTool, setActiveTool });
 
+    const { preview: addBoxPreview } = useAddBoxMode({
+        containerRef,
+        activeTool,
+        setActiveTool,
+    });
+
     const { isPending, handleSave, handleLoadExample, handleAutoLayout } =
         useDiagramActions();
 
@@ -114,6 +121,7 @@ export function useDiagramCanvas() {
         displayEdges,
         activeTool,
         toggles,
+        addBoxPreview,
         isGrabbing,
         isPending,
         tableDialogOpen,

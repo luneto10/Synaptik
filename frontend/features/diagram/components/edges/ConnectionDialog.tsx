@@ -17,6 +17,7 @@ import { Switch } from "@/components/ui/switch";
 import { ArrowRight, TableProperties, KeyRound } from "lucide-react";
 import type { Connection } from "@xyflow/react";
 import type { RelationshipType, TableNode } from "../../types/flow.types";
+import { isTableNode } from "../../types/flow.types";
 import { useDiagramStore } from "../../store/diagramStore";
 import { RelationTypePicker } from "./RelationTypePicker";
 import { defaultFkColumnName } from "../../store/helpers";
@@ -158,14 +159,14 @@ export default function ConnectionDialog({
 }: ConnectionDialogProps) {
     const nodes = useDiagramStore((s) => s.nodes);
 
-    const sourceNode = useMemo(
-        () => nodes.find((n) => n.id === connection?.source),
-        [nodes, connection?.source],
-    );
-    const targetNode = useMemo(
-        () => nodes.find((n) => n.id === connection?.target),
-        [nodes, connection?.target],
-    );
+    const sourceNode = useMemo<TableNode | undefined>(() => {
+        const n = nodes.find((n) => n.id === connection?.source);
+        return n && isTableNode(n) ? n : undefined;
+    }, [nodes, connection?.source]);
+    const targetNode = useMemo<TableNode | undefined>(() => {
+        const n = nodes.find((n) => n.id === connection?.target);
+        return n && isTableNode(n) ? n : undefined;
+    }, [nodes, connection?.target]);
     const defaultFkName = sourceNode ? defaultFkColumnName(sourceNode.data.name) : "";
 
     if (!connection || !sourceNode || !targetNode) return null;

@@ -1,6 +1,7 @@
 import { useDiagramStore } from "./diagramStore";
 import { EDGE_STYLE, LAYOUT } from "../constants";
-import type { RelationEdge, TableNode } from "../types/flow.types";
+import type { DiagramNode, RelationEdge, TableNode } from "../types/flow.types";
+import { isTableNode } from "../types/flow.types";
 
 type NodeBounds = { x0: number; x1: number; y0: number; y1: number };
 
@@ -112,7 +113,13 @@ export function computeEdgeOffsets(
  */
 export function useEdgeOffset(edgeId: string): number {
     return useDiagramStore((s) => {
-        const offsets = computeEdgeOffsets(s.nodes, s.edges);
+        const offsets = computeEdgeOffsets(
+            s.nodes.filter(isTableNode),
+            s.edges,
+        );
         return offsets.get(edgeId) ?? EDGE_STYLE.baseOffset;
     });
 }
+
+// Explicit re-export so callers can pass DiagramNode[] at higher layers.
+export type { DiagramNode };

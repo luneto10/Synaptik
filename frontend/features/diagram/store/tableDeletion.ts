@@ -1,5 +1,6 @@
 import type { Draft } from "immer";
-import type { TableNode, RelationEdge } from "../types/flow.types";
+import type { RelationEdge } from "../types/flow.types";
+import { isTableNode } from "../types/flow.types";
 import type { DiagramState } from "./diagramStore.types";
 import { makeMnEdge, stripAutoCol } from "./helpers";
 
@@ -8,16 +9,16 @@ export function removeTableAndCascadeInDraft(
     draft: Draft<DiagramState>,
     nodeId: string,
 ): void {
+    const tables = draft.nodes.filter(isTableNode);
+
     for (const edge of draft.edges.filter((e) => e.source === nodeId)) {
         stripAutoCol(
-            draft.nodes as TableNode[],
+            tables,
             edge.data?.autoCreatedColumnId,
             edge.data?.autoCreatedColumnNodeId ?? edge.target,
         );
     }
-    draft.nodes = draft.nodes.filter(
-        (n) => n.id !== nodeId,
-    ) as TableNode[];
+    draft.nodes = draft.nodes.filter((n) => n.id !== nodeId);
 
     const filteredEdges = draft.edges.filter(
         (e) => e.source !== nodeId && e.target !== nodeId,
@@ -26,8 +27,9 @@ export function removeTableAndCascadeInDraft(
         (e) => e.data?.junctionTableId === nodeId,
     );
     if (junctionEdges.length > 0) {
+        // Re-read tables since the cascading delete removed the junction node.
         const mn = makeMnEdge(
-            draft.nodes as TableNode[],
+            draft.nodes.filter(isTableNode),
             junctionEdges as RelationEdge[],
         );
         draft.edges = mn ? [...filteredEdges, mn] : filteredEdges;

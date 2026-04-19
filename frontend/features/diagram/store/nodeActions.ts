@@ -1,7 +1,9 @@
 import { applyNodeChanges, type NodeChange } from "@xyflow/react";
 import {
     TABLE_NODE_TYPE,
+    isTableNode,
     type TableNode,
+    type DiagramNode,
     type RelationEdge,
 } from "../types/flow.types";
 import { LAYOUT } from "../constants";
@@ -23,15 +25,24 @@ import {
 } from "../utils/nameValidation";
 import { findSpawnPosition } from "../utils/geometry";
 import { normalizeEdgeHandles } from "../utils/handleNormalization";
+import { createBoxActions } from "./boxActions";
+import { hasMeaningfulNodeChanges } from "./nodeChangeGuards";
+
+/** Narrow a draft node to TableNode, or null if it's a box. */
+function findTable(nodes: DiagramNode[], id: string): TableNode | null {
+    const node = nodes.find((n) => n.id === id);
+    return node && isTableNode(node) ? node : null;
+}
 
 export function createNodeActions(set: SetState) {
     return {
         onNodesChange: (changes: NodeChange[]) =>
             set((draft) => {
+                if (!hasMeaningfulNodeChanges(draft.nodes, changes)) return;
                 draft.nodes = applyNodeChanges(
                     changes,
                     draft.nodes,
-                ) as TableNode[];
+                ) as DiagramNode[];
             }),
 
         addTable: (name: string, position?: { x: number; y: number }) =>
@@ -39,8 +50,8 @@ export function createNodeActions(set: SetState) {
                 const trimmedName = name.trim();
                 const finalName = trimmedName || "new_table";
                 if (!normalizeName(finalName)) return;
-                if (hasDuplicateTableName(draft.nodes as TableNode[], finalName))
-                    return;
+                const tables = draft.nodes.filter(isTableNode);
+                if (hasDuplicateTableName(tables, finalName)) return;
 
                 const id = crypto.randomUUID();
                 let pos: { x: number; y: number };
@@ -50,9 +61,9 @@ export function createNodeActions(set: SetState) {
                         x: position.x - LAYOUT.DEFAULT_NODE_WIDTH / 2,
                         y: position.y - 60,
                     };
-                    pos = findSpawnPosition(draft.nodes as TableNode[], desired);
+                    pos = findSpawnPosition(tables, desired);
                 } else {
-                    const col = draft.nodes.length;
+                    const col = tables.length;
                     const row = Math.floor(col / LAYOUT.COLS);
                     pos = {
                         x: LAYOUT.ORIGIN_X + (col % LAYOUT.COLS) * LAYOUT.GAP_X,
@@ -63,14 +74,17 @@ export function createNodeActions(set: SetState) {
                     id,
                     type: TABLE_NODE_TYPE,
                     position: pos,
+                    zIndex: 1,
                     data: { id, name: finalName, columns: [makePkCol()] },
                 });
             }),
+        ...createBoxActions(set),
 
         addColumn: (nodeId: string, columnId?: string) =>
             set((draft) => {
-                const node = draft.nodes.find((n) => n.id === nodeId);
-                node?.data.columns.push({
+                const node = findTable(draft.nodes, nodeId);
+                if (!node) return;
+                node.data.columns.push({
                     id: columnId ?? crypto.randomUUID(),
                     name: "column_name",
                     type: "text",
@@ -83,7 +97,7 @@ export function createNodeActions(set: SetState) {
 
         updateColumn: (nodeId: string, column: DbColumn) =>
             set((draft) => {
-                const node = draft.nodes.find((n) => n.id === nodeId);
+                const node = findTable(draft.nodes, nodeId);
                 if (!node) return;
                 if (!normalizeName(column.name)) return;
                 if (
@@ -102,12 +116,14 @@ export function createNodeActions(set: SetState) {
 
         removeColumn: (nodeId: string, columnId: string) =>
             set((draft) => {
-                const node = draft.nodes.find((n) => n.id === nodeId);
+                const node = findTable(draft.nodes, nodeId);
                 if (!node) return;
 
                 // Deleting an FK column from a junction table drops the whole junction
                 const col = node.data.columns.find((c) => c.id === columnId);
-                const isJunction = draft.edges.some((e) => e.data?.junctionTableId === nodeId);
+                const isJunction = draft.edges.some(
+                    (e) => e.data?.junctionTableId === nodeId,
+                );
                 if (isJunction && col?.isForeignKey) {
                     removeTableAndCascadeInDraft(draft, nodeId);
                     return;
@@ -120,13 +136,13 @@ export function createNodeActions(set: SetState) {
 
         renameTable: (nodeId: string, name: string) =>
             set((draft) => {
-                const node = draft.nodes.find((n) => n.id === nodeId);
+                const node = findTable(draft.nodes, nodeId);
                 if (!node) return;
                 const trimmedName = name.trim();
                 if (!normalizeName(trimmedName)) return;
                 if (
                     hasDuplicateTableName(
-                        draft.nodes as TableNode[],
+                        draft.nodes.filter(isTableNode),
                         trimmedName,
                         nodeId,
                     )
@@ -153,12 +169,8 @@ export function createNodeActions(set: SetState) {
 
         createJunctionTable: (sourceNodeId: string, targetNodeId: string) =>
             set((draft) => {
-                const sourceNode = draft.nodes.find(
-                    (n) => n.id === sourceNodeId,
-                );
-                const targetNode = draft.nodes.find(
-                    (n) => n.id === targetNodeId,
-                );
+                const sourceNode = findTable(draft.nodes, sourceNodeId);
+                const targetNode = findTable(draft.nodes, targetNodeId);
                 if (!sourceNode || !targetNode) return;
 
                 const sourcePk = sourceNode.data.columns.find(
@@ -231,7 +243,7 @@ export function createNodeActions(set: SetState) {
                     },
                 );
 
-                const tgt = draft.nodes.find((n) => n.id === targetNodeId);
+                const tgt = findTable(draft.nodes, targetNodeId);
                 if (tgt)
                     tgt.position = {
                         x: junctionX + LAYOUT.JUNCTION_GAP,
@@ -242,10 +254,13 @@ export function createNodeActions(set: SetState) {
                 draft.edges.push(edgeToSource, edgeToTarget);
             }),
 
-        loadDiagram: (nodes: TableNode[], edges: RelationEdge[]) =>
+        loadDiagram: (nodes: DiagramNode[], edges: RelationEdge[]) =>
             set((draft) => {
                 draft.nodes = nodes;
-                draft.edges = normalizeEdgeHandles(nodes, edges);
+                draft.edges = normalizeEdgeHandles(
+                    nodes.filter(isTableNode),
+                    edges,
+                );
             }),
     };
 }
