@@ -1,21 +1,28 @@
 import { useCallback, useState } from "react";
 import { endDiagramHistoryGestureIfActive } from "../store/diagramHistory";
-import type { DiagramTool } from "../components/canvas/LeftToolbox";
+import {
+    TOOLS,
+    type DiagramTool,
+    type DiagramToggle,
+    type ToolValue,
+} from "../components/canvas/LeftToolbox";
 
 type UiStateArgs = {
-    activeTool: DiagramTool;
     setActiveTool: (tool: DiagramTool) => void;
     setPendingConnectSource: (id: string | null) => void;
     selectedNodeId: string | undefined;
 };
 
 /**
- * Owns transient canvas UI flags (dialog, minimap, search, isolate) and the
- * tool-change orchestration. `activeTool` state itself lives in the caller so
+ * Owns transient canvas UI flags (dialog, minimap, search, toggles) and the
+ * tool-action dispatch. `activeTool` state itself lives in the caller so
  * `useConnectMode` can read it without a circular hook dependency.
+ *
+ * `handleToolAction` is the single entry point for the toolbox and keyboard
+ * shortcuts: it looks up the descriptor in `TOOLS` and routes to the correct
+ * behavior (exclusive tool vs. independent toggle).
  */
 export function useDiagramUiState({
-    activeTool,
     setActiveTool,
     setPendingConnectSource,
     selectedNodeId,
@@ -24,26 +31,34 @@ export function useDiagramUiState({
     const [showMinimap, setShowMinimap] = useState(false);
     const [searchOpen, setSearchOpen] = useState(false);
     const [searchTargetId, setSearchTargetId] = useState<string | null>(null);
+    const [toggleState, setToggleState] = useState<Record<DiagramToggle, boolean>>({
+        isolateConnections: false,
+    });
 
-    const handleToolChange = useCallback(
-        (tool: DiagramTool) => {
-            // Isolate mode toggles off if clicked while active; others are standard switches.
-            const nextTool =
-                tool === "isolateConnections" && activeTool === "isolateConnections"
-                    ? "select"
-                    : tool;
+    const handleToolAction = useCallback(
+        (value: ToolValue) => {
+            const descriptor = TOOLS.find((t) => t.value === value);
+            if (!descriptor) return;
 
-            setActiveTool(nextTool);
+            if (descriptor.kind === "toggle") {
+                setToggleState((prev) => ({
+                    ...prev,
+                    [descriptor.value]: !prev[descriptor.value],
+                }));
+                return;
+            }
+
+            setActiveTool(descriptor.value);
 
             // Side-effect: Auto-fill connection source if exactly one node is selected.
             setPendingConnectSource(
-                nextTool === "connect" ? (selectedNodeId ?? null) : null,
+                descriptor.value === "connect" ? (selectedNodeId ?? null) : null,
             );
 
             // Side-effect: Trigger the table configuration dialog.
-            if (nextTool === "addTable") setTableDialogOpen(true);
+            if (descriptor.value === "addTable") setTableDialogOpen(true);
         },
-        [activeTool, setActiveTool, setPendingConnectSource, selectedNodeId],
+        [setActiveTool, setPendingConnectSource, selectedNodeId],
     );
 
     const handleTableDialogClose = useCallback(
@@ -75,7 +90,9 @@ export function useDiagramUiState({
         setSearchOpen,
         searchTargetId,
         setSearchTargetId,
-        handleToolChange,
+        toggles: toggleState,
+        isolateConnections: toggleState.isolateConnections,
+        handleToolAction,
         handleTableDialogClose,
         handleToggleMinimap,
         handleToggleSearch,
