@@ -1,4 +1,3 @@
-import type { DbColumn } from "../types/db.types";
 import {
     isBoxNode,
     isTableNode,
@@ -7,23 +6,16 @@ import {
     type RelationEdge,
     type TableNode,
 } from "../types/flow.types";
+import type { DbColumn } from "../types/db.types";
 import { handleIds } from "../utils/handleIds";
 import {
     hasDuplicateCategoryTitle,
     hasDuplicateTableName,
 } from "../utils/nameValidation";
-import { LAYOUT, PASTE_OFFSET } from "../constants";
+import { DUPLICATE_OFFSET, LAYOUT } from "../constants";
 import type { DiagramState, SetState } from "./diagramStore.types";
-import { getClipboard, setClipboard } from "./clipboard";
-import { useDiagramStore } from "./diagramStore";
 
-type ClipboardActions = Pick<DiagramState, "copySelection" | "pasteClipboard">;
-
-function clearSelection(nodes: DiagramNode[]) {
-    for (const node of nodes) {
-        if (node.selected) node.selected = false;
-    }
-}
+type DuplicateAction = Pick<DiagramState, "duplicateSelection">;
 
 function uniqueTableName(tables: TableNode[], baseName: string): string {
     const first = `${baseName}_copy`;
@@ -69,12 +61,11 @@ function cloneColumn(
     nodeIdMap: Map<string, string>,
 ): DbColumn {
     const newId = columnIdMap.get(col.id);
-    if (!newId) throw new Error(`clipboardActions: missing columnIdMap entry for ${col.id}`);
+    if (!newId) throw new Error(`duplicateAction: missing columnIdMap entry for ${col.id}`);
     const cloned: DbColumn = { ...col, id: newId };
     if (col.references) {
         const mappedTable = nodeIdMap.get(col.references.tableId);
         if (mappedTable) {
-            // FK points into the copied set — remap both ends.
             cloned.references = {
                 tableId: mappedTable,
                 columnId:
@@ -82,7 +73,6 @@ function cloneColumn(
                     col.references.columnId,
             };
         } else {
-            // FK points at an external (non-copied) table — keep original reference.
             cloned.references = { ...col.references };
         }
     }
@@ -97,7 +87,7 @@ function cloneTableNode(
     offset: { x: number; y: number },
 ): TableNode {
     const newId = nodeIdMap.get(table.id);
-    if (!newId) throw new Error(`clipboardActions: missing nodeIdMap entry for ${table.id}`);
+    if (!newId) throw new Error(`duplicateAction: missing nodeIdMap entry for ${table.id}`);
     const newName = uniqueTableName(existingTables, table.data.name);
     const newColumns = table.data.columns.map((c) =>
         cloneColumn(c, columnIdMap, nodeIdMap),
@@ -126,7 +116,7 @@ function cloneBoxNode(
     offset: { x: number; y: number },
 ): BoxNode {
     const newId = nodeIdMap.get(box.id);
-    if (!newId) throw new Error(`clipboardActions: missing nodeIdMap entry for ${box.id}`);
+    if (!newId) throw new Error(`duplicateAction: missing nodeIdMap entry for ${box.id}`);
     const newTitle = uniqueBoxTitle(existingBoxes, box.data.title);
     return {
         ...box,
@@ -143,7 +133,6 @@ function cloneBoxNode(
     };
 }
 
-/** Returns null when the edge's junction reference points at a non-copied node. */
 function cloneEdge(
     edge: RelationEdge,
     nodeIdMap: Map<string, string>,
@@ -159,7 +148,7 @@ function cloneEdge(
         let newJunctionTableId = oldData.junctionTableId;
         if (newJunctionTableId !== undefined) {
             const mapped = nodeIdMap.get(newJunctionTableId);
-            if (!mapped) return null; // Drop edges whose junction isn't in the clipboard.
+            if (!mapped) return null;
             newJunctionTableId = mapped;
         }
         newData = {
@@ -200,29 +189,47 @@ function cloneEdge(
     };
 }
 
-export function createClipboardActions(set: SetState): ClipboardActions {
+/**
+ * Computes a horizontal offset that places duplicated nodes to the right of the
+ * selection's bounding box, with a small gap. Uses the widest measured width in
+ * the selection so clones never overlap the originals.
+ */
+function computeRightOffset(nodes: DiagramNode[]): { x: number; y: number } {
+    let maxRight = -Infinity;
+    let minLeft = Infinity;
+    for (const n of nodes) {
+        const w =
+            typeof n.width === "number"
+                ? n.width
+                : n.measured?.width ?? LAYOUT.DEFAULT_NODE_WIDTH;
+        const right = n.position.x + w;
+        if (right > maxRight) maxRight = right;
+        if (n.position.x < minLeft) minLeft = n.position.x;
+    }
+    // Total width of the bounding box + a gap
+    const boundingWidth = maxRight - minLeft;
+    return { x: boundingWidth + DUPLICATE_OFFSET, y: 0 };
+}
+
+export function createDuplicateAction(set: SetState): DuplicateAction {
     return {
-        copySelection: () => {
-            const { nodes, edges } = useDiagramStore.getState();
-            const selectedNodes = nodes.filter((n) => n.selected);
-            if (selectedNodes.length === 0) return;
-            const selectedIds = new Set(selectedNodes.map((n) => n.id));
-            const selectedEdges = edges.filter(
-                (e) => selectedIds.has(e.source) && selectedIds.has(e.target),
-            );
-            setClipboard({ nodes: selectedNodes, edges: selectedEdges });
-        },
-
-        pasteClipboard: (anchor?: { x: number; y: number }) =>
+        duplicateSelection: () =>
             set((draft) => {
-                const payload = getClipboard();
-                if (!payload || payload.nodes.length === 0) return;
+                const selectedNodes = draft.nodes.filter((n) => n.selected);
+                if (selectedNodes.length === 0) return;
 
-                clearSelection(draft.nodes);
+                const selectedIds = new Set(selectedNodes.map((n) => n.id));
+                const selectedEdges = draft.edges.filter(
+                    (e) => selectedIds.has(e.source) && selectedIds.has(e.target),
+                );
+
+                for (const node of draft.nodes) {
+                    if (node.selected) node.selected = false;
+                }
 
                 const nodeIdMap = new Map<string, string>();
                 const columnIdMap = new Map<string, string>();
-                for (const n of payload.nodes) {
+                for (const n of selectedNodes) {
                     nodeIdMap.set(n.id, crypto.randomUUID());
                     if (isTableNode(n)) {
                         for (const c of n.data.columns) {
@@ -231,39 +238,12 @@ export function createClipboardActions(set: SetState): ClipboardActions {
                     }
                 }
 
-                let offset: { x: number; y: number };
-                if (anchor) {
-                    let minX = Infinity;
-                    let minY = Infinity;
-                    let maxX = -Infinity;
-                    let maxY = -Infinity;
-                    for (const n of payload.nodes) {
-                        const w =
-                            typeof n.width === "number"
-                                ? n.width
-                                : n.measured?.width ??
-                                LAYOUT.DEFAULT_NODE_WIDTH;
-                        const h =
-                            typeof n.height === "number"
-                                ? n.height
-                                : n.measured?.height ??
-                                LAYOUT.DEFAULT_NODE_HEIGHT;
-                        if (n.position.x < minX) minX = n.position.x;
-                        if (n.position.y < minY) minY = n.position.y;
-                        if (n.position.x + w > maxX) maxX = n.position.x + w;
-                        if (n.position.y + h > maxY) maxY = n.position.y + h;
-                    }
-                    const centerX = (minX + maxX) / 2;
-                    const centerY = (minY + maxY) / 2;
-                    offset = { x: anchor.x - centerX, y: anchor.y - centerY };
-                } else {
-                    offset = { x: PASTE_OFFSET, y: PASTE_OFFSET };
-                }
+                const offset = computeRightOffset(selectedNodes);
 
                 const tablesSoFar = draft.nodes.filter(isTableNode) as TableNode[];
                 const boxesSoFar = draft.nodes.filter(isBoxNode) as BoxNode[];
 
-                for (const n of payload.nodes) {
+                for (const n of selectedNodes) {
                     if (isTableNode(n)) {
                         const clone = cloneTableNode(n, nodeIdMap, columnIdMap, tablesSoFar, offset);
                         draft.nodes.push(clone);
@@ -275,7 +255,7 @@ export function createClipboardActions(set: SetState): ClipboardActions {
                     }
                 }
 
-                for (const e of payload.edges) {
+                for (const e of selectedEdges) {
                     const clone = cloneEdge(e, nodeIdMap, columnIdMap);
                     if (clone) draft.edges.push(clone);
                 }

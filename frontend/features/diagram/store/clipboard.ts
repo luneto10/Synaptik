@@ -1,8 +1,5 @@
 import type { DiagramNode, RelationEdge } from "../types/flow.types";
 
-// Module-level clipboard. Deliberately outside zundo so it survives undo/redo,
-// and outside zustand so it doesn't trigger subscriber re-renders.
-
 export interface ClipboardPayload {
     nodes: DiagramNode[];
     edges: RelationEdge[];

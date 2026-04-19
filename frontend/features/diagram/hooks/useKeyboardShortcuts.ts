@@ -47,14 +47,20 @@ export function useKeyboardShortcuts({
         event.preventDefault();
         const anchor = getPasteAnchor?.() ?? undefined;
         useDiagramStore.getState().pasteClipboard(anchor);
-        // Activate xyflow's NodesSelection box so pasted nodes render inside a
-        // draggable group, matching the behaviour after a drag-box selection.
-        // Must run after xyflow's internal setNodes (triggered by the node
-        // prop change), which would otherwise reset the flag.
         queueMicrotask(() => {
             reactFlowStore.setState({ nodesSelectionActive: true });
         });
     }, [getPasteAnchor, reactFlowStore]);
+
+    const handleDuplicate = useCallback((event: KeyboardEvent) => {
+        const { nodes, duplicateSelection } = useDiagramStore.getState();
+        if (!nodes.some((n) => n.selected)) return;
+        event.preventDefault();
+        duplicateSelection();
+        queueMicrotask(() => {
+            reactFlowStore.setState({ nodesSelectionActive: true });
+        });
+    }, [reactFlowStore]);
 
     useHotkeys("mod+z", handleUndo, {
         preventDefault: true,
@@ -66,6 +72,7 @@ export function useKeyboardShortcuts({
     });
     useHotkeys("mod+c", handleCopy, { preventDefault: false });
     useHotkeys("mod+v", handlePaste, { preventDefault: false });
+    useHotkeys("mod+d", handleDuplicate, { preventDefault: true });
 
     useHotkeys("l", handleAutoLayout, { preventDefault: true });
     useHotkeys("m", handleToggleMinimap, { preventDefault: true });
