@@ -38,7 +38,6 @@ function uniqueBoxTitle(boxes: BoxNode[], baseTitle: string): string {
     return `${baseTitle}_copy_${counter}`;
 }
 
-/** Handle format: `{colId}-{source|target}-{left|right}` — see handleIds.ts. */
 function remapHandle(
     handle: string | null | undefined,
     columnIdMap: Map<string, string>,
@@ -160,17 +159,17 @@ function cloneEdge(
                 columnIdMap.get(oldData.targetColumnId) ?? oldData.targetColumnId,
             ...(oldData.autoCreatedColumnId !== undefined
                 ? {
-                      autoCreatedColumnId:
-                          columnIdMap.get(oldData.autoCreatedColumnId) ??
-                          oldData.autoCreatedColumnId,
-                  }
+                    autoCreatedColumnId:
+                        columnIdMap.get(oldData.autoCreatedColumnId) ??
+                        oldData.autoCreatedColumnId,
+                }
                 : {}),
             ...(oldData.autoCreatedColumnNodeId !== undefined
                 ? {
-                      autoCreatedColumnNodeId:
-                          nodeIdMap.get(oldData.autoCreatedColumnNodeId) ??
-                          oldData.autoCreatedColumnNodeId,
-                  }
+                    autoCreatedColumnNodeId:
+                        nodeIdMap.get(oldData.autoCreatedColumnNodeId) ??
+                        oldData.autoCreatedColumnNodeId,
+                }
                 : {}),
             ...(newJunctionTableId !== undefined
                 ? { junctionTableId: newJunctionTableId }
@@ -224,12 +223,10 @@ export function createDuplicateAction(set: SetState): DuplicateAction {
                     (e) => selectedIds.has(e.source) && selectedIds.has(e.target),
                 );
 
-                // Clear selection on existing nodes so only clones are selected.
                 for (const node of draft.nodes) {
                     if (node.selected) node.selected = false;
                 }
 
-                // Build id maps.
                 const nodeIdMap = new Map<string, string>();
                 const columnIdMap = new Map<string, string>();
                 for (const n of selectedNodes) {
@@ -243,7 +240,6 @@ export function createDuplicateAction(set: SetState): DuplicateAction {
 
                 const offset = computeRightOffset(selectedNodes);
 
-                // Progressive collision-resolution lists.
                 const tablesSoFar = draft.nodes.filter(isTableNode) as TableNode[];
                 const boxesSoFar = draft.nodes.filter(isBoxNode) as BoxNode[];
 

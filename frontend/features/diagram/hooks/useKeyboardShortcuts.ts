@@ -47,10 +47,6 @@ export function useKeyboardShortcuts({
         event.preventDefault();
         const anchor = getPasteAnchor?.() ?? undefined;
         useDiagramStore.getState().pasteClipboard(anchor);
-        // Activate xyflow's NodesSelection box so pasted nodes render inside a
-        // draggable group, matching the behaviour after a drag-box selection.
-        // Must run after xyflow's internal setNodes (triggered by the node
-        // prop change), which would otherwise reset the flag.
         queueMicrotask(() => {
             reactFlowStore.setState({ nodesSelectionActive: true });
         });

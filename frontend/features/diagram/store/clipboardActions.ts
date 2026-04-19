@@ -46,7 +46,6 @@ function uniqueBoxTitle(boxes: BoxNode[], baseTitle: string): string {
     return `${baseTitle}_copy_${counter}`;
 }
 
-/** Handle format: `{colId}-{source|target}-{left|right}` — see handleIds.ts. */
 function remapHandle(
     handle: string | null | undefined,
     columnIdMap: Map<string, string>,
@@ -171,17 +170,17 @@ function cloneEdge(
                 columnIdMap.get(oldData.targetColumnId) ?? oldData.targetColumnId,
             ...(oldData.autoCreatedColumnId !== undefined
                 ? {
-                      autoCreatedColumnId:
-                          columnIdMap.get(oldData.autoCreatedColumnId) ??
-                          oldData.autoCreatedColumnId,
-                  }
+                    autoCreatedColumnId:
+                        columnIdMap.get(oldData.autoCreatedColumnId) ??
+                        oldData.autoCreatedColumnId,
+                }
                 : {}),
             ...(oldData.autoCreatedColumnNodeId !== undefined
                 ? {
-                      autoCreatedColumnNodeId:
-                          nodeIdMap.get(oldData.autoCreatedColumnNodeId) ??
-                          oldData.autoCreatedColumnNodeId,
-                  }
+                    autoCreatedColumnNodeId:
+                        nodeIdMap.get(oldData.autoCreatedColumnNodeId) ??
+                        oldData.autoCreatedColumnNodeId,
+                }
                 : {}),
             ...(newJunctionTableId !== undefined
                 ? { junctionTableId: newJunctionTableId }
@@ -204,7 +203,6 @@ function cloneEdge(
 export function createClipboardActions(set: SetState): ClipboardActions {
     return {
         copySelection: () => {
-            // Read-only snapshot — no set() call, no temporal history entry.
             const { nodes, edges } = useDiagramStore.getState();
             const selectedNodes = nodes.filter((n) => n.selected);
             if (selectedNodes.length === 0) return;
@@ -222,7 +220,6 @@ export function createClipboardActions(set: SetState): ClipboardActions {
 
                 clearSelection(draft.nodes);
 
-                // Build id maps up front — needed before cloning edges and FK references.
                 const nodeIdMap = new Map<string, string>();
                 const columnIdMap = new Map<string, string>();
                 for (const n of payload.nodes) {
@@ -234,9 +231,6 @@ export function createClipboardActions(set: SetState): ClipboardActions {
                     }
                 }
 
-                // Translation offset: center the dimensional bounding box on the
-                // cursor so the pointer lands on the pasted content, not its corner.
-                // Fall back to a constant diagonal when no anchor is available.
                 let offset: { x: number; y: number };
                 if (anchor) {
                     let minX = Infinity;
@@ -248,12 +242,12 @@ export function createClipboardActions(set: SetState): ClipboardActions {
                             typeof n.width === "number"
                                 ? n.width
                                 : n.measured?.width ??
-                                  LAYOUT.DEFAULT_NODE_WIDTH;
+                                LAYOUT.DEFAULT_NODE_WIDTH;
                         const h =
                             typeof n.height === "number"
                                 ? n.height
                                 : n.measured?.height ??
-                                  LAYOUT.DEFAULT_NODE_HEIGHT;
+                                LAYOUT.DEFAULT_NODE_HEIGHT;
                         if (n.position.x < minX) minX = n.position.x;
                         if (n.position.y < minY) minY = n.position.y;
                         if (n.position.x + w > maxX) maxX = n.position.x + w;
@@ -266,8 +260,6 @@ export function createClipboardActions(set: SetState): ClipboardActions {
                     offset = { x: PASTE_OFFSET, y: PASTE_OFFSET };
                 }
 
-                // Progressive collision-resolution lists — let later paste items see
-                // earlier ones so two "users" in the clipboard become users_copy + users_copy_2.
                 const tablesSoFar = draft.nodes.filter(isTableNode) as TableNode[];
                 const boxesSoFar = draft.nodes.filter(isBoxNode) as BoxNode[];
 
