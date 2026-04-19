@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, memo, useCallback } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { HexColorPicker } from "react-colorful";
+import { useShallow } from "zustand/shallow";
 import {
     Popover,
     PopoverContent,
@@ -16,6 +17,11 @@ import {
     beginDiagramHistoryGesture,
     endDiagramHistoryGestureDeferred,
 } from "../store/diagramHistory";
+import { useRafThrottle } from "../utils/useRafThrottle";
+import { normalizeHex } from "../utils/color";
+import { hasDuplicateCategoryTitle } from "../utils/nameValidation";
+import { isBoxNode } from "../types/flow.types";
+import InlineFieldError from "../components/common/InlineFieldError";
 
 interface BoxNodeEditorProps {
     nodeId: string;
@@ -25,118 +31,278 @@ interface BoxNodeEditorProps {
 }
 
 const PRESETS = [
-    "#6366f1", "#8b5cf6", "#ec4899", "#ef4444",
-    "#f97316", "#eab308", "#22c55e", "#14b8a6",
-    "#0ea5e9", "#64748b", "#1e293b", "#ffffff",
+    "#6366f1",
+    "#8b5cf6",
+    "#ec4899",
+    "#ef4444",
+    "#f97316",
+    "#eab308",
+    "#22c55e",
+    "#14b8a6",
+    "#0ea5e9",
+    "#64748b",
+    "#1e293b",
+    "#ffffff",
 ];
 
-export const BoxNodeEditor = memo(function BoxNodeEditor({ 
-    nodeId, 
-    title, 
-    color, 
-    opacity 
+export const BoxNodeEditor = memo(function BoxNodeEditor({
+    nodeId,
+    title,
+    color,
+    opacity,
 }: BoxNodeEditorProps) {
     const updateBox = useDiagramStore((s) => s.updateBox);
+    const boxes = useDiagramStore(useShallow((s) => s.nodes.filter(isBoxNode)));
     const [open, setOpen] = useState(false);
 
-    const onTitleChange = useCallback((next: string) => {
-        updateBox(nodeId, { title: next });
-    }, [nodeId, updateBox]);
+    const [draftColor, setDraftColor] = useState(color);
+    const [draftOpacity, setDraftOpacity] = useState(opacity);
+    const isDraggingRef = useRef(false);
 
-    const onColorChange = useCallback((next: string) => {
+    useEffect(() => {
+        if (!isDraggingRef.current) setDraftColor(color);
+    }, [color]);
+    useEffect(() => {
+        if (!isDraggingRef.current) setDraftOpacity(opacity);
+    }, [opacity]);
+
+    const commitColor = useRafThrottle((next: string) => {
         updateBox(nodeId, { color: next });
-    }, [nodeId, updateBox]);
-
-    const onOpacityChange = useCallback((next: number) => {
+    });
+    const commitOpacity = useRafThrottle((next: number) => {
         updateBox(nodeId, { opacity: next });
-    }, [nodeId, updateBox]);
+    });
 
-    const startGesture = useCallback(() => beginDiagramHistoryGesture(), []);
-    const endGesture = useCallback(() => endDiagramHistoryGestureDeferred(), []);
+    const [draftTitle, setDraftTitle] = useState(title);
+    const [error, setError] = useState<string | null>(null);
+    const titleFocusedRef = useRef(false);
+    useEffect(() => {
+        if (!titleFocusedRef.current) setDraftTitle(title);
+    }, [title]);
+
+    const commitTitle = useCallback(() => {
+        const next = draftTitle.trim();
+        if (!next || next === title) {
+            setDraftTitle(title);
+            setError(null);
+            return;
+        }
+
+        const isDuplicate = hasDuplicateCategoryTitle(boxes, next, nodeId);
+        if (isDuplicate) {
+            setError("Duplicate category title.");
+            return;
+        }
+
+        setError(null);
+        updateBox(nodeId, { title: next });
+        setDraftTitle(next);
+    }, [draftTitle, title, nodeId, updateBox, boxes]);
+
+    const onColorChange = useCallback(
+        (next: string) => {
+            setDraftColor(next);
+            commitColor(next);
+        },
+        [commitColor],
+    );
+
+    const onOpacityChange = useCallback(
+        (next: number) => {
+            setDraftOpacity(next);
+            commitOpacity(next);
+        },
+        [commitOpacity],
+    );
+
+    const startDrag = useCallback(() => {
+        isDraggingRef.current = true;
+        beginDiagramHistoryGesture();
+    }, []);
+    const endDrag = useCallback(() => {
+        isDraggingRef.current = false;
+        endDiagramHistoryGestureDeferred();
+    }, []);
+
+    // Hex input: double-click the swatch label to type the value directly.
+    const [editingHex, setEditingHex] = useState(false);
+    const [hexDraft, setHexDraft] = useState(draftColor);
+    const hexInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (!editingHex) setHexDraft(draftColor);
+    }, [draftColor, editingHex]);
+
+    useEffect(() => {
+        if (editingHex) {
+            hexInputRef.current?.focus();
+            hexInputRef.current?.select();
+        }
+    }, [editingHex]);
+
+    const commitHex = useCallback(() => {
+        const next = normalizeHex(hexDraft);
+        if (next) {
+            setDraftColor(next);
+            updateBox(nodeId, { color: next });
+        } else {
+            setHexDraft(draftColor);
+        }
+        setEditingHex(false);
+    }, [hexDraft, draftColor, nodeId, updateBox]);
 
     return (
         <div
-            className="flex items-center gap-1.5 rounded-lg bg-card border border-border shadow-md px-1.5 py-1"
+            className="flex flex-col gap-0.5 rounded-lg bg-card border border-border shadow-md p-1 min-w-[240px]"
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
         >
-            <Input
-                value={title}
-                onChange={(e) => onTitleChange(e.target.value)}
-                onFocus={startGesture}
-                onBlur={endGesture}
-                placeholder="Untitled category"
-                className="h-7 w-40 text-xs border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
-            />
+            <div className="flex items-center gap-1.5 px-0.5">
+                <div className="flex-1">
+                    <Input
+                        value={draftTitle}
+                        onChange={(e) => {
+                            setDraftTitle(e.target.value);
+                            if (error) setError(null);
+                        }}
+                        onFocus={() => {
+                            titleFocusedRef.current = true;
+                            beginDiagramHistoryGesture();
+                        }}
+                        onBlur={() => {
+                            titleFocusedRef.current = false;
+                            commitTitle();
+                            endDiagramHistoryGestureDeferred();
+                        }}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                                commitTitle();
+                                e.currentTarget.blur();
+                            } else if (e.key === "Escape") {
+                                setDraftTitle(title);
+                                setError(null);
+                                e.currentTarget.blur();
+                            }
+                        }}
+                        placeholder="Untitled category"
+                        className="h-8 w-64 text-sm font-semibold border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
+                    />
+                    <InlineFieldError
+                        message={error}
+                        compact
+                        className="px-1"
+                    />
+                </div>
 
-            <Popover open={open} onOpenChange={setOpen}>
-                <PopoverTrigger asChild>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 w-7 p-0"
-                        aria-label="Change color"
-                    >
-                        <span
-                            className="w-4 h-4 rounded-full border border-border/60 shadow-inner"
-                            style={{ backgroundColor: color }}
-                        />
-                    </Button>
-                </PopoverTrigger>
-                <PopoverContent
-                    side="top"
-                    align="end"
-                    className="w-[236px] p-3"
-                    onMouseDown={(e) => e.stopPropagation()}
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <div
-                        onPointerDown={startGesture}
-                        onPointerUp={endGesture}
-                        onPointerCancel={endGesture}
-                        className="flex justify-center"
-                    >
-                        <HexColorPicker color={color} onChange={onColorChange} />
-                    </div>
-
-                    <div className="mt-3 flex items-center gap-1 flex-wrap">
-                        {PRESETS.map((c) => (
-                            <button
-                                key={c}
-                                type="button"
-                                onClick={() => onColorChange(c)}
-                                className="w-5 h-5 rounded-full border border-border/60 hover:scale-110 transition-transform"
-                                style={{ backgroundColor: c }}
-                                aria-label={`Pick ${c}`}
+                <Popover open={open} onOpenChange={setOpen}>
+                    <PopoverTrigger asChild>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0"
+                            aria-label="Change color"
+                        >
+                            <span
+                                className="w-4 h-4 rounded-full border border-border/60 shadow-inner"
+                                style={{ backgroundColor: draftColor }}
                             />
-                        ))}
-                    </div>
-
-                    <Separator className="my-3" />
-
-                    <div className="space-y-1.5">
-                        <div className="flex items-center justify-between">
-                            <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                                Opacity
-                            </Label>
-                            <span className="text-xs font-mono text-muted-foreground">
-                                {Math.round(opacity * 100)}%
-                            </span>
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                        side="top"
+                        align="end"
+                        className="w-[236px] p-3"
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div
+                            onPointerDown={startDrag}
+                            onPointerUp={endDrag}
+                            onPointerCancel={endDrag}
+                            className="flex justify-center"
+                        >
+                            <HexColorPicker
+                                color={draftColor}
+                                onChange={onColorChange}
+                            />
                         </div>
-                        <input
-                            type="range"
-                            min={0}
-                            max={1}
-                            step={0.01}
-                            value={opacity}
-                            onChange={(e) => onOpacityChange(Number(e.target.value))}
-                            onPointerDown={startGesture}
-                            onPointerUp={endGesture}
-                            className="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-indigo-500 bg-muted"
-                        />
-                    </div>
-                </PopoverContent>
-            </Popover>
+
+                        <div className="mt-2 flex items-center justify-between gap-2">
+                            <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                                Hex
+                            </span>
+                            {editingHex ? (
+                                <Input
+                                    ref={hexInputRef}
+                                    value={hexDraft}
+                                    onChange={(e) =>
+                                        setHexDraft(e.target.value)
+                                    }
+                                    onBlur={commitHex}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter") commitHex();
+                                        else if (e.key === "Escape") {
+                                            setHexDraft(draftColor);
+                                            setEditingHex(false);
+                                        }
+                                    }}
+                                    spellCheck={false}
+                                    maxLength={7}
+                                    className="h-6 w-[92px] text-xs font-mono uppercase px-1.5"
+                                />
+                            ) : (
+                                <button
+                                    type="button"
+                                    onDoubleClick={() => setEditingHex(true)}
+                                    className="text-xs font-mono uppercase text-muted-foreground hover:text-foreground transition-colors select-text cursor-text"
+                                    title="Double-click to edit"
+                                >
+                                    {draftColor.toUpperCase()}
+                                </button>
+                            )}
+                        </div>
+
+                        <div className="mt-2 flex items-center gap-1 flex-wrap">
+                            {PRESETS.map((c) => (
+                                <button
+                                    key={c}
+                                    type="button"
+                                    onClick={() => onColorChange(c)}
+                                    className="w-5 h-5 rounded-full border border-border/60 hover:scale-110 transition-transform"
+                                    style={{ backgroundColor: c }}
+                                    aria-label={`Pick ${c}`}
+                                />
+                            ))}
+                        </div>
+
+                        <Separator className="my-3" />
+
+                        <div className="space-y-1.5">
+                            <div className="flex items-center justify-between">
+                                <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                                    Opacity
+                                </Label>
+                                <span className="text-xs font-mono text-muted-foreground">
+                                    {Math.round(draftOpacity * 100)}%
+                                </span>
+                            </div>
+                            <input
+                                type="range"
+                                min={0}
+                                max={1}
+                                step={0.01}
+                                value={draftOpacity}
+                                onChange={(e) =>
+                                    onOpacityChange(Number(e.target.value))
+                                }
+                                onPointerDown={startDrag}
+                                onPointerUp={endDrag}
+                                className="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-indigo-500 bg-muted"
+                            />
+                        </div>
+                    </PopoverContent>
+                </Popover>
+            </div>
         </div>
     );
 });

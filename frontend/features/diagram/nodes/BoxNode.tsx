@@ -1,23 +1,20 @@
 "use client";
 
 import { memo, useState } from "react";
-import { NodeResizer, NodeToolbar, Position, type NodeProps } from "@xyflow/react";
+import {
+    NodeResizer,
+    NodeToolbar,
+    Position,
+    type NodeProps,
+} from "@xyflow/react";
 import {
     endDiagramHistoryGestureDeferred,
     endDiagramHistoryGestureIfActive,
 } from "../store/diagramHistory";
 import { BOX } from "../constants";
 import type { BoxNode as BoxNodeType } from "../types/flow.types";
+import { hexToRgba } from "../utils/color";
 import { BoxNodeEditor } from "./BoxNodeEditor";
-
-function hexToRgba(hex: string, alpha: number): string {
-    const h = hex.replace("#", "");
-    const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
-    const r = parseInt(full.slice(0, 2), 16);
-    const g = parseInt(full.slice(2, 4), 16);
-    const b = parseInt(full.slice(4, 6), 16);
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
 
 function BoxNode({ id, data, selected }: NodeProps<BoxNodeType>) {
     const [isResizing, setIsResizing] = useState(false);
@@ -27,7 +24,12 @@ function BoxNode({ id, data, selected }: NodeProps<BoxNodeType>) {
 
     return (
         <>
-            <NodeToolbar isVisible={selected} position={Position.Top} offset={8}>
+            <NodeToolbar
+                isVisible={selected}
+                position={Position.Top}
+                offset={8}
+                style={{ zIndex: 1000 }}
+            >
                 <BoxNodeEditor
                     nodeId={id}
                     title={data.title}
@@ -57,13 +59,14 @@ function BoxNode({ id, data, selected }: NodeProps<BoxNodeType>) {
                 style={{
                     backgroundColor: fill,
                     borderColor,
-                    boxShadow: selected || isResizing
-                        ? `0 0 0 1px ${borderColor}40`
-                        : undefined,
+                    boxShadow:
+                        selected || isResizing
+                            ? `0 0 0 1px ${borderColor}40`
+                            : undefined,
                 }}
             >
                 {data.title && (
-                    <div className="px-3 py-2 text-base font-bold text-foreground/90 select-none">
+                    <div className="px-4 py-3 text-3xl font-bold text-foreground/90 select-none">
                         {data.title}
                     </div>
                 )}
