@@ -16,6 +16,7 @@ import LeftToolbox from "./components/canvas/LeftToolbox";
 import NewTableDialog from "./components/canvas/NewTableDialog";
 import { TableSearch } from "./components/canvas/TableSearch";
 import { FitViewTrigger } from "./components/canvas/FitViewTrigger";
+import { SelectionResizer } from "./components/canvas/SelectionResizer";
 import ConnectionDialog from "./components/edges/ConnectionDialog";
 import { EdgeMarkerDefs } from "./components/edges/EdgeMarkerDefs";
 import { useDiagramCanvas } from "./hooks/useDiagramCanvas";
@@ -179,6 +180,7 @@ export function DiagramCanvas() {
                     proOptions={PRO_OPTIONS}
                 >
                     <EdgeMarkerDefs />
+                    <SelectionResizer />
                     <FitViewTrigger
                         nodeId={searchTargetId}
                         onDone={() => setSearchTargetId(null)}

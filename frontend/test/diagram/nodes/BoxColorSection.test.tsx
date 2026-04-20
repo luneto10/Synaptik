@@ -22,6 +22,8 @@ describe("BoxColorSection", () => {
                 onStartHexEdit={vi.fn()}
                 onCommitHex={vi.fn()}
                 onCancelHex={vi.fn()}
+                draftOpacity={1}
+                onOpacityChange={vi.fn()}
             />,
         );
 

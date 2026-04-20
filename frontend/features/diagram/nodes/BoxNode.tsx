@@ -5,6 +5,7 @@ import {
     NodeResizer,
     NodeToolbar,
     Position,
+    useStore,
     type NodeProps,
 } from "@xyflow/react";
 import {
@@ -18,6 +19,8 @@ import { BoxNodeEditor } from "./BoxNodeEditor";
 
 function BoxNode({ id, data, selected }: NodeProps<BoxNodeType>) {
     const [isResizing, setIsResizing] = useState(false);
+    const selectedCount = useStore((s) => s.nodes.filter((n) => n.selected).length);
+    const isSolelySelected = selected && selectedCount === 1;
 
     const fill = hexToRgba(data.color, data.opacity);
     const borderColor = data.color;
@@ -25,7 +28,7 @@ function BoxNode({ id, data, selected }: NodeProps<BoxNodeType>) {
     return (
         <>
             <NodeToolbar
-                isVisible={selected}
+                isVisible={isSolelySelected}
                 position={Position.Top}
                 offset={8}
                 style={{ zIndex: 1000 }}
@@ -41,7 +44,7 @@ function BoxNode({ id, data, selected }: NodeProps<BoxNodeType>) {
             <NodeResizer
                 minWidth={BOX.MIN_WIDTH}
                 minHeight={BOX.MIN_HEIGHT}
-                isVisible={selected}
+                isVisible={isSolelySelected}
                 lineClassName="border-indigo-500/20! border-solid!"
                 handleClassName="!w-[9px] !h-[9px] !rounded-full !bg-background !border !border-indigo-500/60 !ring-1 !ring-indigo-500/30 hover:!border-indigo-400 hover:!ring-indigo-500/40 !transition-colors !duration-100 !shadow-sm"
                 onResizeStart={() => {
@@ -61,7 +64,7 @@ function BoxNode({ id, data, selected }: NodeProps<BoxNodeType>) {
                     borderColor,
                     boxShadow:
                         selected || isResizing
-                            ? `0 0 0 1px ${borderColor}40`
+                            ? `0 0 0 1px ${borderColor}40, 0 20px 25px -5px ${borderColor}15, 0 8px 10px -6px ${borderColor}10`
                             : undefined,
                 }}
             >

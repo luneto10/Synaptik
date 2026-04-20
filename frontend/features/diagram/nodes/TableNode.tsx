@@ -6,7 +6,7 @@ import {
     useState,
     Fragment,
 } from "react";
-import { NodeResizer, Handle, Position } from "@xyflow/react";
+import { NodeResizer, Handle, Position, useStore } from "@xyflow/react";
 import type { NodeProps } from "@xyflow/react";
 import { useDiagramStore } from "../store/diagramStore";
 import type { TableNode as TableNodeType } from "../types/flow.types";
@@ -35,6 +35,8 @@ function TableNode({ id, data, selected, dragging }: NodeProps<TableNodeType>) {
     const [focusColId, setFocusColId] = useState<string | null>(null);
     const [isResizing, setIsResizing] = useState(false);
     const { endGesture, endGestureIfActive } = useHistoryGestureHandlers();
+    const selectedCount = useStore((s) => s.nodes.filter((n) => n.selected).length);
+    const isSolelySelected = selected && selectedCount === 1;
 
     const handleAddColumn = useCallback(() => {
         const newId = crypto.randomUUID();
@@ -54,8 +56,8 @@ function TableNode({ id, data, selected, dragging }: NodeProps<TableNodeType>) {
         [id, removeColumn],
     );
 
-    // Handles are visible only when selected and not being dragged or resized
-    const showHandles = selected && !dragging && !isResizing;
+    // Handles are visible only when solely selected and not being dragged or resized
+    const showHandles = isSolelySelected && !dragging && !isResizing;
 
     // Dynamic minimum height: must fit all PK + FK rows so user can't resize them away
     const requiredRows = data.columns.filter(
@@ -70,7 +72,7 @@ function TableNode({ id, data, selected, dragging }: NodeProps<TableNodeType>) {
             <NodeResizer
                 minWidth={LAYOUT.MIN_NODE_WIDTH}
                 minHeight={minHeight}
-                isVisible={selected}
+                isVisible={isSolelySelected}
                 lineClassName="border-indigo-500/20! border-solid!"
                 handleClassName="!w-[9px] !h-[9px] !rounded-full !bg-background !border !border-indigo-500/60 !ring-1 !ring-indigo-500/30 hover:!border-indigo-400 hover:!ring-indigo-500/40 !transition-colors !duration-100 !shadow-sm"
                 onResizeStart={() => {

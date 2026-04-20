@@ -407,6 +407,135 @@ describe("diagram store actions integration", () => {
         expect(b?.measured?.height).toBe(220);
     });
 
+    it("two sequential selection-style resize gestures undo to the prior committed stage", () => {
+        const history = useDiagramStore.temporal.getState();
+        useDiagramStore.setState({
+            nodes: [
+                {
+                    ...node("a", "A", [pk("pk-a")]),
+                    measured: { width: 280, height: 200 },
+                },
+                {
+                    ...node("b", "B", [pk("pk-b")]),
+                    position: { x: 400, y: 0 },
+                    measured: { width: 300, height: 220 },
+                },
+            ],
+            edges: [],
+        });
+        history.clear?.();
+
+        // Gesture 1: first frame records history, later frames stay paused.
+        useDiagramStore.getState().onNodesChange([
+            {
+                type: "dimensions",
+                id: "a",
+                dimensions: { width: 360, height: 240 },
+                resizing: true,
+            },
+            {
+                type: "position",
+                id: "b",
+                position: { x: 520, y: 0 },
+            },
+            {
+                type: "dimensions",
+                id: "b",
+                dimensions: { width: 420, height: 300 },
+                resizing: true,
+            },
+        ]);
+        beginDiagramHistoryGesture();
+        useDiagramStore.getState().onNodesChange([
+            {
+                type: "dimensions",
+                id: "a",
+                dimensions: { width: 400, height: 260 },
+                resizing: true,
+            },
+            {
+                type: "position",
+                id: "b",
+                position: { x: 600, y: 0 },
+            },
+            {
+                type: "dimensions",
+                id: "b",
+                dimensions: { width: 460, height: 320 },
+                resizing: true,
+            },
+        ]);
+        endDiagramHistoryGestureIfActive();
+
+        // Gesture 2: undo should come back here, not all the way to the initial size.
+        useDiagramStore.getState().onNodesChange([
+            {
+                type: "dimensions",
+                id: "a",
+                dimensions: { width: 500, height: 320 },
+                resizing: true,
+            },
+            {
+                type: "position",
+                id: "b",
+                position: { x: 700, y: 0 },
+            },
+            {
+                type: "dimensions",
+                id: "b",
+                dimensions: { width: 540, height: 360 },
+                resizing: true,
+            },
+        ]);
+        beginDiagramHistoryGesture();
+        useDiagramStore.getState().onNodesChange([
+            {
+                type: "dimensions",
+                id: "a",
+                dimensions: { width: 560, height: 360 },
+                resizing: true,
+            },
+            {
+                type: "position",
+                id: "b",
+                position: { x: 760, y: 0 },
+            },
+            {
+                type: "dimensions",
+                id: "b",
+                dimensions: { width: 620, height: 420 },
+                resizing: true,
+            },
+        ]);
+        endDiagramHistoryGestureIfActive();
+
+        let a = useDiagramStore.getState().nodes.find((n) => n.id === "a");
+        let b = useDiagramStore.getState().nodes.find((n) => n.id === "b");
+        expect(a?.measured?.width).toBe(560);
+        expect(a?.measured?.height).toBe(360);
+        expect(b?.position).toEqual({ x: 760, y: 0 });
+        expect(b?.measured?.width).toBe(620);
+        expect(b?.measured?.height).toBe(420);
+
+        history.undo();
+        a = useDiagramStore.getState().nodes.find((n) => n.id === "a");
+        b = useDiagramStore.getState().nodes.find((n) => n.id === "b");
+        expect(a?.measured?.width).toBe(400);
+        expect(a?.measured?.height).toBe(260);
+        expect(b?.position).toEqual({ x: 600, y: 0 });
+        expect(b?.measured?.width).toBe(460);
+        expect(b?.measured?.height).toBe(320);
+
+        history.undo();
+        a = useDiagramStore.getState().nodes.find((n) => n.id === "a");
+        b = useDiagramStore.getState().nodes.find((n) => n.id === "b");
+        expect(a?.measured?.width).toBe(280);
+        expect(a?.measured?.height).toBe(200);
+        expect(b?.position).toEqual({ x: 400, y: 0 });
+        expect(b?.measured?.width).toBe(300);
+        expect(b?.measured?.height).toBe(220);
+    });
+
     it("addEdgeWithType creates FK column, and deleteEdge removes it", () => {
         useDiagramStore.setState({
             nodes: [
