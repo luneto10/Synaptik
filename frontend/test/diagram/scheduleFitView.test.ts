@@ -1,14 +1,14 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
-import { scheduleDeferredFitView } from "../../../features/diagram/hooks/useDeferredFitView";
+import { scheduleFitView } from "../../features/diagram/constants";
 
-describe("scheduleDeferredFitView", () => {
+describe("scheduleFitView", () => {
     it("defers fitView call and onDone callback", () => {
         vi.useFakeTimers();
         const fitView = vi.fn();
         const onDone = vi.fn();
 
-        scheduleDeferredFitView(fitView, { padding: 0.3 }, 50, onDone);
+        scheduleFitView(fitView, { padding: 0.3 }, 50, onDone);
         expect(fitView).not.toHaveBeenCalled();
         expect(onDone).not.toHaveBeenCalled();
 

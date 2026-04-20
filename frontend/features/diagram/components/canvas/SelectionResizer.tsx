@@ -26,6 +26,7 @@ export type {
 
 export const SelectionResizer = memo(function SelectionResizer() {
     const selectedNodes = useStore((s) => s.nodes.filter((n) => n.selected));
+    const nodesSelectionActive = useStore((s) => s.nodesSelectionActive);
     const userSelectionActive = useStore((s) => s.userSelectionActive);
     // Re-render on pan/zoom so screen-space handles stay in sync
     useStore((s) => s.transform);
@@ -33,6 +34,7 @@ export const SelectionResizer = memo(function SelectionResizer() {
     const { flowToScreenPosition, getViewport } = useReactFlow();
     const areaSelected = useSelectionResizerArea(
         userSelectionActive,
+        nodesSelectionActive,
         selectedNodes.length,
     );
     const onPointerDown = useSelectionResizerDrag({ selectedNodes, getViewport });
