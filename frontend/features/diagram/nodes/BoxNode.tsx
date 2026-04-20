@@ -84,7 +84,7 @@ function BoxNode({ id, data, selected }: NodeProps<BoxNodeType>) {
                 }}
             >
                 {data.title && (
-                    <div className="px-4 py-3 text-3xl font-bold text-foreground/90 select-none">
+                    <div className="px-4 py-3 text-3xl font-bold text-foreground/90 select-none break-words whitespace-pre-wrap">
                         {data.title}
                     </div>
                 )}
