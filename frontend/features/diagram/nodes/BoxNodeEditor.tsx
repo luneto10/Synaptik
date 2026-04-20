@@ -50,22 +50,9 @@ export const BoxNodeEditor = memo(function BoxNodeEditor({
     const [open, setOpen] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const [isDragging, setIsDragging] = useState(false);
-    const [titleFocused, setTitleFocused] = useState(false);
-
     const [draftColor, setDraftColor] = useState(color);
     const [draftOpacity, setDraftOpacity] = useState(opacity);
     const [draftTitle, setDraftTitle] = useState(title);
-
-    useEffect(() => {
-        if (!isDragging) {
-            setDraftColor(color);
-            setDraftOpacity(opacity);
-        }
-        if (!titleFocused) {
-            setDraftTitle(title);
-        }
-    }, [color, opacity, title, isDragging, titleFocused]);
 
     const commitColor = useRafThrottle((next: string) => {
         updateBox(nodeId, { color: next });
@@ -110,11 +97,9 @@ export const BoxNodeEditor = memo(function BoxNodeEditor({
     );
 
     const startDrag = useCallback(() => {
-        setIsDragging(true);
         beginDiagramHistoryGesture();
     }, []);
     const endDrag = useCallback(() => {
-        setIsDragging(false);
         endDiagramHistoryGestureDeferred();
     }, []);
 
@@ -122,12 +107,6 @@ export const BoxNodeEditor = memo(function BoxNodeEditor({
     const [editingHex, setEditingHex] = useState(false);
     const [hexDraft, setHexDraft] = useState(draftColor);
     const hexInputRef = useRef<HTMLInputElement>(null);
-
-    useEffect(() => {
-        if (!editingHex) {
-            setHexDraft(draftColor);
-        }
-    }, [draftColor, editingHex]);
 
     useEffect(() => {
         if (editingHex) {
@@ -162,11 +141,9 @@ export const BoxNodeEditor = memo(function BoxNodeEditor({
                             if (error) setError(null);
                         }}
                         onFocus={() => {
-                            setTitleFocused(true);
                             beginDiagramHistoryGesture();
                         }}
                         onBlur={() => {
-                            setTitleFocused(false);
                             commitTitle();
                             endDiagramHistoryGestureDeferred();
                         }}
@@ -253,7 +230,10 @@ export const BoxNodeEditor = memo(function BoxNodeEditor({
                             ) : (
                                 <button
                                     type="button"
-                                    onDoubleClick={() => setEditingHex(true)}
+                                    onDoubleClick={() => {
+                                        setHexDraft(draftColor);
+                                        setEditingHex(true);
+                                    }}
                                     className="text-xs font-mono uppercase text-muted-foreground hover:text-foreground transition-colors select-text cursor-text"
                                     title="Double-click to edit"
                                 >
