@@ -86,7 +86,7 @@ export function DiagramCanvas() {
     return (
         <div
             ref={containerRef}
-            className="w-screen h-screen flex flex-col overflow-hidden bg-background"
+            className="w-screen h-screen flex flex-col overflow-hidden bg-background select-none [&_input]:select-text [&_textarea]:select-text **:[[contenteditable]]:select-text"
             tabIndex={-1}
             onContextMenu={(e) => e.preventDefault()}
             onMouseDownCapture={onMouseDownCapture}

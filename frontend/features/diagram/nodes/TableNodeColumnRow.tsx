@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useEffect, useRef, useState } from "react";
+import { memo } from "react";
 import { Input } from "@/components/ui/input";
 import {
     Select,
@@ -16,6 +16,7 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Trash2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
     COLUMN_TYPES,
     type DbColumn,
@@ -23,8 +24,7 @@ import {
 } from "../types/db.types";
 import ColumnBadges from "./ColumnBadges";
 import ColumnSettingsPopover from "./ColumnSettingsPopover";
-import { onInputCommitAndBlur } from "../utils/onInputCommit";
-import { useValidatedField } from "../hooks/useValidatedField";
+import { useTableColumnNameEdit } from "../hooks/useTableColumnNameEdit";
 import InlineFieldError from "../components/common/InlineFieldError";
 
 interface Props {
@@ -46,99 +46,70 @@ function TableNodeColumnRow({
     onUpdate,
     onRemove,
 }: Props) {
-    const nameInputRef = useRef<HTMLInputElement>(null);
-    const isFreshColumnRef = useRef(false);
-    const [draftName, setDraftName] = useState(column.name);
-    const { error, clearError, failValidation, setError } =
-        useValidatedField<HTMLInputElement>();
-    const errorId = `${column.id}-name-error`;
-
-    useEffect(() => {
-        if (autoFocus && nameInputRef.current) {
-            isFreshColumnRef.current = true;
-            nameInputRef.current.focus();
-            nameInputRef.current.select();
-            onFocusConsumed?.();
-        }
-    }, [autoFocus, onFocusConsumed]);
-
-    const commitName = (source: "blur" | "enter"): "applied" | "blocked" => {
-        const next = draftName.trim();
-        if (!next || next === column.name) {
-            setDraftName(column.name);
-            setError(null);
-            return "applied";
-        }
-        const hasDuplicate = hasDuplicateName(next, column.id);
-        if (hasDuplicate) {
-            const shouldDiscardFreshColumn =
-                isFreshColumnRef.current && source === "blur";
-            if (shouldDiscardFreshColumn) {
-                onRemove(column.id);
-                return "blocked";
-            }
-            failValidation("Duplicate column name.", nameInputRef.current);
-            return "blocked";
-        }
-        setError(null);
-        onUpdate({ ...column, name: next });
-        isFreshColumnRef.current = false;
-        return "applied";
-    };
-
-    const cancelName = () => {
-        const isDuplicateDraft = hasDuplicateName(draftName, column.id);
-        if (isFreshColumnRef.current && isDuplicateDraft) {
-            onRemove(column.id);
-            return;
-        }
-        setDraftName(column.name);
-        clearError();
-    };
-
-    const rowAccent = column.isPrimaryKey
-        ? "border-l-2 border-l-amber-500/50"
-        : column.isForeignKey
-          ? "border-l-2 border-l-violet-500/40"
-          : "border-l-2 border-l-transparent";
+    const {
+        nameInputRef,
+        editing,
+        draftName,
+        error,
+        errorId,
+        openEditor,
+        commitNameOnBlur,
+        handleDraftChange,
+        handleNameKeyDown,
+        displayNameKeyDown,
+    } = useTableColumnNameEdit({
+        column,
+        hasDuplicateName,
+        autoFocus,
+        onFocusConsumed,
+        onUpdate,
+        onRemove,
+    });
 
     return (
         <div
-            className={`group relative flex items-center border-b border-border/30 last:border-0 hover:bg-muted/40 transition-colors ${rowAccent}`}
+            className={cn(
+                "group relative flex items-center border-b border-border/30 last:border-0 hover:bg-muted/40 transition-colors border-l-2",
+                column.isPrimaryKey && "border-l-amber-500/50",
+                column.isForeignKey &&
+                    !column.isPrimaryKey &&
+                    "border-l-violet-500/40",
+                !column.isPrimaryKey &&
+                    !column.isForeignKey &&
+                    "border-l-transparent",
+            )}
         >
-            {/* Badges */}
             <div className="w-14 pl-2 pr-1 shrink-0">
                 <ColumnBadges column={column} />
             </div>
 
-            {/* Name */}
             <div className="flex-1 px-1 py-1.5 min-w-0">
-                <Input
-                    ref={nameInputRef}
-                    value={draftName}
-                    onChange={(e) => {
-                        setDraftName(e.target.value);
-                        if (error) clearError();
-                    }}
-                    onBlur={() => commitName("blur")}
-                    onKeyDown={(e) => {
-                        onInputCommitAndBlur(e, {
-                            onCommit: () => {
-                                const result = commitName("enter");
-                                return result === "applied";
-                            },
-                            onCancel: () => {
-                                cancelName();
-                            },
-                        });
-                        e.stopPropagation();
-                    }}
-                    aria-invalid={!!error}
-                    aria-describedby={error ? errorId : undefined}
-                    className="nodrag h-7 text-sm border-0 bg-transparent! dark:bg-transparent! shadow-none p-0 font-mono text-foreground
+                {editing ? (
+                    <Input
+                        ref={nameInputRef}
+                        value={draftName}
+                        onChange={(e) => handleDraftChange(e.target.value)}
+                        onBlur={commitNameOnBlur}
+                        onKeyDown={handleNameKeyDown}
+                        aria-invalid={!!error}
+                        aria-describedby={error ? errorId : undefined}
+                        className="nodrag h-7 text-sm border-0 bg-transparent! dark:bg-transparent! shadow-none p-0 font-mono text-foreground
                                focus-visible:ring-0! focus-visible:ring-offset-0! focus-visible:border-0!
                                focus-visible:bg-indigo-500/10 focus-visible:rounded focus-visible:px-1 w-full"
-                />
+                    />
+                ) : (
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onDoubleClick={openEditor}
+                        onKeyDown={displayNameKeyDown}
+                        title="Double-click to rename column"
+                        aria-label={`Rename column ${column.name}`}
+                        className="h-7 w-full justify-start rounded px-0 text-sm font-mono text-foreground hover:bg-transparent select-none"
+                    >
+                        <span className="truncate">{column.name}</span>
+                    </Button>
+                )}
                 <InlineFieldError
                     id={errorId}
                     message={error}
@@ -147,7 +118,6 @@ function TableNodeColumnRow({
                 />
             </div>
 
-            {/* Type */}
             <div className="w-20 px-0.5 py-1 shrink-0 flex items-center justify-end">
                 <Select
                     value={column.type}
@@ -172,7 +142,6 @@ function TableNodeColumnRow({
                 </Select>
             </div>
 
-            {/* Actions */}
             <div className="w-12 px-1 shrink-0">
                 <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                     <ColumnSettingsPopover
@@ -199,7 +168,6 @@ function TableNodeColumnRow({
                     )}
                 </div>
             </div>
-
         </div>
     );
 }

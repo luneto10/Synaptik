@@ -1,10 +1,10 @@
 import { useCallback } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
-import { useStoreApi } from "@xyflow/react";
 import { useDiagramStore } from "../store/diagramStore";
-import { selectAll } from "../store/nodeSelection";
 import { endDiagramHistoryGestureIfActive } from "../store/diagramHistory";
 import { TOOLS, type ToolValue } from "../components/canvas/LeftToolbox";
+import { useActivateSelectionBounds } from "./useActivateSelectionBounds";
+import { useSelectAllHotkey } from "./useSelectAllHotkey";
 
 interface Options {
     handleToolAction: (value: ToolValue) => void;
@@ -24,7 +24,8 @@ export function useKeyboardShortcuts({
     handleToggleSearch,
     getPasteAnchor,
 }: Options) {
-    const reactFlowStore = useStoreApi();
+    const handleSelectAll = useSelectAllHotkey();
+    const activateSelectionBounds = useActivateSelectionBounds();
 
     const handleUndo = useCallback(() => {
         endDiagramHistoryGestureIfActive();
@@ -47,30 +48,16 @@ export function useKeyboardShortcuts({
         event.preventDefault();
         const anchor = getPasteAnchor?.() ?? undefined;
         useDiagramStore.getState().pasteClipboard(anchor);
-        queueMicrotask(() => {
-            reactFlowStore.setState({ nodesSelectionActive: true });
-        });
-    }, [getPasteAnchor, reactFlowStore]);
+        activateSelectionBounds();
+    }, [activateSelectionBounds, getPasteAnchor]);
 
     const handleDuplicate = useCallback((event: KeyboardEvent) => {
         const { nodes, duplicateSelection } = useDiagramStore.getState();
         if (!nodes.some((n) => n.selected)) return;
         event.preventDefault();
         duplicateSelection();
-        queueMicrotask(() => {
-            reactFlowStore.setState({ nodesSelectionActive: true });
-        });
-    }, [reactFlowStore]);
-
-    const handleSelectAll = useCallback((event: KeyboardEvent) => {
-        const { nodes } = useDiagramStore.getState();
-        if (nodes.length === 0) return;
-        event.preventDefault();
-        selectAll();
-        queueMicrotask(() => {
-            reactFlowStore.setState({ nodesSelectionActive: true });
-        });
-    }, [reactFlowStore]);
+        activateSelectionBounds();
+    }, [activateSelectionBounds]);
 
     useHotkeys("mod+z", handleUndo, {
         preventDefault: true,

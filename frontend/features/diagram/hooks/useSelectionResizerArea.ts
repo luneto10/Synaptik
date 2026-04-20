@@ -2,17 +2,20 @@ import { useEffect, useRef, useState } from "react";
 
 function getNextAreaSelectedState(
     userSelectionActive: boolean,
+    nodesSelectionActive: boolean,
     selectedCount: number,
     prevUserSelectionActive: boolean,
     wasAreaSelected: boolean,
 ) {
     if (userSelectionActive || selectedCount < 2) return false;
+    if (nodesSelectionActive) return true;
     if (prevUserSelectionActive) return true;
     return wasAreaSelected;
 }
 
 export function useSelectionResizerArea(
     userSelectionActive: boolean,
+    nodesSelectionActive: boolean,
     selectedCount: number,
 ) {
     const prevSelectionActiveRef = useRef(false);
@@ -24,6 +27,7 @@ export function useSelectionResizerArea(
 
         const nextAreaSelected = getNextAreaSelectedState(
             userSelectionActive,
+            nodesSelectionActive,
             selectedCount,
             previousSelectionActive,
             areaSelected,
@@ -40,7 +44,7 @@ export function useSelectionResizerArea(
         return () => {
             isCancelled = true;
         };
-    }, [areaSelected, selectedCount, userSelectionActive]);
+    }, [areaSelected, nodesSelectionActive, selectedCount, userSelectionActive]);
 
     return areaSelected;
 }
