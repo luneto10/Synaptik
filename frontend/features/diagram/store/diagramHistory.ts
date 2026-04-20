@@ -35,8 +35,11 @@ export function endDiagramHistoryGestureDeferred() {
  */
 export function withoutHistory(fn: () => void) {
     const t = useDiagramStore.temporal.getState();
+    const wasAlreadyPaused = historyPausedRef.current;
     t.pause();
-    try { fn(); } finally { t.resume(); }
+    try { fn(); } finally {
+        if (!wasAlreadyPaused) t.resume();
+    }
 }
 
 /** Test / dialog / unmount helper — hard-resets gesture state. */

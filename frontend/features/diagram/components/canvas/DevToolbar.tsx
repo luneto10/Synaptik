@@ -1,12 +1,12 @@
 "use client";
 
 import { useCallback, useRef } from "react";
-import { useReactFlow } from "@xyflow/react";
 import { Download, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useDiagramStore } from "../../store/diagramStore";
 import type { DiagramNode, RelationEdge } from "../../types/flow.types";
-import { FIT_VIEW_PADDING, scheduleFitView } from "../../constants";
+import { FIT_VIEW_PADDING } from "../../constants";
+import { useDeferredFitView } from "../../hooks/useDeferredFitView";
 
 interface Snapshot {
     nodes: DiagramNode[];
@@ -26,7 +26,7 @@ function makeExportName() {
 export function DevToolbar() {
     const loadDiagram = useDiagramStore((s) => s.loadDiagram);
     const fileRef = useRef<HTMLInputElement>(null);
-    const { fitView } = useReactFlow();
+    const { deferredFitView } = useDeferredFitView();
 
     const handleExport = useCallback(() => {
         const { nodes, edges } = useDiagramStore.getState();
@@ -63,7 +63,7 @@ export function DevToolbar() {
                     }
 
                     loadDiagram(snapshot.nodes, snapshot.edges);
-                    scheduleFitView(fitView, { padding: FIT_VIEW_PADDING });
+                    deferredFitView({ padding: FIT_VIEW_PADDING });
                 } catch (err) {
                     console.error("[DevToolbar] Failed to load snapshot:", err);
                     alert("Invalid diagram JSON - check the console for details.");
@@ -71,7 +71,7 @@ export function DevToolbar() {
             };
             reader.readAsText(file);
         },
-        [fitView, loadDiagram],
+        [deferredFitView, loadDiagram],
     );
 
     const openImportPicker = useCallback(() => {

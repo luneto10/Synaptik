@@ -3,12 +3,11 @@ import type { EdgeChange, NodeChange } from "@xyflow/react";
 import { useDiagramStore } from "../store/diagramStore";
 import {
     beginDiagramHistoryGesture,
-    endDiagramHistoryGestureDeferred,
-    endDiagramHistoryGestureIfActive,
     historyPausedRef,
     withoutHistory,
 } from "../store/diagramHistory";
 import type { DiagramNode, RelationEdge } from "../types/flow.types";
+import { useHistoryGestureHandlers } from "./useHistoryGestureHandlers";
 
 type ChangeHandlersArgs = {
     onNodesChange?: (changes: NodeChange[]) => void;
@@ -63,6 +62,7 @@ export function useFlowCanvasChangeHandlers({
     onNodesChange,
     onEdgesChange,
 }: ChangeHandlersArgs) {
+    const { endGesture, endGestureIfActive } = useHistoryGestureHandlers();
     const suppressNextRemovalsRef = useRef<{
         nodeIds: Set<string>;
         edgeIds: Set<string>;
@@ -77,7 +77,7 @@ export function useFlowCanvasChangeHandlers({
             edges: RelationEdge[];
         }): Promise<boolean | { nodes: DiagramNode[]; edges: RelationEdge[] }> => {
             if (nodesToRemove.length === 0) return true;
-            endDiagramHistoryGestureIfActive();
+            endGestureIfActive();
             suppressNextRemovalsRef.current.nodeIds = new Set(
                 nodesToRemove.map((n) => n.id),
             );
@@ -93,7 +93,7 @@ export function useFlowCanvasChangeHandlers({
             });
             return false;
         },
-        [],
+        [endGestureIfActive],
     );
 
     const handleNodesChange = useCallback(
@@ -133,7 +133,7 @@ export function useFlowCanvasChangeHandlers({
                     ) {
                         useDiagramStore.getState().normalizeEdgeHandleDirections();
                     }
-                    endDiagramHistoryGestureIfActive();
+                    endGestureIfActive();
                     return;
 
                 case "gesture-continue":
@@ -143,7 +143,7 @@ export function useFlowCanvasChangeHandlers({
                     return;
             }
         },
-        [onNodesChange],
+        [onNodesChange, endGestureIfActive],
     );
 
     const handleEdgesChange = useCallback(
@@ -166,20 +166,20 @@ export function useFlowCanvasChangeHandlers({
     );
 
     const handleNodeDragStart = useCallback(() => {
-        endDiagramHistoryGestureIfActive();
-    }, []);
+        endGestureIfActive();
+    }, [endGestureIfActive]);
 
     const handleNodeDragStop = useCallback(() => {
-        endDiagramHistoryGestureDeferred();
-    }, []);
+        endGesture();
+    }, [endGesture]);
 
     const handleSelectionDragStart = useCallback(() => {
-        endDiagramHistoryGestureIfActive();
-    }, []);
+        endGestureIfActive();
+    }, [endGestureIfActive]);
 
     const handleSelectionDragStop = useCallback(() => {
-        endDiagramHistoryGestureDeferred();
-    }, []);
+        endGesture();
+    }, [endGesture]);
 
     return {
         handleBeforeDelete,
