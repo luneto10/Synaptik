@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useStoreApi } from "@xyflow/react";
 import { useDiagramStore } from "../store/diagramStore";
+import { selectAll } from "../store/nodeSelection";
 import { endDiagramHistoryGestureIfActive } from "../store/diagramHistory";
 import { TOOLS, type ToolValue } from "../components/canvas/LeftToolbox";
 
@@ -61,6 +62,16 @@ export function useKeyboardShortcuts({
         });
     }, [reactFlowStore]);
 
+    const handleSelectAll = useCallback((event: KeyboardEvent) => {
+        const { nodes } = useDiagramStore.getState();
+        if (nodes.length === 0) return;
+        event.preventDefault();
+        selectAll();
+        queueMicrotask(() => {
+            reactFlowStore.setState({ nodesSelectionActive: true });
+        });
+    }, [reactFlowStore]);
+
     useHotkeys("mod+z", handleUndo, {
         preventDefault: true,
         enableOnFormTags: true,
@@ -72,6 +83,7 @@ export function useKeyboardShortcuts({
     useHotkeys("mod+c", handleCopy, { preventDefault: false });
     useHotkeys("mod+v", handlePaste, { preventDefault: false });
     useHotkeys("mod+d", handleDuplicate, { preventDefault: true });
+    useHotkeys("mod+a", handleSelectAll, { preventDefault: true });
 
     useHotkeys("l", handleAutoLayout, { preventDefault: true });
     useHotkeys("m", handleToggleMinimap, { preventDefault: true });
