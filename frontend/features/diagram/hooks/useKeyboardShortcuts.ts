@@ -59,14 +59,8 @@ export function useKeyboardShortcuts({
         activateSelectionBounds();
     }, [activateSelectionBounds]);
 
-    useHotkeys("mod+z", handleUndo, {
-        preventDefault: true,
-        enableOnFormTags: true,
-    });
-    useHotkeys("mod+shift+z, mod+y", handleRedo, {
-        preventDefault: true,
-        enableOnFormTags: true,
-    });
+    useHotkeys("mod+z", handleUndo, { preventDefault: true });
+    useHotkeys("mod+shift+z, mod+y", handleRedo, { preventDefault: true });
     useHotkeys("mod+c", handleCopy, { preventDefault: false });
     useHotkeys("mod+v", handlePaste, { preventDefault: false });
     useHotkeys("mod+d", handleDuplicate, { preventDefault: true });
