@@ -15,9 +15,9 @@ import { useDiagramStore } from "../../store/diagramStore";
 import { endDiagramHistoryGestureIfActive } from "../../store/diagramHistory";
 import { onInputCommit } from "../../utils/onInputCommit";
 import InlineFieldError from "../common/InlineFieldError";
+import { useValidatedField } from "../../hooks/useValidatedField";
 import {
     hasDuplicateTableName,
-    refocusAndSelect,
 } from "../../utils/nameValidation";
 import { isTableNode } from "../../types/flow.types";
 
@@ -33,7 +33,8 @@ export default function NewTableDialog({
     const addTable = useDiagramStore((s) => s.addTable);
     const { screenToFlowPosition } = useReactFlow();
     const [name, setName] = useState("");
-    const [error, setError] = useState<string | null>(null);
+    const { error, clearError, failValidation } =
+        useValidatedField<HTMLInputElement>();
     const inputRef = useRef<HTMLInputElement>(null);
     const errorId = "new-table-name-error";
 
@@ -46,7 +47,7 @@ export default function NewTableDialog({
     const handleOpenChange = (nextOpen: boolean) => {
         if (!nextOpen) {
             setName("");
-            setError(null);
+            clearError();
         }
         onOpenChange(nextOpen);
     };
@@ -56,8 +57,7 @@ export default function NewTableDialog({
         const nextName = trimmed || "new_table";
         const nodes = useDiagramStore.getState().nodes.filter(isTableNode);
         if (hasDuplicateTableName(nodes, nextName)) {
-            setError("A table with this name already exists.");
-            refocusAndSelect(inputRef.current);
+            failValidation("A table with this name already exists.", inputRef.current);
             return;
         }
 
@@ -84,7 +84,7 @@ export default function NewTableDialog({
                     value={name}
                     onChange={(e) => {
                         setName(e.target.value);
-                        if (error) setError(null);
+                        if (error) clearError();
                     }}
                     onKeyDown={(e) =>
                         onInputCommit(e, {

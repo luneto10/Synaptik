@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useReactFlow } from "@xyflow/react";
-import { scheduleFitView } from "../../constants";
+import { useDeferredFitView } from "../../hooks/useDeferredFitView";
 
 interface FitViewTriggerProps {
     nodeId: string | null;
@@ -14,12 +13,11 @@ interface FitViewTriggerProps {
  * When nodeId changes to a non-null value, zooms to that node and calls onDone.
  */
 export function FitViewTrigger({ nodeId, onDone }: FitViewTriggerProps) {
-    const { fitView } = useReactFlow();
+    const { deferredFitView } = useDeferredFitView();
 
     useEffect(() => {
         if (!nodeId) return;
-        const id = scheduleFitView(
-            fitView,
+        const id = deferredFitView(
             {
                 nodes: [{ id: nodeId }],
                 duration: 400,
@@ -27,10 +25,10 @@ export function FitViewTrigger({ nodeId, onDone }: FitViewTriggerProps) {
                 maxZoom: 1.2,
             },
             80,
-            onDone,
+            onDone
         );
         return () => clearTimeout(id);
-    }, [nodeId, fitView, onDone]);
+    }, [nodeId, deferredFitView, onDone]);
 
     return null;
 }

@@ -24,7 +24,7 @@ import {
 import ColumnBadges from "./ColumnBadges";
 import ColumnSettingsPopover from "./ColumnSettingsPopover";
 import { onInputCommitAndBlur } from "../utils/onInputCommit";
-import { refocusAndSelect } from "../utils/nameValidation";
+import { useValidatedField } from "../hooks/useValidatedField";
 import InlineFieldError from "../components/common/InlineFieldError";
 
 interface Props {
@@ -49,7 +49,8 @@ function TableNodeColumnRow({
     const nameInputRef = useRef<HTMLInputElement>(null);
     const isFreshColumnRef = useRef(false);
     const [draftName, setDraftName] = useState(column.name);
-    const [error, setError] = useState<string | null>(null);
+    const { error, clearError, failValidation, setError } =
+        useValidatedField<HTMLInputElement>();
     const errorId = `${column.id}-name-error`;
 
     useEffect(() => {
@@ -76,8 +77,7 @@ function TableNodeColumnRow({
                 onRemove(column.id);
                 return "blocked";
             }
-            setError("Duplicate column name.");
-            refocusAndSelect(nameInputRef.current);
+            failValidation("Duplicate column name.", nameInputRef.current);
             return "blocked";
         }
         setError(null);
@@ -93,7 +93,7 @@ function TableNodeColumnRow({
             return;
         }
         setDraftName(column.name);
-        setError(null);
+        clearError();
     };
 
     const rowAccent = column.isPrimaryKey
@@ -118,7 +118,7 @@ function TableNodeColumnRow({
                     value={draftName}
                     onChange={(e) => {
                         setDraftName(e.target.value);
-                        if (error) setError(null);
+                        if (error) clearError();
                     }}
                     onBlur={() => commitName("blur")}
                     onKeyDown={(e) => {

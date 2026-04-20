@@ -1,15 +1,15 @@
 import { useCallback } from "react";
-import { useReactFlow } from "@xyflow/react";
 import { useMutation } from "@tanstack/react-query";
 import { useDiagramStore } from "../store/diagramStore";
 import { saveDiagram, type DiagramPayload } from "../api/diagram.api";
-import { FIT_VIEW_PADDING, scheduleFitView } from "../constants";
+import { FIT_VIEW_PADDING } from "../constants";
 import type { DiagramNode, RelationEdge } from "../types/flow.types";
 import { isTableNode } from "../types/flow.types";
 import { buildAutoLayoutChanges } from "../layout/autoLayout";
+import { useDeferredFitView } from "./useDeferredFitView";
 
 export function useDiagramActions() {
-    const { fitView } = useReactFlow();
+    const { deferredFitView } = useDeferredFitView();
     const loadDiagram = useDiagramStore((s) => s.loadDiagram);
 
     const { mutate: save, isPending } = useMutation<
@@ -29,8 +29,8 @@ export function useDiagramActions() {
             example.nodes as DiagramNode[],
             example.edges as RelationEdge[],
         );
-        scheduleFitView(fitView, { padding: FIT_VIEW_PADDING });
-    }, [loadDiagram, fitView]);
+        deferredFitView({ padding: FIT_VIEW_PADDING });
+    }, [loadDiagram, deferredFitView]);
 
     const handleAutoLayout = useCallback(async () => {
         const { nodes, edges, onNodesChange, normalizeEdgeHandleDirections } =
@@ -42,8 +42,8 @@ export function useDiagramActions() {
 
         onNodesChange(changes);
         normalizeEdgeHandleDirections();
-        scheduleFitView(fitView, { padding: FIT_VIEW_PADDING });
-    }, [fitView]);
+        deferredFitView({ padding: FIT_VIEW_PADDING });
+    }, [deferredFitView]);
 
     return { isPending, handleSave, handleLoadExample, handleAutoLayout };
 }

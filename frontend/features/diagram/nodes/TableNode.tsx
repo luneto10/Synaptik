@@ -5,15 +5,10 @@ import {
     useCallback,
     useState,
     Fragment,
-    type CSSProperties,
 } from "react";
 import { NodeResizer, Handle, Position } from "@xyflow/react";
 import type { NodeProps } from "@xyflow/react";
 import { useDiagramStore } from "../store/diagramStore";
-import {
-    endDiagramHistoryGestureDeferred,
-    endDiagramHistoryGestureIfActive,
-} from "../store/diagramHistory";
 import type { TableNode as TableNodeType } from "../types/flow.types";
 import type { DbColumn } from "../types/db.types";
 import TableNodeHeader from "./TableNodeHeader";
@@ -22,16 +17,15 @@ import TableNodeFooter from "./TableNodeFooter";
 import { handleIds } from "../utils/handleIds";
 import { cn } from "@/lib/utils";
 import { LAYOUT } from "../constants";
-
-// Heights must match the actual rendered node layout
-const HEADER_HEIGHT = 48;
-const FOOTER_HEIGHT = 40;
-const ROW_HEIGHT = 34;
-const SEPARATOR_HEIGHT = 1;
-
-/** Vertical center (px from node top) of column row at index i. */
-const rowCenterY = (i: number) =>
-    HEADER_HEIGHT + SEPARATOR_HEIGHT + i * ROW_HEIGHT + ROW_HEIGHT / 2;
+import { useHistoryGestureHandlers } from "../hooks/useHistoryGestureHandlers";
+import {
+    computeTableMinHeight,
+    invisibleTargetStyle,
+    routingHandleStyle,
+    routingTargetStyle,
+    rowCenterY,
+    visibleDotStyle,
+} from "./tableNodeHandles";
 
 function TableNode({ id, data, selected, dragging }: NodeProps<TableNodeType>) {
     const addColumn = useDiagramStore((s) => s.addColumn);
@@ -40,6 +34,7 @@ function TableNode({ id, data, selected, dragging }: NodeProps<TableNodeType>) {
 
     const [focusColId, setFocusColId] = useState<string | null>(null);
     const [isResizing, setIsResizing] = useState(false);
+    const { endGesture, endGestureIfActive } = useHistoryGestureHandlers();
 
     const handleAddColumn = useCallback(() => {
         const newId = crypto.randomUUID();
@@ -66,69 +61,7 @@ function TableNode({ id, data, selected, dragging }: NodeProps<TableNodeType>) {
     const requiredRows = data.columns.filter(
         (c) => c.isPrimaryKey || c.isForeignKey,
     ).length;
-    const minHeight = Math.max(
-        LAYOUT.MIN_NODE_HEIGHT,
-        HEADER_HEIGHT +
-            FOOTER_HEIGHT +
-            SEPARATOR_HEIGHT +
-            Math.max(1, requiredRows) * ROW_HEIGHT,
-    );
-
-    // ── Visible interaction dot (source handle, appears on selection) ──────────
-    // Keep the handle center exactly on the node wall so edge endpoints
-    // visually terminate on the border instead of floating outside.
-    const DOT_SIZE = 10;
-    const visibleDot = (side: "left" | "right"): CSSProperties => ({
-        width: DOT_SIZE,
-        height: DOT_SIZE,
-        borderRadius: "50%",
-        background: "#fff",
-        border: "2px solid #6366f1",
-        opacity: showHandles ? 1 : 0,
-        pointerEvents: showHandles ? "all" : "none",
-        transition: "opacity 120ms",
-        cursor: "crosshair",
-        [side]: 0,
-        transform: side === "left" ? "translateX(-50%)" : "translateX(50%)",
-        boxShadow: "0 0 0 3px rgba(99,102,241,0.16)",
-    });
-
-    // Invisible node-level target — large hit area so drops land easily
-    const invisibleTarget = (side: "left" | "right"): CSSProperties => ({
-        width: 20,
-        height: 20,
-        opacity: 0,
-        background: "transparent",
-        border: "none",
-        pointerEvents: "all",
-        [side]: -10,
-    });
-
-    // ── Column routing handles (invisible, positioned at each row's Y) ─────────
-    // These live OUTSIDE the overflow:hidden div so they're not clipped.
-    // Edges connect to these handles, placing arrow endpoints at the correct row.
-    const ROUTE_SIZE = 8;
-    const routingHandle = (
-        yCenter: number,
-        side: "left" | "right",
-    ): CSSProperties => ({
-        width: ROUTE_SIZE,
-        height: ROUTE_SIZE,
-        opacity: 0,
-        background: "transparent",
-        border: "none",
-        top: yCenter,
-        [side]: 0,
-        transform: side === "left" ? "translateX(-50%)" : "translateX(50%)",
-        pointerEvents: "none",
-    });
-    const routingTarget = (
-        yCenter: number,
-        side: "left" | "right",
-    ): CSSProperties => ({
-        ...routingHandle(yCenter, side),
-        pointerEvents: "all",
-    });
+    const minHeight = computeTableMinHeight(requiredRows);
 
     const nh = handleIds(id);
 
@@ -141,12 +74,12 @@ function TableNode({ id, data, selected, dragging }: NodeProps<TableNodeType>) {
                 lineClassName="border-indigo-500/20! border-solid!"
                 handleClassName="!w-[9px] !h-[9px] !rounded-full !bg-background !border !border-indigo-500/60 !ring-1 !ring-indigo-500/30 hover:!border-indigo-400 hover:!ring-indigo-500/40 !transition-colors !duration-100 !shadow-sm"
                 onResizeStart={() => {
-                    endDiagramHistoryGestureIfActive();
+                    endGestureIfActive();
                     setIsResizing(true);
                 }}
                 onResizeEnd={() => {
                     setIsResizing(false);
-                    endDiagramHistoryGestureDeferred();
+                    endGesture();
                 }}
             />
 
@@ -160,25 +93,25 @@ function TableNode({ id, data, selected, dragging }: NodeProps<TableNodeType>) {
                             type="source"
                             position={Position.Left}
                             id={ch.sourceLeft}
-                            style={routingHandle(yc, "left")}
+                            style={routingHandleStyle(yc, "left")}
                         />
                         <Handle
                             type="source"
                             position={Position.Right}
                             id={ch.sourceRight}
-                            style={routingHandle(yc, "right")}
+                            style={routingHandleStyle(yc, "right")}
                         />
                         <Handle
                             type="target"
                             position={Position.Left}
                             id={ch.targetLeft}
-                            style={routingTarget(yc, "left")}
+                            style={routingTargetStyle(yc, "left")}
                         />
                         <Handle
                             type="target"
                             position={Position.Right}
                             id={ch.targetRight}
-                            style={routingTarget(yc, "right")}
+                            style={routingTargetStyle(yc, "right")}
                         />
                     </Fragment>
                 );
@@ -189,25 +122,25 @@ function TableNode({ id, data, selected, dragging }: NodeProps<TableNodeType>) {
                 type="source"
                 position={Position.Left}
                 id={nh.sourceLeft}
-                style={visibleDot("left")}
+                style={visibleDotStyle("left", showHandles)}
             />
             <Handle
                 type="source"
                 position={Position.Right}
                 id={nh.sourceRight}
-                style={visibleDot("right")}
+                style={visibleDotStyle("right", showHandles)}
             />
             <Handle
                 type="target"
                 position={Position.Left}
                 id={nh.targetLeft}
-                style={invisibleTarget("left")}
+                style={invisibleTargetStyle("left")}
             />
             <Handle
                 type="target"
                 position={Position.Right}
                 id={nh.targetRight}
-                style={invisibleTarget("right")}
+                style={invisibleTargetStyle("right")}
             />
 
             <div
