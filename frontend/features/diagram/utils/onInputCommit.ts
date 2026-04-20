@@ -15,3 +15,31 @@ export function onInputCommit(
         onCancel?.();
     }
 }
+
+/**
+ * Enter / Escape helper that also blurs the current field by default.
+ * Returning false from onCommit/onCancel prevents the blur.
+ */
+export function onInputCommitAndBlur(
+    e: React.KeyboardEvent<HTMLInputElement>,
+    {
+        onCommit,
+        onCancel,
+    }: {
+        onCommit: () => void | boolean;
+        onCancel?: () => void | boolean;
+    },
+) {
+    onInputCommit(e, {
+        onCommit: () => {
+            const shouldBlur = onCommit() !== false;
+            if (shouldBlur) e.currentTarget.blur();
+        },
+        onCancel: onCancel
+            ? () => {
+                  const shouldBlur = onCancel() !== false;
+                  if (shouldBlur) e.currentTarget.blur();
+              }
+            : undefined,
+    });
+}

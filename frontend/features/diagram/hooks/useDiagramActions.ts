@@ -3,7 +3,7 @@ import { useReactFlow } from "@xyflow/react";
 import { useMutation } from "@tanstack/react-query";
 import { useDiagramStore } from "../store/diagramStore";
 import { saveDiagram, type DiagramPayload } from "../api/diagram.api";
-import { FIT_VIEW_PADDING, REFLOW_DELAY_MS } from "../constants";
+import { FIT_VIEW_PADDING, scheduleFitView } from "../constants";
 import type { DiagramNode, RelationEdge } from "../types/flow.types";
 import { isTableNode } from "../types/flow.types";
 import { buildAutoLayoutChanges } from "../layout/autoLayout";
@@ -29,10 +29,7 @@ export function useDiagramActions() {
             example.nodes as DiagramNode[],
             example.edges as RelationEdge[],
         );
-        setTimeout(
-            () => fitView({ padding: FIT_VIEW_PADDING }),
-            REFLOW_DELAY_MS,
-        );
+        scheduleFitView(fitView, { padding: FIT_VIEW_PADDING });
     }, [loadDiagram, fitView]);
 
     const handleAutoLayout = useCallback(async () => {
@@ -45,10 +42,7 @@ export function useDiagramActions() {
 
         onNodesChange(changes);
         normalizeEdgeHandleDirections();
-        setTimeout(
-            () => fitView({ padding: FIT_VIEW_PADDING }),
-            REFLOW_DELAY_MS,
-        );
+        scheduleFitView(fitView, { padding: FIT_VIEW_PADDING });
     }, [fitView]);
 
     return { isPending, handleSave, handleLoadExample, handleAutoLayout };

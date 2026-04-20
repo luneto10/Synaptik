@@ -97,7 +97,6 @@ export function useDiagramCanvas() {
 
     const { handleUndo, handleRedo } = useKeyboardShortcuts({
         handleToolAction,
-        setTableDialogOpen: handleTableDialogClose,
         setPendingConnectSource,
         handleToggleMinimap,
         handleAutoLayout,

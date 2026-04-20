@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useReactFlow } from "@xyflow/react";
+import { scheduleFitView } from "../../constants";
 
 interface FitViewTriggerProps {
     nodeId: string | null;
@@ -15,26 +16,21 @@ interface FitViewTriggerProps {
 export function FitViewTrigger({ nodeId, onDone }: FitViewTriggerProps) {
     const { fitView } = useReactFlow();
 
-    // Keep `onDone` in a ref so the zoom effect doesn't re-run when the caller
-    // passes a fresh function each render.
-    const onDoneRef = useRef(onDone);
-    useEffect(() => {
-        onDoneRef.current = onDone;
-    }, [onDone]);
-
     useEffect(() => {
         if (!nodeId) return;
-        const id = setTimeout(() => {
-            fitView({
+        const id = scheduleFitView(
+            fitView,
+            {
                 nodes: [{ id: nodeId }],
                 duration: 400,
                 padding: 0.35,
                 maxZoom: 1.2,
-            });
-            onDoneRef.current();
-        }, 80);
+            },
+            80,
+            onDone,
+        );
         return () => clearTimeout(id);
-    }, [nodeId, fitView]);
+    }, [nodeId, fitView, onDone]);
 
     return null;
 }

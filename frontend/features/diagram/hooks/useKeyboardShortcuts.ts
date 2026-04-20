@@ -7,7 +7,6 @@ import { TOOLS, type ToolValue } from "../components/canvas/LeftToolbox";
 
 interface Options {
     handleToolAction: (value: ToolValue) => void;
-    setTableDialogOpen: (open: boolean) => void;
     setPendingConnectSource: (id: string | null) => void;
     handleToggleMinimap: () => void;
     handleAutoLayout: () => void;

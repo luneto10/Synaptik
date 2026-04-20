@@ -23,7 +23,8 @@ import {
 } from "../types/db.types";
 import ColumnBadges from "./ColumnBadges";
 import ColumnSettingsPopover from "./ColumnSettingsPopover";
-import { onInputCommit } from "../utils/onInputCommit";
+import { onInputCommitAndBlur } from "../utils/onInputCommit";
+import { refocusAndSelect } from "../utils/nameValidation";
 import InlineFieldError from "../components/common/InlineFieldError";
 
 interface Props {
@@ -76,10 +77,7 @@ function TableNodeColumnRow({
                 return "blocked";
             }
             setError("Duplicate column name.");
-            requestAnimationFrame(() => {
-                nameInputRef.current?.focus();
-                nameInputRef.current?.select();
-            });
+            refocusAndSelect(nameInputRef.current);
             return "blocked";
         }
         setError(null);
@@ -124,16 +122,13 @@ function TableNodeColumnRow({
                     }}
                     onBlur={() => commitName("blur")}
                     onKeyDown={(e) => {
-                        onInputCommit(e, {
+                        onInputCommitAndBlur(e, {
                             onCommit: () => {
                                 const result = commitName("enter");
-                                if (result === "applied") {
-                                    e.currentTarget.blur();
-                                }
+                                return result === "applied";
                             },
                             onCancel: () => {
                                 cancelName();
-                                e.currentTarget.blur();
                             },
                         });
                         e.stopPropagation();

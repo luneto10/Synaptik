@@ -5,6 +5,13 @@ export function normalizeName(value: string) {
     return value.trim().toLowerCase();
 }
 
+export function refocusAndSelect(input: HTMLInputElement | null) {
+    requestAnimationFrame(() => {
+        input?.focus();
+        input?.select();
+    });
+}
+
 export function hasDuplicateTableName(
     nodes: TableNode[],
     candidate: string,

@@ -6,7 +6,7 @@ import { Download, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useDiagramStore } from "../../store/diagramStore";
 import type { DiagramNode, RelationEdge } from "../../types/flow.types";
-import { FIT_VIEW_PADDING, REFLOW_DELAY_MS } from "../../constants";
+import { FIT_VIEW_PADDING, scheduleFitView } from "../../constants";
 
 interface Snapshot {
     nodes: DiagramNode[];
@@ -63,10 +63,7 @@ export function DevToolbar() {
                     }
 
                     loadDiagram(snapshot.nodes, snapshot.edges);
-                    setTimeout(
-                        () => fitView({ padding: FIT_VIEW_PADDING }),
-                        REFLOW_DELAY_MS,
-                    );
+                    scheduleFitView(fitView, { padding: FIT_VIEW_PADDING });
                 } catch (err) {
                     console.error("[DevToolbar] Failed to load snapshot:", err);
                     alert("Invalid diagram JSON - check the console for details.");

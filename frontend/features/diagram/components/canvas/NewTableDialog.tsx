@@ -15,7 +15,10 @@ import { useDiagramStore } from "../../store/diagramStore";
 import { endDiagramHistoryGestureIfActive } from "../../store/diagramHistory";
 import { onInputCommit } from "../../utils/onInputCommit";
 import InlineFieldError from "../common/InlineFieldError";
-import { hasDuplicateTableName } from "../../utils/nameValidation";
+import {
+    hasDuplicateTableName,
+    refocusAndSelect,
+} from "../../utils/nameValidation";
 import { isTableNode } from "../../types/flow.types";
 
 interface NewTableDialogProps {
@@ -54,7 +57,7 @@ export default function NewTableDialog({
         const nodes = useDiagramStore.getState().nodes.filter(isTableNode);
         if (hasDuplicateTableName(nodes, nextName)) {
             setError("A table with this name already exists.");
-            requestAnimationFrame(() => inputRef.current?.focus());
+            refocusAndSelect(inputRef.current);
             return;
         }
 
@@ -65,8 +68,6 @@ export default function NewTableDialog({
             y: window.innerHeight / 2,
         });
         addTable(nextName, position);
-        setName("");
-        setError(null);
         handleOpenChange(false);
     };
 

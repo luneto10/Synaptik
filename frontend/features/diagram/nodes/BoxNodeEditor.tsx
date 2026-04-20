@@ -22,6 +22,7 @@ import { normalizeHex } from "../utils/color";
 import { hasDuplicateCategoryTitle } from "../utils/nameValidation";
 import { isBoxNode } from "../types/flow.types";
 import InlineFieldError from "../components/common/InlineFieldError";
+import { onInputCommitAndBlur } from "../utils/onInputCommit";
 
 interface BoxNodeEditorProps {
     nodeId: string;
@@ -51,15 +52,12 @@ export const BoxNodeEditor = memo(function BoxNodeEditor({
 
     const [isDragging, setIsDragging] = useState(false);
     const [titleFocused, setTitleFocused] = useState(false);
-    
-    const [prevProps, setPrevProps] = useState({ color, opacity, title });
-    
+
     const [draftColor, setDraftColor] = useState(color);
     const [draftOpacity, setDraftOpacity] = useState(opacity);
     const [draftTitle, setDraftTitle] = useState(title);
-    
-    if (color !== prevProps.color || opacity !== prevProps.opacity || title !== prevProps.title) {
-        setPrevProps({ color, opacity, title });
+
+    useEffect(() => {
         if (!isDragging) {
             setDraftColor(color);
             setDraftOpacity(opacity);
@@ -67,7 +65,7 @@ export const BoxNodeEditor = memo(function BoxNodeEditor({
         if (!titleFocused) {
             setDraftTitle(title);
         }
-    }
+    }, [color, opacity, title, isDragging, titleFocused]);
 
     const commitColor = useRafThrottle((next: string) => {
         updateBox(nodeId, { color: next });
@@ -125,22 +123,11 @@ export const BoxNodeEditor = memo(function BoxNodeEditor({
     const [hexDraft, setHexDraft] = useState(draftColor);
     const hexInputRef = useRef<HTMLInputElement>(null);
 
-    // Sync hexDraft with draftColor when not editing
-    const [lastDraftColor, setLastDraftColor] = useState(draftColor);
-    if (draftColor !== lastDraftColor) {
-        setLastDraftColor(draftColor);
+    useEffect(() => {
         if (!editingHex) {
             setHexDraft(draftColor);
         }
-    }
-    // Also sync when editing starts/stops
-    const [prevEditingHex, setPrevEditingHex] = useState(editingHex);
-    if (editingHex !== prevEditingHex) {
-        setPrevEditingHex(editingHex);
-        if (!editingHex) {
-            setHexDraft(draftColor);
-        }
-    }
+    }, [draftColor, editingHex]);
 
     useEffect(() => {
         if (editingHex) {
@@ -183,16 +170,19 @@ export const BoxNodeEditor = memo(function BoxNodeEditor({
                             commitTitle();
                             endDiagramHistoryGestureDeferred();
                         }}
-                        onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                                commitTitle();
-                                e.currentTarget.blur();
-                            } else if (e.key === "Escape") {
-                                setDraftTitle(title);
-                                setError(null);
-                                e.currentTarget.blur();
-                            }
-                        }}
+                        onKeyDown={(e) =>
+                            onInputCommitAndBlur(e, {
+                                onCommit: () => {
+                                    commitTitle();
+                                    return true;
+                                },
+                                onCancel: () => {
+                                    setDraftTitle(title);
+                                    setError(null);
+                                    return true;
+                                },
+                            })
+                        }
                         placeholder="Untitled category"
                         className="h-8 w-64 text-base font-semibold border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
                     />
@@ -243,13 +233,19 @@ export const BoxNodeEditor = memo(function BoxNodeEditor({
                                     value={hexDraft}
                                     onChange={(e) => setHexDraft(e.target.value)}
                                     onBlur={commitHex}
-                                    onKeyDown={(e) => {
-                                        if (e.key === "Enter") commitHex();
-                                        else if (e.key === "Escape") {
+                                    onKeyDown={(e) =>
+                                        onInputCommitAndBlur(e, {
+                                            onCommit: () => {
+                                                commitHex();
+                                                return true;
+                                            },
+                                            onCancel: () => {
                                             setHexDraft(draftColor);
                                             setEditingHex(false);
-                                        }
-                                    }}
+                                                return true;
+                                            },
+                                        })
+                                    }
                                     spellCheck={false}
                                     maxLength={7}
                                     className="h-6 w-[92px] text-xs font-mono uppercase px-1.5"

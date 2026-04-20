@@ -8,6 +8,12 @@ interface UseGrabModeOptions {
     setActiveTool: (tool: DiagramTool) => void;
 }
 
+export function getFlowPane(containerRef: RefObject<HTMLDivElement | null>) {
+    return containerRef.current?.querySelector(
+        ".react-flow__pane",
+    ) as HTMLElement | null;
+}
+
 /**
  * Manages middle / right mouse button "grab to pan" behaviour:
  *
@@ -38,10 +44,7 @@ export function useGrabMode({
     }, [setActiveTool]);
 
     useEffect(() => {
-        if (!containerRef.current) return;
-        const pane = containerRef.current.querySelector(
-            ".react-flow__pane",
-        ) as HTMLElement | null;
+        const pane = getFlowPane(containerRef);
         if (!pane) return;
         pane.style.cursor = isGrabbing ? "grabbing" : "default";
     }, [isGrabbing, containerRef]);

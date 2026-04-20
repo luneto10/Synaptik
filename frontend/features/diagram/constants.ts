@@ -1,4 +1,5 @@
 import type { RelationshipType } from "./types/flow.types";
+import type { FitViewOptions } from "@xyflow/react";
 
 export const HISTORY_LIMIT = 50;
 /** Padding applied when fitting the view to diagram content. */
@@ -6,6 +7,18 @@ export const FIT_VIEW_PADDING = 0.3;
 
 /** Delay (ms) before calling fitView / focus after a DOM reflow. */
 export const REFLOW_DELAY_MS = 50;
+
+export function scheduleFitView(
+    fitView: (options?: FitViewOptions) => void | Promise<unknown>,
+    options: FitViewOptions = { padding: FIT_VIEW_PADDING },
+    delayMs = REFLOW_DELAY_MS,
+    onDone?: () => void,
+) {
+    return window.setTimeout(() => {
+        void fitView(options);
+        onDone?.();
+    }, delayMs);
+}
 
 /** Grid layout used when auto-placing new tables and running auto-layout. */
 export const LAYOUT = {

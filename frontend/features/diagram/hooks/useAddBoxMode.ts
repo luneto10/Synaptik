@@ -4,6 +4,7 @@ import { useReactFlow } from "@xyflow/react";
 import { useDiagramStore } from "../store/diagramStore";
 import { BOX } from "../constants";
 import type { DiagramTool } from "../components/canvas/LeftToolbox";
+import { getFlowPane } from "./useGrabMode";
 
 export type BoxPreview = { x: number; y: number; w: number; h: number };
 
@@ -49,9 +50,7 @@ export function useAddBoxMode({
         const container = containerRef.current;
         if (!container) return;
 
-        const pane = container.querySelector(
-            ".react-flow__pane",
-        ) as HTMLElement | null;
+        const pane = getFlowPane(containerRef);
         if (!pane) return;
 
         const previousCursor = pane.style.cursor;

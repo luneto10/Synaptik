@@ -4,7 +4,7 @@ import {
     memo,
     useCallback,
     useEffect,
-    useLayoutEffect,
+    useMemo,
     useRef,
     useState,
 } from "react";
@@ -12,7 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import type { DbColumn } from "../types/db.types";
-import { hasDuplicateColumnName } from "../utils/nameValidation";
+import { normalizeName } from "../utils/nameValidation";
 import TableNodeColumnRow from "./TableNodeColumnRow";
 
 interface TableNodeColumnsProps {
@@ -52,18 +52,32 @@ function TableNodeColumns({
         return () => ro.disconnect();
     }, [columns.length]);
 
-    const columnsRef = useRef(columns);
-    useLayoutEffect(() => {
-        columnsRef.current = columns;
+    const duplicateIndex = useMemo(() => {
+        const counts = new Map<string, number>();
+        const byColumnId = new Map<string, string>();
+        for (const column of columns) {
+            const normalized = normalizeName(column.name);
+            byColumnId.set(column.id, normalized);
+            if (!normalized) continue;
+            counts.set(normalized, (counts.get(normalized) ?? 0) + 1);
+        }
+        return { counts, byColumnId };
     }, [columns]);
+
     const hasDuplicateName = useCallback(
-        (candidate: string, excludeColumnId: string) =>
-            hasDuplicateColumnName(
-                columnsRef.current,
-                candidate,
-                excludeColumnId,
-            ),
-        [],
+        (candidate: string, excludeColumnId: string) => {
+            const normalizedCandidate = normalizeName(candidate);
+            if (!normalizedCandidate) return false;
+
+            const existingName = duplicateIndex.byColumnId.get(excludeColumnId);
+            const existingCount = duplicateIndex.counts.get(normalizedCandidate) ?? 0;
+
+            if (existingName === normalizedCandidate) {
+                return existingCount > 1;
+            }
+            return existingCount > 0;
+        },
+        [duplicateIndex],
     );
 
     return (
