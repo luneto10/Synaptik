@@ -19,6 +19,9 @@ export function useSelectAllHotkey() {
         if (nodes.length === 0) return;
         selectAll();
         activateSelectionBounds();
+        queueMicrotask(() => {
+            window.getSelection()?.removeAllRanges();
+        });
     }, [activateSelectionBounds]);
 
     useEffect(() => {

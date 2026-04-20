@@ -134,7 +134,9 @@ export default function ColumnSettingsPopover({
                         </Button>
                     </PopoverTrigger>
                 </TooltipTrigger>
-                <TooltipContent side="top">Column settings</TooltipContent>
+                <TooltipContent side="top" data-node-tooltip="">
+                    Column settings
+                </TooltipContent>
             </Tooltip>
 
             <PopoverContent className="w-64 p-3 space-y-3" side="right">

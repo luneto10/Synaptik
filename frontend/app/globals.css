@@ -135,3 +135,9 @@
 .react-flow__pane.selection {
     cursor: default;
 }
+
+/* Portaled tooltip content is outside the diagram shell’s select-none; keep chrome tooltips out of “select all”.
+   Tooltips from inside a flow node (table / category) set data-node-tooltip so labels can still be selected/copied. */
+[data-slot="tooltip-content"]:not([data-node-tooltip]) {
+    user-select: none;
+}

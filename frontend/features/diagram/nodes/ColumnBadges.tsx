@@ -43,7 +43,13 @@ function TypeIcon({ type }: { type: ColumnType }) {
                     <Icon className="w-3 h-3 shrink-0" />
                 </span>
             </TooltipTrigger>
-            <TooltipContent side="top" className="font-mono">{type}</TooltipContent>
+            <TooltipContent
+                side="top"
+                className="font-mono"
+                data-node-tooltip=""
+            >
+                {type}
+            </TooltipContent>
         </Tooltip>
     );
 }

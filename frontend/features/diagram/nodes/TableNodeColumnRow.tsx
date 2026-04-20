@@ -161,7 +161,7 @@ function TableNodeColumnRow({
                                     <Trash2 className="w-3 h-3" />
                                 </Button>
                             </TooltipTrigger>
-                            <TooltipContent side="top">
+                            <TooltipContent side="top" data-node-tooltip="">
                                 Delete column
                             </TooltipContent>
                         </Tooltip>

@@ -14,7 +14,8 @@ import {
 } from "../store/diagramHistory";
 import { BOX } from "../constants";
 import type { BoxNode as BoxNodeType } from "../types/flow.types";
-import { hexToRgba } from "../utils/color";
+import { cn } from "@/lib/utils";
+import { hexToRgba, lightenHex } from "../utils/color";
 import { BoxNodeEditor } from "./BoxNodeEditor";
 
 function BoxNode({ id, data, selected }: NodeProps<BoxNodeType>) {
@@ -24,6 +25,18 @@ function BoxNode({ id, data, selected }: NodeProps<BoxNodeType>) {
 
     const fill = hexToRgba(data.color, data.opacity);
     const borderColor = data.color;
+    const active = selected || isResizing;
+    const edgeColor = lightenHex(borderColor, 0.32) ?? borderColor;
+
+    const categoryLiftShadow = active
+        ? [
+              `inset 0 1px 0 0 rgba(255,255,255,0.28)`,
+              `0 0 0 2px ${hexToRgba(edgeColor, 0.95)}`,
+              `0 0 0 5px ${hexToRgba(edgeColor, 0.35)}`,
+              `0 0 40px 2px ${hexToRgba(edgeColor, 0.38)}`,
+              `0 18px 36px -10px ${hexToRgba(edgeColor, 0.22)}`,
+          ].join(", ")
+        : undefined;
 
     return (
         <>
@@ -58,14 +71,16 @@ function BoxNode({ id, data, selected }: NodeProps<BoxNodeType>) {
             />
 
             <div
-                className="w-full h-full rounded-xl border-2 transition-colors duration-150 cursor-grab active:cursor-grabbing"
+                className={cn(
+                    "w-full h-full rounded-xl border-solid transition-[box-shadow,border-width,border-color] duration-150 cursor-grab active:cursor-grabbing",
+                    !active && "shadow-md hover:shadow-lg",
+                )}
                 style={{
                     backgroundColor: fill,
-                    borderColor,
-                    boxShadow:
-                        selected || isResizing
-                            ? `0 0 0 1px ${borderColor}40, 0 20px 25px -5px ${borderColor}15, 0 8px 10px -6px ${borderColor}10`
-                            : undefined,
+                    borderStyle: "solid",
+                    borderWidth: active ? 3 : 2,
+                    borderColor: active ? edgeColor : borderColor,
+                    boxShadow: categoryLiftShadow,
                 }}
             >
                 {data.title && (
