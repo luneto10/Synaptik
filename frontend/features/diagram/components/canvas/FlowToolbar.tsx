@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useState } from "react";
+import { memo, useState, useCallback, useRef } from "react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,7 @@ import { onInputCommit } from "../../utils/onInputCommit";
 import { IS_MAC } from "../../utils/isMac";
 import { cn } from "@/lib/utils";
 import { DevToolbar } from "./DevToolbar";
+import InlineFieldError from "../common/InlineFieldError";
 
 /** Vertical rule for toolbars: avoids Radix Separator `self-stretch` fighting `h-*` in flex rows. */
 function ToolbarDivider() {
@@ -62,6 +63,26 @@ function FlowToolbar({
     const { theme, setTheme } = useTheme();
     const [projectName, setProjectName] = useState("untitled");
     const [editingName, setEditingName] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const lastValidName = useRef("untitled");
+
+    const validateAndCommit = useCallback(() => {
+        const trimmed = projectName.trim();
+        if (!trimmed) {
+            setError("Project name cannot be empty");
+            return;
+        }
+        setProjectName(trimmed);
+        lastValidName.current = trimmed;
+        setError(null);
+        setEditingName(false);
+    }, [projectName]);
+
+    const handleCancel = useCallback(() => {
+        setProjectName(lastValidName.current);
+        setError(null);
+        setEditingName(false);
+    }, []);
 
     return (
         <div className="h-11 border-b border-border/60 bg-card/95 backdrop-blur-sm flex items-center px-3 gap-2 shrink-0 z-10">
@@ -78,36 +99,54 @@ function FlowToolbar({
             <ToolbarDivider />
 
             {/* ── Project name ── */}
-            {editingName ? (
-                <Input
-                    autoFocus
-                    value={projectName}
-                    onChange={(e) => setProjectName(e.target.value)}
-                    onBlur={() => setEditingName(false)}
-                    onKeyDown={(e) =>
-                        onInputCommit(e, {
-                            onCommit: () => setEditingName(false),
-                            onCancel: () => setEditingName(false),
-                        })
-                    }
-                    className="h-6 w-28 text-xs px-2"
-                />
-            ) : (
-                <button
-                    onDoubleClick={() => setEditingName(true)}
-                    onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === "F2") {
-                            e.preventDefault();
-                            setEditingName(true);
-                        }
-                    }}
-                    title="Double-click to rename"
-                    aria-label="Rename project"
-                    className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-default select-none font-medium"
-                >
-                    {projectName}
-                </button>
-            )}
+            <div className="relative">
+                {editingName ? (
+                    <>
+                        <Input
+                            autoFocus
+                            value={projectName}
+                            onChange={(e) => {
+                                setProjectName(e.target.value);
+                                if (error) setError(null);
+                            }}
+                            onBlur={validateAndCommit}
+                            onKeyDown={(e) =>
+                                onInputCommit(e, {
+                                    onCommit: validateAndCommit,
+                                    onCancel: handleCancel,
+                                })
+                            }
+                            className={cn(
+                                "h-6 w-32 text-xs px-2 transition-colors",
+                                error &&
+                                    "border-destructive focus-visible:ring-destructive",
+                            )}
+                        />
+                        <div className="absolute top-full left-0 pt-1 z-50">
+                            <InlineFieldError
+                                message={error}
+                                compact
+                                className="bg-card px-1.5 py-0.5 rounded border border-destructive/20 shadow-sm whitespace-nowrap"
+                            />
+                        </div>
+                    </>
+                ) : (
+                    <button
+                        onDoubleClick={() => setEditingName(true)}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === "F2") {
+                                e.preventDefault();
+                                setEditingName(true);
+                            }
+                        }}
+                        title="Double-click to rename"
+                        aria-label="Rename project"
+                        className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-default select-none font-medium px-1"
+                    >
+                        {projectName}
+                    </button>
+                )}
+            </div>
 
             <Badge
                 variant="outline"
