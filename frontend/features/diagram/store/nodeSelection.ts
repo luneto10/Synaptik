@@ -15,3 +15,16 @@ export function replaceSelection(nodeIds: string[]) {
         onNodesChange(changes);
     });
 }
+
+/** Selects every node in the diagram. No history entry. */
+export function selectAll() {
+    withoutHistory(() => {
+        const { nodes, onNodesChange } = useDiagramStore.getState();
+        const changes: NodeChange[] = nodes.map((node) => ({
+            type: "select",
+            id: node.id,
+            selected: true,
+        }));
+        onNodesChange(changes);
+    });
+}
