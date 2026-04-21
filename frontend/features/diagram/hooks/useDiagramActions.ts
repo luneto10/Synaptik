@@ -10,7 +10,6 @@ import { useDeferredFitView } from "./useDeferredFitView";
 
 export function useDiagramActions() {
     const { deferredFitView } = useDeferredFitView();
-    const loadDiagram = useDiagramStore((s) => s.loadDiagram);
 
     const { mutate: save, isPending } = useMutation<
         { id: string },
@@ -25,12 +24,12 @@ export function useDiagramActions() {
 
     const handleLoadExample = useCallback(async () => {
         const { default: example } = await import("../mock/ecommerce.json");
-        loadDiagram(
+        useDiagramStore.getState().loadDiagram(
             example.nodes as DiagramNode[],
             example.edges as RelationEdge[],
         );
         deferredFitView({ padding: FIT_VIEW_PADDING });
-    }, [loadDiagram, deferredFitView]);
+    }, [deferredFitView]);
 
     const handleAutoLayout = useCallback(async () => {
         const { nodes, edges, onNodesChange, normalizeEdgeHandleDirections } =

@@ -1,4 +1,5 @@
 import { useDiagramStore } from "./diagramStore";
+import { historyPausedRef } from "./diagramHistory";
 import { EDGE_STYLE, LAYOUT } from "../constants";
 import type { DiagramNode, RelationEdge, TableNode } from "../types/flow.types";
 import { isTableNode } from "../types/flow.types";
@@ -18,6 +19,12 @@ export function computeEdgeOffsets(
     edges: RelationEdge[],
 ): Map<string, number> {
     if (cachedOffsets && allNodes === cachedAllNodes && edges === cachedEdges) {
+        return cachedOffsets;
+    }
+
+    // During drag/resize gestures positions change every frame but obstacle routing
+    // doesn't need to update until the gesture ends — return stale offsets for free.
+    if (historyPausedRef.current && cachedOffsets) {
         return cachedOffsets;
     }
 

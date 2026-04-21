@@ -30,16 +30,10 @@ export function useAddBoxMode({
     setActiveTool,
 }: UseAddBoxModeOptions) {
     const { screenToFlowPosition } = useReactFlow();
-    const addBox = useDiagramStore((s) => s.addBox);
 
     const [preview, setPreview] = useState<BoxPreview | null>(null);
     const startRef = useRef<{ x: number; y: number } | null>(null);
-    const addBoxRef = useRef(addBox);
     const screenToFlowPositionRef = useRef(screenToFlowPosition);
-
-    useEffect(() => {
-        addBoxRef.current = addBox;
-    }, [addBox]);
 
     useEffect(() => {
         screenToFlowPositionRef.current = screenToFlowPosition;
@@ -93,7 +87,7 @@ export function useAddBoxMode({
                     x: Math.max(s.x, e.clientX),
                     y: Math.max(s.y, e.clientY),
                 });
-                addBoxRef.current(topLeft, {
+                useDiagramStore.getState().addBox(topLeft, {
                     width: bottomRight.x - topLeft.x,
                     height: bottomRight.y - topLeft.y,
                 });

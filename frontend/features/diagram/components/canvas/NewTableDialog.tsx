@@ -30,7 +30,6 @@ export default function NewTableDialog({
     open,
     onOpenChange,
 }: NewTableDialogProps) {
-    const addTable = useDiagramStore((s) => s.addTable);
     const { screenToFlowPosition } = useReactFlow();
     const [name, setName] = useState("");
     const { error, clearError, failValidation } =
@@ -67,7 +66,7 @@ export default function NewTableDialog({
             x: window.innerWidth / 2,
             y: window.innerHeight / 2,
         });
-        addTable(nextName, position);
+        useDiagramStore.getState().addTable(nextName, position);
         handleOpenChange(false);
     };
 

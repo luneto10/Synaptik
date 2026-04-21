@@ -5,7 +5,6 @@ import {
     getSmoothStepPath,
     EdgeLabelRenderer,
     BaseEdge,
-    useStore,
     type EdgeProps,
 } from "@xyflow/react";
 import { Badge } from "@/components/ui/badge";
@@ -103,11 +102,6 @@ function RelationEdge({
         ],
     );
 
-    const setEdgeRelationType = useDiagramStore((s) => s.setEdgeRelationType);
-    const deleteEdge = useDiagramStore((s) => s.deleteEdge);
-    const createJunctionTable = useDiagramStore((s) => s.createJunctionTable);
-    const flipEdgeEnd = useDiagramStore((s) => s.flipEdgeEnd);
-
     const [open, setOpen] = useState(false);
     const [askJunction, setAskJunction] = useState(false);
 
@@ -122,44 +116,37 @@ function RelationEdge({
                 setAskJunction(true);
                 return;
             }
-            setEdgeRelationType(id, val as RelationshipType);
+            useDiagramStore.getState().setEdgeRelationType(id, val as RelationshipType);
             setOpen(false);
         },
-        [id, relType, setEdgeRelationType],
+        [id, relType],
     );
 
     const handleCreateJunction = useCallback(() => {
-        createJunctionTable(source, target);
-        deleteEdge(id);
+        useDiagramStore.getState().createJunctionTable(source, target);
+        useDiagramStore.getState().deleteEdge(id);
         setAskJunction(false);
         setOpen(false);
-    }, [source, target, id, createJunctionTable, deleteEdge]);
+    }, [source, target, id]);
 
     const handleKeepDirect = useCallback(() => {
-        setEdgeRelationType(id, "many-to-many");
+        useDiagramStore.getState().setEdgeRelationType(id, "many-to-many");
         setAskJunction(false);
         setOpen(false);
-    }, [id, setEdgeRelationType]);
+    }, [id]);
 
     const handleDelete = useCallback(() => {
-        deleteEdge(id);
+        useDiagramStore.getState().deleteEdge(id);
         setOpen(false);
-    }, [id, deleteEdge]);
+    }, [id]);
 
     const [markerStart, markerEnd] = MARKERS[relType];
-    // useViewport() re-renders on every pan — subscribe to zoom scalar only.
-    const zoom = useStore((s) => s.transform[2]);
-    const safeZoom = Math.max(zoom, 0.05);
-    // Partial inverse scaling: badges get a readability boost when zoomed out
-    // without becoming screen-constant (too large at extreme zoom-out).
-    const labelScale = safeZoom < 1 ? 1 / Math.sqrt(safeZoom) : 1;
-
     const labelWrapperStyle = useMemo<CSSProperties>(
         () => ({
             ...LABEL_WRAPPER_BASE,
-            transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px) scale(${labelScale})`,
+            transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
         }),
-        [labelX, labelY, labelScale],
+        [labelX, labelY],
     );
 
     return (
@@ -217,10 +204,10 @@ function RelationEdge({
                                     targetHandleId={targetHandleId}
                                     onTypeChange={handleTypeChange}
                                     onFlipSource={() =>
-                                        flipEdgeEnd(id, "source")
+                                        useDiagramStore.getState().flipEdgeEnd(id, "source")
                                     }
                                     onFlipTarget={() =>
-                                        flipEdgeEnd(id, "target")
+                                        useDiagramStore.getState().flipEdgeEnd(id, "target")
                                     }
                                     onDelete={handleDelete}
                                     onCreateJunction={handleCreateJunction}

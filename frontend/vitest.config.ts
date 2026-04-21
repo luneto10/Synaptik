@@ -10,6 +10,18 @@ export default defineConfig({
     test: {
         environment: "node",
         setupFiles: ["./test/setup.ts"],
+        deps: {
+            optimizer: {
+                ssr: {
+                    include: [
+                        "@csstools/css-calc",
+                        "@csstools/css-color-parser",
+                        "@csstools/css-parser-algorithms",
+                        "@csstools/css-tokenizer",
+                    ],
+                },
+            },
+        },
         include: ["test/**/*.test.ts", "test/**/*.test.tsx"],
         coverage: {
             provider: "v8",

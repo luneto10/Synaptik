@@ -12,6 +12,8 @@ import type { NodeProps } from "@xyflow/react";
 import { useDiagramStore } from "../store/diagramStore";
 import type { TableNode as TableNodeType } from "../types/flow.types";
 import type { DbColumn } from "../types/db.types";
+
+const getStore = () => useDiagramStore.getState();
 import TableNodeHeader from "./TableNodeHeader";
 import TableNodeColumns from "./TableNodeColumns";
 import TableNodeFooter from "./TableNodeFooter";
@@ -79,10 +81,6 @@ const RoutingHandles = memo(function RoutingHandles({
 });
 
 function TableNode({ id, data, selected, dragging }: NodeProps<TableNodeType>) {
-    const addColumn = useDiagramStore((s) => s.addColumn);
-    const updateColumn = useDiagramStore((s) => s.updateColumn);
-    const removeColumn = useDiagramStore((s) => s.removeColumn);
-
     const [focusColId, setFocusColId] = useState<string | null>(null);
     const [isResizing, setIsResizing] = useState(false);
     const { endGesture, endGestureIfActive } = useHistoryGestureHandlers();
@@ -93,20 +91,20 @@ function TableNode({ id, data, selected, dragging }: NodeProps<TableNodeType>) {
 
     const handleAddColumn = useCallback(() => {
         const newId = crypto.randomUUID();
-        addColumn(id, newId);
+        getStore().addColumn(id, newId);
         setFocusColId(newId);
-    }, [id, addColumn]);
+    }, [id]);
 
     const handleFocusConsumed = useCallback(() => setFocusColId(null), []);
 
     const handleUpdateColumn = useCallback(
-        (col: DbColumn) => updateColumn(id, col),
-        [id, updateColumn],
+        (col: DbColumn) => getStore().updateColumn(id, col),
+        [id],
     );
 
     const handleRemoveColumn = useCallback(
-        (colId: string) => removeColumn(id, colId),
-        [id, removeColumn],
+        (colId: string) => getStore().removeColumn(id, colId),
+        [id],
     );
 
     const showHandles = isSolelySelected && !dragging && !isResizing;

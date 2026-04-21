@@ -6,7 +6,6 @@ import { hasDuplicateTableName } from "../utils/nameValidation";
 import { useValidatedField } from "./useValidatedField";
 
 export function useTableNodeHeaderRename(nodeId: string, tableName: string) {
-    const renameTable = useDiagramStore((s) => s.renameTable);
     const inputRef = useRef<HTMLInputElement>(null);
     const [editing, setEditing] = useState(false);
     const [draft, setDraft] = useState(tableName);
@@ -45,17 +44,10 @@ export function useTableNodeHeaderRename(nodeId: string, tableName: string) {
             return "blocked";
         }
         setError(null);
-        renameTable(nodeId, next);
+        useDiagramStore.getState().renameTable(nodeId, next);
         setEditing(false);
         return "applied";
-    }, [
-        draft,
-        failValidation,
-        nodeId,
-        renameTable,
-        setError,
-        tableName,
-    ]);
+    }, [draft, failValidation, nodeId, setError, tableName]);
 
     const cancelRename = useCallback(() => {
         setDraft(tableName);

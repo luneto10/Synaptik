@@ -22,8 +22,8 @@ export function useDiagramCanvas() {
     const nodeCount = useDiagramStore((s) => s.nodes.length);
     const edgeCount = useDiagramStore((s) => s.edges.length);
     const edges = useDiagramStore((s) => s.edges);
-    const onNodesChange = useDiagramStore((s) => s.onNodesChange);
-    const onEdgesChange = useDiagramStore((s) => s.onEdgesChange);
+    // Actions are stable Zustand references — read once, no subscription needed.
+    const { onNodesChange, onEdgesChange } = useDiagramStore.getState();
 
     const {
         handleBeforeDelete,

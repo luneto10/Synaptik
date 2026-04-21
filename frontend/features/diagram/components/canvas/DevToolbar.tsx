@@ -25,7 +25,6 @@ function makeExportName() {
 }
 
 export function DevToolbar() {
-    const loadDiagram = useDiagramStore((s) => s.loadDiagram);
     const fileRef = useRef<HTMLInputElement>(null);
     const { deferredFitView } = useDeferredFitView();
 
@@ -63,7 +62,7 @@ export function DevToolbar() {
                         throw new Error("Invalid snapshot shape");
                     }
 
-                    loadDiagram(snapshot.nodes, snapshot.edges);
+                    useDiagramStore.getState().loadDiagram(snapshot.nodes, snapshot.edges);
                     deferredFitView({ padding: FIT_VIEW_PADDING });
                 } catch (err) {
                     console.error("[DevToolbar] Failed to load snapshot:", err);
@@ -72,7 +71,7 @@ export function DevToolbar() {
             };
             reader.readAsText(file);
         },
-        [deferredFitView, loadDiagram],
+        [deferredFitView],
     );
 
     const openImportPicker = useCallback(() => {
@@ -81,9 +80,9 @@ export function DevToolbar() {
 
     const handleLoadStress = useCallback(() => {
         const { nodes, edges } = stressData as Snapshot;
-        loadDiagram(nodes, edges);
+        useDiagramStore.getState().loadDiagram(nodes, edges);
         deferredFitView({ padding: FIT_VIEW_PADDING });
-    }, [loadDiagram, deferredFitView]);
+    }, [deferredFitView]);
 
     return (
         <>

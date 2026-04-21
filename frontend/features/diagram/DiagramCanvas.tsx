@@ -19,6 +19,7 @@ import NewTableDialog from "./components/canvas/NewTableDialog";
 import { TableSearch } from "./components/canvas/TableSearch";
 import { FitViewTrigger } from "./components/canvas/FitViewTrigger";
 import { SelectionResizer } from "./components/canvas/SelectionResizer";
+import { PanOnAuxDrag } from "./components/canvas/PanOnAuxDrag";
 import ConnectionDialog from "./components/edges/ConnectionDialog";
 import { EdgeMarkerDefs } from "./components/edges/EdgeMarkerDefs";
 import { useDiagramCanvas } from "./hooks/useDiagramCanvas";
@@ -42,6 +43,7 @@ const selectSelectedCount = (s: { nodes: { selected?: boolean }[] }) => {
     for (const node of s.nodes) if (node.selected) n++;
     return n;
 };
+
 
 export function DiagramCanvas() {
     const selectedCount = useStore(selectSelectedCount);
@@ -191,6 +193,7 @@ export function DiagramCanvas() {
                     proOptions={PRO_OPTIONS}
                 >
                     <EdgeMarkerDefs />
+                    <PanOnAuxDrag />
                     <SelectionResizer />
                     <FitViewTrigger
                         nodeId={searchTargetId}
