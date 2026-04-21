@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useRef } from "react";
-import { Download, Upload } from "lucide-react";
+import { Download, Upload, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useDiagramStore } from "../../store/diagramStore";
 import type { DiagramNode, RelationEdge } from "../../types/flow.types";
+import stressData from "../../mock/stress.json";
 import { FIT_VIEW_PADDING } from "../../constants";
 import { useDeferredFitView } from "../../hooks/useDeferredFitView";
 
@@ -78,6 +79,12 @@ export function DevToolbar() {
         fileRef.current?.click();
     }, []);
 
+    const handleLoadStress = useCallback(() => {
+        const { nodes, edges } = stressData as Snapshot;
+        loadDiagram(nodes, edges);
+        deferredFitView({ padding: FIT_VIEW_PADDING });
+    }, [loadDiagram, deferredFitView]);
+
     return (
         <>
             <input
@@ -112,6 +119,17 @@ export function DevToolbar() {
                 onClick={openImportPicker}
             >
                 <Upload className="h-3.5 w-3.5" />
+            </Button>
+
+            <Button
+                variant="ghost"
+                size="icon"
+                title="Load stress test"
+                aria-label="Load stress test"
+                className="h-7 w-7 text-amber-500/70 hover:text-amber-400"
+                onClick={handleLoadStress}
+            >
+                <Zap className="h-3.5 w-3.5" />
             </Button>
         </>
     );

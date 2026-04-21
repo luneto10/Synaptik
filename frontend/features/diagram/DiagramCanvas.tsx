@@ -8,7 +8,9 @@ import {
     MiniMap,
     BackgroundVariant,
     ControlButton,
+    useStore,
 } from "@xyflow/react";
+import { SelectedCountContext } from "./components/canvas/SelectedCountContext";
 import { Map } from "lucide-react";
 import { nodeTypes } from "./nodes";
 import FlowToolbar from "./components/canvas/FlowToolbar";
@@ -34,7 +36,15 @@ const PRO_OPTIONS = { hideAttribution: true };
 const MINIMAP_STYLE: CSSProperties = { bottom: 56, right: 12 };
 const PAN_ON_DRAG_MIDDLE_RIGHT: number[] = [1, 2];
 
+// Computed once here so every TableNode gets O(1) context read instead of O(N) filter.
+const selectSelectedCount = (s: { nodes: { selected?: boolean }[] }) => {
+    let n = 0;
+    for (const node of s.nodes) if (node.selected) n++;
+    return n;
+};
+
 export function DiagramCanvas() {
+    const selectedCount = useStore(selectSelectedCount);
     const {
         containerRef,
         nodeCount,
@@ -84,6 +94,7 @@ export function DiagramCanvas() {
     } = useDiagramCanvas();
 
     return (
+        <SelectedCountContext.Provider value={selectedCount}>
         <div
             ref={containerRef}
             className="w-screen h-screen flex flex-col overflow-hidden bg-background select-none [&_input]:select-text [&_textarea]:select-text **:[[contenteditable]]:select-text"
@@ -241,5 +252,6 @@ export function DiagramCanvas() {
                 onSelect={handleSearchSelect}
             />
         </div>
+        </SelectedCountContext.Provider>
     );
 }

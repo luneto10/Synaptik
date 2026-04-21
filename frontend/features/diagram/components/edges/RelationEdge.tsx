@@ -5,7 +5,7 @@ import {
     getSmoothStepPath,
     EdgeLabelRenderer,
     BaseEdge,
-    useViewport,
+    useStore,
     type EdgeProps,
 } from "@xyflow/react";
 import { Badge } from "@/components/ui/badge";
@@ -147,7 +147,8 @@ function RelationEdge({
     }, [id, deleteEdge]);
 
     const [markerStart, markerEnd] = MARKERS[relType];
-    const { zoom } = useViewport();
+    // useViewport() re-renders on every pan — subscribe to zoom scalar only.
+    const zoom = useStore((s) => s.transform[2]);
     const safeZoom = Math.max(zoom, 0.05);
     // Partial inverse scaling: badges get a readability boost when zoomed out
     // without becoming screen-constant (too large at extreme zoom-out).

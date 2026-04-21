@@ -5,9 +5,9 @@ import {
     NodeResizer,
     NodeToolbar,
     Position,
-    useStore,
     type NodeProps,
 } from "@xyflow/react";
+import { useSelectedCount } from "../components/canvas/SelectedCountContext";
 import {
     endDiagramHistoryGestureDeferred,
     endDiagramHistoryGestureIfActive,
@@ -20,7 +20,7 @@ import { BoxNodeEditor } from "./BoxNodeEditor";
 
 function BoxNode({ id, data, selected }: NodeProps<BoxNodeType>) {
     const [isResizing, setIsResizing] = useState(false);
-    const selectedCount = useStore((s) => s.nodes.filter((n) => n.selected).length);
+    const selectedCount = useSelectedCount();
     const isSolelySelected = selected && selectedCount === 1;
 
     const fill = hexToRgba(data.color, data.opacity);
@@ -84,7 +84,7 @@ function BoxNode({ id, data, selected }: NodeProps<BoxNodeType>) {
                 }}
             >
                 {data.title && (
-                    <div className="px-4 py-3 text-3xl font-bold text-foreground/90 select-none break-words whitespace-pre-wrap">
+                    <div className="px-4 py-3 text-3xl font-bold text-foreground/90 select-none wrap-break-word whitespace-pre-wrap">
                         {data.title}
                     </div>
                 )}

@@ -3,6 +3,7 @@
 import { memo } from "react";
 import { createPortal } from "react-dom";
 import { useStore, useReactFlow } from "@xyflow/react";
+import { shallow } from "zustand/shallow";
 import {
     computeBBox,
     cornerFlowPos,
@@ -25,7 +26,8 @@ export type {
 } from "../../utils/selectionResizer";
 
 export const SelectionResizer = memo(function SelectionResizer() {
-    const selectedNodes = useStore((s) => s.nodes.filter((n) => n.selected));
+    // shallow prevents re-renders when unrelated nodes change (e.g. non-selected nodes dragged).
+    const selectedNodes = useStore((s) => s.nodes.filter((n) => n.selected), shallow);
     const nodesSelectionActive = useStore((s) => s.nodesSelectionActive);
     const userSelectionActive = useStore((s) => s.userSelectionActive);
     // Re-render on pan/zoom so screen-space handles stay in sync
