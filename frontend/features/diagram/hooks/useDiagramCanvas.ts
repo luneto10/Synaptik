@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { SelectionMode } from "@xyflow/react";
+import { useShallow } from "zustand/shallow";
 import { useDiagramStore } from "../store/diagramStore";
 import { endDiagramHistoryGestureIfActive } from "../store/diagramHistory";
 import { useDiagramActions } from "./useDiagramActions";
@@ -9,7 +10,6 @@ import { useFlowCanvasChangeHandlers } from "./useFlowCanvasChangeHandlers";
 import { useGrabMode } from "./useGrabMode";
 import { useAddBoxMode } from "./useAddBoxMode";
 import { useCanvasPointer } from "./useCanvasPointer";
-import { useSelectedNodeIds } from "./useSelectedNodeId";
 import { useDiagramUiState } from "./useDiagramUiState";
 import { useIsolatedEdges } from "./useIsolatedEdges";
 import type { DiagramTool } from "../components/canvas/LeftToolbox";
@@ -48,8 +48,9 @@ export function useDiagramCanvas() {
         displayNodes,
     } = useConnectMode(activeTool);
 
-    const selectedNodeIds = useSelectedNodeIds();
-    const selectedNodeId = selectedNodeIds.length === 1 ? selectedNodeIds[0] : undefined;
+    const solelySelectedNodeId = useDiagramStore(
+        (s) => (s.selectedCount === 1 ? s.nodes.find((n) => n.selected)?.id : undefined)
+    );
 
     const {
         tableDialogOpen,
@@ -68,8 +69,12 @@ export function useDiagramCanvas() {
     } = useDiagramUiState({
         setActiveTool,
         setPendingConnectSource,
-        selectedNodeId,
+        selectedNodeId: solelySelectedNodeId,
     });
+
+    const selectedNodeIds = useDiagramStore(
+        useShallow((s) => (isolateConnections ? s.nodes.filter((n) => n.selected).map((n) => n.id) : []))
+    );
 
     const {
         isGrabbing,

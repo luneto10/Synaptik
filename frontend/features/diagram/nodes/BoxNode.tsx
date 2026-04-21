@@ -1,13 +1,13 @@
 "use client";
 
-import { memo, useState } from "react";
+import { memo, useState, useCallback } from "react";
 import {
     NodeResizer,
     NodeToolbar,
     Position,
     type NodeProps,
 } from "@xyflow/react";
-import { useSelectedCount } from "../components/canvas/SelectedCountContext";
+import { useDiagramStore } from "../store/diagramStore";
 import {
     endDiagramHistoryGestureDeferred,
     endDiagramHistoryGestureIfActive,
@@ -20,8 +20,11 @@ import { BoxNodeEditor } from "./BoxNodeEditor";
 
 function BoxNode({ id, data, selected }: NodeProps<BoxNodeType>) {
     const [isResizing, setIsResizing] = useState(false);
-    const selectedCount = useSelectedCount();
-    const isSolelySelected = selected && selectedCount === 1;
+    
+    // Efficiently track if this node is solely selected.
+    const isSolelySelected = useDiagramStore(
+        useCallback((s) => s.selectedCount === 1 && selected, [selected])
+    );
 
     const fill = hexToRgba(data.color, data.opacity);
     const borderColor = data.color;

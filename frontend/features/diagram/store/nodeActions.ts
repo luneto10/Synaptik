@@ -39,6 +39,14 @@ export function createNodeActions(set: SetState) {
                     changes,
                     draft.nodes,
                 ) as DiagramNode[];
+                
+                // Update selectedCount once per batch of changes.
+                // This allows nodes to subscribe to (count === 1) without O(N^2) lag.
+                let count = 0;
+                for (const node of draft.nodes) {
+                    if (node.selected) count++;
+                }
+                draft.selectedCount = count;
             }),
 
         addTable: (name: string, position?: { x: number; y: number }) =>

@@ -9,6 +9,7 @@ import type { DbColumn } from "../types/db.types";
 export interface DiagramState {
     nodes: DiagramNode[];
     edges: RelationEdge[];
+    selectedCount: number;
     onNodesChange: (changes: NodeChange[]) => void;
     onEdgesChange: (changes: EdgeChange[]) => void;
     /**

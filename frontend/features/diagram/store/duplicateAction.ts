@@ -259,6 +259,13 @@ export function createDuplicateAction(set: SetState): DuplicateAction {
                     const clone = cloneEdge(e, nodeIdMap, columnIdMap);
                     if (clone) draft.edges.push(clone);
                 }
+
+                // Sync selectedCount after batch mutation
+                let count = 0;
+                for (const node of draft.nodes) {
+                    if (node.selected) count++;
+                }
+                draft.selectedCount = count;
             }),
     };
 }

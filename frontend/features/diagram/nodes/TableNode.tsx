@@ -21,7 +21,6 @@ import { handleIds } from "../utils/handleIds";
 import { cn } from "@/lib/utils";
 import { LAYOUT } from "../constants";
 import { useHistoryGestureHandlers } from "../hooks/useHistoryGestureHandlers";
-import { useSelectedCount } from "../components/canvas/SelectedCountContext";
 import {
     computeTableMinHeight,
     invisibleTargetStyle,
@@ -85,9 +84,9 @@ function TableNode({ id, data, selected, dragging }: NodeProps<TableNodeType>) {
     const [isResizing, setIsResizing] = useState(false);
     const { endGesture, endGestureIfActive } = useHistoryGestureHandlers();
 
-    // Single subscription in DiagramCanvas feeds all nodes — O(1) read here.
-    const selectedCount = useSelectedCount();
-    const isSolelySelected = selected && selectedCount === 1;
+    const isSolelySelected = useDiagramStore(
+        useCallback((s) => s.selectedCount === 1 && selected, [selected])
+    );
 
     const handleAddColumn = useCallback(() => {
         const newId = crypto.randomUUID();
