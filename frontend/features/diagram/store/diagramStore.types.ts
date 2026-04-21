@@ -50,6 +50,10 @@ export interface DiagramState {
     createJunctionTable: (sourceNodeId: string, targetNodeId: string) => void;
     /** Replaces the entire diagram state — used for loading saved or mock data. */
     loadDiagram: (nodes: DiagramNode[], edges: RelationEdge[]) => void;
+    /** Incrementally loads large diagrams in frame-sized chunks. */
+    loadDiagramChunked: (nodes: DiagramNode[], edges: RelationEdge[]) => Promise<void>;
+    /** Chooses sync or chunked loading based on diagram size. */
+    loadDiagramAdaptive: (nodes: DiagramNode[], edges: RelationEdge[]) => Promise<void>;
     /** Snapshots the currently selected nodes (and edges between them) into the clipboard. No-op when nothing is selected. */
     copySelection: () => void;
     /**

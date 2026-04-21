@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useState, useCallback } from "react";
+import { memo, useState, useCallback, useMemo } from "react";
 import {
     NodeResizer,
     NodeToolbar,
@@ -26,20 +26,30 @@ function BoxNode({ id, data, selected }: NodeProps<BoxNodeType>) {
         useCallback((s) => s.selectedCount === 1 && selected, [selected])
     );
 
-    const fill = hexToRgba(data.color, data.opacity);
+    const fill = useMemo(() => hexToRgba(data.color, data.opacity), [
+        data.color,
+        data.opacity,
+    ]);
     const borderColor = data.color;
     const active = selected || isResizing;
-    const edgeColor = lightenHex(borderColor, 0.32) ?? borderColor;
+    const edgeColor = useMemo(
+        () => lightenHex(borderColor, 0.32) ?? borderColor,
+        [borderColor],
+    );
 
-    const categoryLiftShadow = active
-        ? [
-              `inset 0 1px 0 0 rgba(255,255,255,0.28)`,
-              `0 0 0 2px ${hexToRgba(edgeColor, 0.95)}`,
-              `0 0 0 5px ${hexToRgba(edgeColor, 0.35)}`,
-              `0 0 40px 2px ${hexToRgba(edgeColor, 0.38)}`,
-              `0 18px 36px -10px ${hexToRgba(edgeColor, 0.22)}`,
-          ].join(", ")
-        : undefined;
+    const categoryLiftShadow = useMemo(
+        () =>
+            active
+                ? [
+                      `inset 0 1px 0 0 rgba(255,255,255,0.28)`,
+                      `0 0 0 2px ${hexToRgba(edgeColor, 0.95)}`,
+                      `0 0 0 5px ${hexToRgba(edgeColor, 0.35)}`,
+                      `0 0 40px 2px ${hexToRgba(edgeColor, 0.38)}`,
+                      `0 18px 36px -10px ${hexToRgba(edgeColor, 0.22)}`,
+                  ].join(", ")
+                : undefined,
+        [active, edgeColor],
+    );
 
     return (
         <>
@@ -75,7 +85,7 @@ function BoxNode({ id, data, selected }: NodeProps<BoxNodeType>) {
 
             <div
                 className={cn(
-                    "w-full h-full rounded-xl border-solid transition-[box-shadow,border-width,border-color] duration-150 cursor-grab active:cursor-grabbing",
+                    "diagram-node-surface w-full h-full rounded-xl border-solid transition-[box-shadow,border-width,border-color] duration-150 cursor-grab active:cursor-grabbing",
                     !active && "shadow-md hover:shadow-lg",
                 )}
                 style={{

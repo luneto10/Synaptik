@@ -8,6 +8,7 @@ import type { DiagramNode, RelationEdge } from "../../types/flow.types";
 import stressData from "../../mock/stress.json";
 import { FIT_VIEW_PADDING } from "../../constants";
 import { useDeferredFitView } from "../../hooks/useDeferredFitView";
+import { createPersistedDiagramSnapshot } from "../../utils/diagramSnapshot";
 
 interface Snapshot {
     nodes: DiagramNode[];
@@ -30,7 +31,7 @@ export function DevToolbar() {
 
     const handleExport = useCallback(() => {
         const { nodes, edges } = useDiagramStore.getState();
-        const snapshot: Snapshot = { nodes, edges };
+        const snapshot: Snapshot = createPersistedDiagramSnapshot(nodes, edges);
         const blob = new Blob([JSON.stringify(snapshot, null, 2)], {
             type: "application/json",
         });
@@ -62,8 +63,12 @@ export function DevToolbar() {
                         throw new Error("Invalid snapshot shape");
                     }
 
-                    useDiagramStore.getState().loadDiagram(snapshot.nodes, snapshot.edges);
-                    deferredFitView({ padding: FIT_VIEW_PADDING });
+                    void useDiagramStore
+                        .getState()
+                        .loadDiagramAdaptive(snapshot.nodes, snapshot.edges)
+                        .then(() => {
+                            deferredFitView({ padding: FIT_VIEW_PADDING });
+                        });
                 } catch (err) {
                     console.error("[DevToolbar] Failed to load snapshot:", err);
                     alert("Invalid diagram JSON - check the console for details.");
@@ -80,8 +85,12 @@ export function DevToolbar() {
 
     const handleLoadStress = useCallback(() => {
         const { nodes, edges } = stressData as Snapshot;
-        useDiagramStore.getState().loadDiagram(nodes, edges);
-        deferredFitView({ padding: FIT_VIEW_PADDING });
+        void useDiagramStore
+            .getState()
+            .loadDiagramAdaptive(nodes, edges)
+            .then(() => {
+                deferredFitView({ padding: FIT_VIEW_PADDING });
+            });
     }, [deferredFitView]);
 
     return (

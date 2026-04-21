@@ -7,6 +7,7 @@ import type { DiagramNode, RelationEdge } from "../types/flow.types";
 import { isTableNode } from "../types/flow.types";
 import { buildAutoLayoutChanges } from "../layout/autoLayout";
 import { useDeferredFitView } from "./useDeferredFitView";
+import { createPersistedDiagramSnapshot } from "../utils/diagramSnapshot";
 
 export function useDiagramActions() {
     const { deferredFitView } = useDeferredFitView();
@@ -19,12 +20,12 @@ export function useDiagramActions() {
 
     const handleSave = useCallback(() => {
         const { nodes, edges } = useDiagramStore.getState();
-        save({ nodes, edges });
+        save(createPersistedDiagramSnapshot(nodes, edges));
     }, [save]);
 
     const handleLoadExample = useCallback(async () => {
         const { default: example } = await import("../mock/ecommerce.json");
-        useDiagramStore.getState().loadDiagram(
+        await useDiagramStore.getState().loadDiagramAdaptive(
             example.nodes as DiagramNode[],
             example.edges as RelationEdge[],
         );

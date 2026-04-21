@@ -108,10 +108,13 @@ function TableNode({ id, data, selected, dragging }: NodeProps<TableNodeType>) {
 
     const showHandles = isSolelySelected && !dragging && !isResizing;
 
-    const requiredRows = data.columns.filter(
-        (c) => c.isPrimaryKey || c.isForeignKey,
-    ).length;
-    const minHeight = computeTableMinHeight(requiredRows);
+    const minHeight = useMemo(() => {
+        let requiredRows = 0;
+        for (const column of data.columns) {
+            if (column.isPrimaryKey || column.isForeignKey) requiredRows++;
+        }
+        return computeTableMinHeight(requiredRows);
+    }, [data.columns]);
 
     // Stable string values — memo prevents object churn on drag frames.
     const nh = useMemo(() => handleIds(id), [id]);
@@ -165,7 +168,7 @@ function TableNode({ id, data, selected, dragging }: NodeProps<TableNodeType>) {
 
             <div
                 className={cn(
-                    "bg-card rounded-xl border w-full h-full flex flex-col overflow-hidden cursor-grab active:cursor-grabbing",
+                    "diagram-node-surface bg-card rounded-xl border w-full h-full flex flex-col overflow-hidden cursor-grab active:cursor-grabbing",
                     "transition-all duration-150",
                     selected && data.isJunction
                         ? "border-violet-500/70 shadow-xl shadow-violet-500/15 ring-1 ring-violet-500/20"

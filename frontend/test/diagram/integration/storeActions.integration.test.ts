@@ -260,6 +260,34 @@ describe("diagram store actions integration", () => {
         expect(() => history.redo()).not.toThrow();
     });
 
+    it("keeps selectedCount stable during position-only node drag changes", () => {
+        useDiagramStore.setState({
+            nodes: [
+                { ...node("a", "A", [pk("pk-a")]), selected: true },
+                node("b", "B", [pk("pk-b")]),
+            ],
+            edges: [],
+            selectedCount: 1,
+        });
+
+        useDiagramStore.getState().onNodesChange([
+            {
+                type: "position",
+                id: "a",
+                position: { x: 180, y: 90 },
+                dragging: true,
+            },
+        ]);
+
+        const state = useDiagramStore.getState();
+        expect(state.selectedCount).toBe(1);
+        expect(state.nodes.find((n) => n.id === "a")?.selected).toBe(true);
+        expect(state.nodes.find((n) => n.id === "a")?.position).toEqual({
+            x: 180,
+            y: 90,
+        });
+    });
+
     it("two sequential move gestures undo in LIFO (only last moved node reverts)", () => {
         const history = useDiagramStore.temporal.getState();
         useDiagramStore.setState({
@@ -760,6 +788,34 @@ describe("diagram store actions integration", () => {
         expect(
             useDiagramStore.getState().nodes.some((n) => n.id === "users"),
         ).toBe(false);
+    });
+
+    it("loadDiagramChunked reaches final state without adding history noise", async () => {
+        const history = useDiagramStore.temporal.getState();
+        history.clear?.();
+
+        const loadedNodes = Array.from({ length: 240 }, (_, index) =>
+            node(`t-${index}`, `T${index}`, [pk(`pk-${index}`)]),
+        );
+        const loadedEdges: never[] = [];
+
+        await useDiagramStore
+            .getState()
+            .loadDiagramChunked(loadedNodes, loadedEdges);
+
+        const state = useDiagramStore.getState();
+        expect(state.nodes).toHaveLength(240);
+        expect(state.edges).toHaveLength(0);
+        expect(state.selectedCount).toBe(0);
+        expect(history.pastStates.length).toBeLessThanOrEqual(1);
+    });
+
+    it("loadDiagramAdaptive uses chunked path for large payloads", async () => {
+        const loadedNodes = Array.from({ length: 520 }, (_, index) =>
+            node(`a-${index}`, `A${index}`, [pk(`pk-a-${index}`)]),
+        );
+        await useDiagramStore.getState().loadDiagramAdaptive(loadedNodes, []);
+        expect(useDiagramStore.getState().nodes).toHaveLength(520);
     });
 
     it("inserts FK columns below key block", () => {

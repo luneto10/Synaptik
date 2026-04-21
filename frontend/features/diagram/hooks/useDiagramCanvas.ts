@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { SelectionMode } from "@xyflow/react";
-import { useShallow } from "zustand/shallow";
 import { useDiagramStore } from "../store/diagramStore";
 import { endDiagramHistoryGestureIfActive } from "../store/diagramHistory";
 import { useDiagramActions } from "./useDiagramActions";
@@ -21,6 +20,7 @@ export function useDiagramCanvas() {
 
     const nodeCount = useDiagramStore((s) => s.nodes.length);
     const edgeCount = useDiagramStore((s) => s.edges.length);
+    const selectedCount = useDiagramStore((s) => s.selectedCount);
     const edges = useDiagramStore((s) => s.edges);
     // Actions are stable Zustand references — read once, no subscription needed.
     const { onNodesChange, onEdgesChange } = useDiagramStore.getState();
@@ -48,9 +48,20 @@ export function useDiagramCanvas() {
         displayNodes,
     } = useConnectMode(activeTool);
 
-    const solelySelectedNodeId = useDiagramStore(
-        (s) => (s.selectedCount === 1 ? s.nodes.find((n) => n.selected)?.id : undefined)
-    );
+    const { solelySelectedNodeId, selectedNodeIds } = useMemo(() => {
+        let soleId: string | undefined;
+        const ids: string[] = [];
+
+        if (selectedCount > 0) {
+            for (const node of displayNodes) {
+                if (!node.selected) continue;
+                ids.push(node.id);
+                if (selectedCount === 1) soleId = node.id;
+            }
+        }
+
+        return { solelySelectedNodeId: soleId, selectedNodeIds: ids };
+    }, [displayNodes, selectedCount]);
 
     const {
         tableDialogOpen,
@@ -72,9 +83,7 @@ export function useDiagramCanvas() {
         selectedNodeId: solelySelectedNodeId,
     });
 
-    const selectedNodeIds = useDiagramStore(
-        useShallow((s) => (isolateConnections ? s.nodes.filter((n) => n.selected).map((n) => n.id) : []))
-    );
+    const isolatedNodeIds = isolateConnections ? selectedNodeIds : [];
 
     const {
         isGrabbing,
@@ -96,7 +105,7 @@ export function useDiagramCanvas() {
 
     const displayEdges = useIsolatedEdges(
         edges,
-        selectedNodeIds,
+        isolatedNodeIds,
         isolateConnections,
     );
 

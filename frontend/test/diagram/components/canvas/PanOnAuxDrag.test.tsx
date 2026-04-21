@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render } from "@testing-library/react";
 import { PanOnAuxDrag } from "../../../../features/diagram/components/canvas/PanOnAuxDrag";
 
@@ -15,7 +15,11 @@ vi.mock("@xyflow/react", () => ({
 
 describe("PanOnAuxDrag", () => {
     beforeEach(() => {
+        vi.useFakeTimers();
         vi.clearAllMocks();
+    });
+    afterEach(() => {
+        vi.useRealTimers();
     });
 
     it("renders nothing", () => {
@@ -66,6 +70,7 @@ describe("PanOnAuxDrag", () => {
                 clientY: 130,
             }),
         );
+        vi.advanceTimersByTime(16);
 
         expect(mockSetViewport).toHaveBeenCalledWith(
             { x: 60, y: 50, zoom: 1 },

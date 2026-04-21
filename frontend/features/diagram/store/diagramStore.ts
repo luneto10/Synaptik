@@ -7,6 +7,7 @@ import { createEdgeActions } from "./edgeActions";
 import { createClipboardActions } from "./clipboardActions";
 import { createDuplicateAction } from "./duplicateAction";
 import { HISTORY_LIMIT } from "../constants";
+import { createHistoryDiagramSnapshot } from "../utils/diagramSnapshot";
 
 // ── Store ──────────────────
 // Snapshots store node/edge array references directly — safe because immer
@@ -20,6 +21,7 @@ export const useDiagramStore = create<DiagramState>()(
             return {
                 nodes: [],
                 edges: [],
+                selectedCount: 0,
                 ...createNodeActions(s),
                 ...createEdgeActions(s),
                 ...createClipboardActions(s),
@@ -28,7 +30,8 @@ export const useDiagramStore = create<DiagramState>()(
         }),
         {
             limit: HISTORY_LIMIT,
-            partialize: (state) => ({ nodes: state.nodes, edges: state.edges }),
+            partialize: (state) =>
+                createHistoryDiagramSnapshot(state.nodes, state.edges),
             equality: (a, b) => a.nodes === b.nodes && a.edges === b.edges,
         },
     ),
