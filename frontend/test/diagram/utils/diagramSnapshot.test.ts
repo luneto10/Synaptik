@@ -22,7 +22,6 @@ describe("diagramSnapshot", () => {
             selected: true,
             dragging: true,
             resizing: true,
-            positionAbsolute: { x: 10, y: 20 },
         },
     ] as DiagramNode[];
     const edges = [
@@ -48,7 +47,6 @@ describe("diagramSnapshot", () => {
             selected?: boolean;
             dragging?: boolean;
             resizing?: boolean;
-            positionAbsolute?: { x: number; y: number };
         };
         const persistedEdge = snapshot.edges[0] as RelationEdge & {
             selected?: boolean;
@@ -59,7 +57,6 @@ describe("diagramSnapshot", () => {
         expect(persistedNode.selected).toBeUndefined();
         expect(persistedNode.dragging).toBeUndefined();
         expect(persistedNode.resizing).toBeUndefined();
-        expect(persistedNode.positionAbsolute).toBeUndefined();
         expect(persistedEdge.selected).toBeUndefined();
     });
 
