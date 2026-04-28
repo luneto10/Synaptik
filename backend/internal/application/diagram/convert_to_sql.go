@@ -3,7 +3,7 @@ package diagramapp
 import (
 	"context"
 
-	"github.com/luneto10/synaptik/backend/internal/domain/diagram"
+	"github.com/luneto10/synaptik/backend/internal/domain/diagram/sqlgen"
 )
 
 type ConvertToSQLUseCase struct{}
@@ -17,5 +17,5 @@ func (uc *ConvertToSQLUseCase) Execute(ctx context.Context, req DiagramRequest) 
 	if err != nil {
 		return "", err
 	}
-	return diagram.GenerateSQL(tables, rels)
+	return sqlgen.Generate(tables, rels)
 }

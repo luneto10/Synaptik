@@ -42,6 +42,9 @@ func toDomainTable(req DbTableRequest) (diagram.DbTable, error) {
 		}
 		columns = append(columns, col)
 	}
+	if req.IsJunction {
+		return diagram.NewJunctionTable(diagram.TableID(req.ID), req.Name, columns), nil
+	}
 	return diagram.NewDbTable(diagram.TableID(req.ID), req.Name, columns), nil
 }
 

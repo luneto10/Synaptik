@@ -112,3 +112,48 @@ func TestToDomainDiagram_FKReference(t *testing.T) {
 		t.Errorf("rels len = %d, want 1", len(rels))
 	}
 }
+
+func TestToDomainDiagram_JunctionTable(t *testing.T) {
+	req := diagramapp.DiagramRequest{
+		Tables: []diagramapp.DbTableRequest{
+			{
+				ID:         "j1",
+				Name:       "post_tag",
+				IsJunction: true,
+				Columns: []diagramapp.DbColumnRequest{
+					{ID: "c1", Name: "post_id", Type: "uuid", IsPrimaryKey: true},
+					{ID: "c2", Name: "tag_id", Type: "uuid", IsPrimaryKey: true},
+				},
+			},
+		},
+		Relationships: []diagramapp.RelationshipRequest{},
+	}
+
+	tables, _, err := diagramapp.ToDomainDiagram(req)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(tables) != 1 {
+		t.Fatalf("tables len = %d, want 1", len(tables))
+	}
+	if !tables[0].IsJunction() {
+		t.Error("IsJunction = false, want true")
+	}
+}
+
+func TestToDomainDiagram_EmptyTables(t *testing.T) {
+	req := diagramapp.DiagramRequest{
+		Tables:        []diagramapp.DbTableRequest{},
+		Relationships: []diagramapp.RelationshipRequest{},
+	}
+	tables, rels, err := diagramapp.ToDomainDiagram(req)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(tables) != 0 {
+		t.Errorf("tables len = %d, want 0", len(tables))
+	}
+	if len(rels) != 0 {
+		t.Errorf("rels len = %d, want 0", len(rels))
+	}
+}

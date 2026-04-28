@@ -1,0 +1,51 @@
+{
+  "tables": [
+    {
+      "id": "tbl-posts",
+      "name": "posts",
+      "columns": [
+        {
+          "id": "col-post-id",
+          "name": "id",
+          "type": "uuid",
+          "isPrimaryKey": true,
+          "isNullable": false
+        },
+        {
+          "id": "col-post-title",
+          "name": "title",
+          "type": "varchar",
+          "isNullable": false
+        }
+      ]
+    },
+    {
+      "id": "tbl-tags",
+      "name": "tags",
+      "columns": [
+        {
+          "id": "col-tag-id",
+          "name": "id",
+          "type": "uuid",
+          "isPrimaryKey": true,
+          "isNullable": false
+        },
+        {
+          "id": "col-tag-name",
+          "name": "name",
+          "type": "varchar",
+          "isUnique": true,
+          "isNullable": false
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "id": "rel-posts-tags",
+      "sourceColumnId": "col-post-id",
+      "targetColumnId": "col-tag-id",
+      "relationshipType": "many-to-many"
+    }
+  ]
+}

@@ -45,3 +45,38 @@ func TestNewDbColumn_NoReference(t *testing.T) {
 		t.Errorf("References = %v, want nil", col.References())
 	}
 }
+
+func TestNewDbColumn_Flags(t *testing.T) {
+	tests := []struct {
+		name         string
+		isPrimaryKey bool
+		isForeignKey bool
+		isNullable   bool
+		isUnique     bool
+	}{
+		{"all false", false, false, false, false},
+		{"primary key only", true, false, false, false},
+		{"foreign key nullable", false, true, true, false},
+		{"unique not-null", false, false, false, true},
+		{"nullable only", false, false, true, false},
+		{"PK and FK", true, true, false, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			col := diagram.NewDbColumn("c1", "col", diagram.ColumnTypeText,
+				tt.isPrimaryKey, tt.isForeignKey, tt.isNullable, tt.isUnique, nil)
+			if col.IsPrimaryKey() != tt.isPrimaryKey {
+				t.Errorf("IsPrimaryKey = %v, want %v", col.IsPrimaryKey(), tt.isPrimaryKey)
+			}
+			if col.IsForeignKey() != tt.isForeignKey {
+				t.Errorf("IsForeignKey = %v, want %v", col.IsForeignKey(), tt.isForeignKey)
+			}
+			if col.IsNullable() != tt.isNullable {
+				t.Errorf("IsNullable = %v, want %v", col.IsNullable(), tt.isNullable)
+			}
+			if col.IsUnique() != tt.isUnique {
+				t.Errorf("IsUnique = %v, want %v", col.IsUnique(), tt.isUnique)
+			}
+		})
+	}
+}

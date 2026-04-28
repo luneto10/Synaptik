@@ -21,9 +21,10 @@ type DbColumnRequest struct {
 // --- Table ---
 
 type DbTableRequest struct {
-	ID      string            `json:"id"      binding:"required"`
-	Name    string            `json:"name"    binding:"required"`
-	Columns []DbColumnRequest `json:"columns" binding:"required"`
+	ID         string            `json:"id"         binding:"required"`
+	Name       string            `json:"name"       binding:"required"`
+	IsJunction bool              `json:"isJunction"`
+	Columns    []DbColumnRequest `json:"columns"    binding:"required"`
 }
 
 // --- Relationship ---
