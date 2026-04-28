@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { SelectionMode } from "@xyflow/react";
 import { useDiagramStore } from "../store/diagramStore";
 import { endDiagramHistoryGestureIfActive } from "../store/diagramHistory";
@@ -9,7 +9,6 @@ import { useFlowCanvasChangeHandlers } from "./useFlowCanvasChangeHandlers";
 import { useGrabMode } from "./useGrabMode";
 import { useAddBoxMode } from "./useAddBoxMode";
 import { useCanvasPointer } from "./useCanvasPointer";
-import { useSelectedNodeIds } from "./useSelectedNodeId";
 import { useDiagramUiState } from "./useDiagramUiState";
 import { useIsolatedEdges } from "./useIsolatedEdges";
 import type { DiagramTool } from "../components/canvas/LeftToolbox";
@@ -21,9 +20,10 @@ export function useDiagramCanvas() {
 
     const nodeCount = useDiagramStore((s) => s.nodes.length);
     const edgeCount = useDiagramStore((s) => s.edges.length);
+    const selectedCount = useDiagramStore((s) => s.selectedCount);
     const edges = useDiagramStore((s) => s.edges);
-    const onNodesChange = useDiagramStore((s) => s.onNodesChange);
-    const onEdgesChange = useDiagramStore((s) => s.onEdgesChange);
+    // Actions are stable Zustand references — read once, no subscription needed.
+    const { onNodesChange, onEdgesChange } = useDiagramStore.getState();
 
     const {
         handleBeforeDelete,
@@ -48,8 +48,20 @@ export function useDiagramCanvas() {
         displayNodes,
     } = useConnectMode(activeTool);
 
-    const selectedNodeIds = useSelectedNodeIds();
-    const selectedNodeId = selectedNodeIds.length === 1 ? selectedNodeIds[0] : undefined;
+    const { solelySelectedNodeId, selectedNodeIds } = useMemo(() => {
+        let soleId: string | undefined;
+        const ids: string[] = [];
+
+        if (selectedCount > 0) {
+            for (const node of displayNodes) {
+                if (!node.selected) continue;
+                ids.push(node.id);
+                if (selectedCount === 1) soleId = node.id;
+            }
+        }
+
+        return { solelySelectedNodeId: soleId, selectedNodeIds: ids };
+    }, [displayNodes, selectedCount]);
 
     const {
         tableDialogOpen,
@@ -68,8 +80,10 @@ export function useDiagramCanvas() {
     } = useDiagramUiState({
         setActiveTool,
         setPendingConnectSource,
-        selectedNodeId,
+        selectedNodeId: solelySelectedNodeId,
     });
+
+    const isolatedNodeIds = isolateConnections ? selectedNodeIds : [];
 
     const {
         isGrabbing,
@@ -91,7 +105,7 @@ export function useDiagramCanvas() {
 
     const displayEdges = useIsolatedEdges(
         edges,
-        selectedNodeIds,
+        isolatedNodeIds,
         isolateConnections,
     );
 

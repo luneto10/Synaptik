@@ -7,11 +7,17 @@ export function replaceSelection(nodeIds: string[]) {
     withoutHistory(() => {
         const { nodes, onNodesChange } = useDiagramStore.getState();
         const selectedIds = new Set(nodeIds);
-        const changes: NodeChange[] = nodes.map((node) => ({
-            type: "select",
-            id: node.id,
-            selected: selectedIds.has(node.id),
-        }));
+        const changes: NodeChange[] = [];
+        for (const node of nodes) {
+            const selected = selectedIds.has(node.id);
+            if (!!node.selected === selected) continue;
+            changes.push({
+                type: "select",
+                id: node.id,
+                selected,
+            });
+        }
+        if (changes.length === 0) return;
         onNodesChange(changes);
     });
 }
@@ -20,11 +26,16 @@ export function replaceSelection(nodeIds: string[]) {
 export function selectAll() {
     withoutHistory(() => {
         const { nodes, onNodesChange } = useDiagramStore.getState();
-        const changes: NodeChange[] = nodes.map((node) => ({
-            type: "select",
-            id: node.id,
-            selected: true,
-        }));
+        const changes: NodeChange[] = [];
+        for (const node of nodes) {
+            if (node.selected) continue;
+            changes.push({
+                type: "select",
+                id: node.id,
+                selected: true,
+            });
+        }
+        if (changes.length === 0) return;
         onNodesChange(changes);
     });
 }

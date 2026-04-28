@@ -17,6 +17,7 @@ import NewTableDialog from "./components/canvas/NewTableDialog";
 import { TableSearch } from "./components/canvas/TableSearch";
 import { FitViewTrigger } from "./components/canvas/FitViewTrigger";
 import { SelectionResizer } from "./components/canvas/SelectionResizer";
+import { PanOnAuxDrag } from "./components/canvas/PanOnAuxDrag";
 import ConnectionDialog from "./components/edges/ConnectionDialog";
 import { EdgeMarkerDefs } from "./components/edges/EdgeMarkerDefs";
 import { useDiagramCanvas } from "./hooks/useDiagramCanvas";
@@ -26,7 +27,7 @@ import {
     FIT_VIEW_OPTIONS,
     DEFAULT_EDGE_OPTIONS,
 } from "./FlowCanvas.constants";
-import { DIAGRAM_COLORS } from "./constants";
+import { DIAGRAM_COLORS, LARGE_DIAGRAM_NODE_THRESHOLD } from "./constants";
 import { cn } from "@/lib/utils";
 
 const DELETE_KEYS = ["Delete", "Backspace"];
@@ -82,6 +83,7 @@ export function DiagramCanvas() {
         setSearchTargetId,
         SelectionMode,
     } = useDiagramCanvas();
+    const shouldRenderVisibleOnly = nodeCount >= LARGE_DIAGRAM_NODE_THRESHOLD;
 
     return (
         <div
@@ -106,7 +108,8 @@ export function DiagramCanvas() {
             <div
                 className={cn(
                     "flex-1 relative bg-background overflow-hidden",
-                    isGrabbing && "cursor-grabbing",
+                    isGrabbing &&
+                        "cursor-grabbing [&_.diagram-node-surface]:shadow-none! [&_.diagram-node-surface]:transition-none! [&_.diagram-node-surface]:ring-0! [&_.react-flow__handle]:opacity-0! [&_.react-flow__edge]:transition-none!",
                 )}
             >
                 <LeftToolbox
@@ -152,6 +155,7 @@ export function DiagramCanvas() {
                 <ReactFlow
                     nodes={displayNodes}
                     edges={displayEdges}
+                    onlyRenderVisibleElements={shouldRenderVisibleOnly}
                     onBeforeDelete={handleBeforeDelete}
                     onNodesChange={handleNodesChange}
                     onNodeDragStart={handleNodeDragStart}
@@ -180,6 +184,7 @@ export function DiagramCanvas() {
                     proOptions={PRO_OPTIONS}
                 >
                     <EdgeMarkerDefs />
+                    <PanOnAuxDrag />
                     <SelectionResizer />
                     <FitViewTrigger
                         nodeId={searchTargetId}

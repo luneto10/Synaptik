@@ -1,25 +1,34 @@
 import { useDiagramStore } from "./diagramStore";
+import { historyPausedRef } from "./diagramHistory";
 import { EDGE_STYLE, LAYOUT } from "../constants";
 import type { DiagramNode, RelationEdge, TableNode } from "../types/flow.types";
 import { isTableNode } from "../types/flow.types";
 
 type NodeBounds = { x0: number; x1: number; y0: number; y1: number };
 
-// Single-entry cache keyed on the (nodes, edges) reference pair. Immer
-// gives us reference stability under no-change mutations (structural
-// sharing), so once-per-store-snapshot recomputation is enough.
-let cachedNodes: TableNode[] | null = null;
+// Single-entry cache keyed on the (allNodes, edges) reference pair. Keying on
+// the full allNodes array (not a filtered slice) preserves immer's structural
+// sharing so the cache hits on every subsequent edge subscription within the
+// same store snapshot, reducing recomputation from O(E) to O(1) per snapshot.
+let cachedAllNodes: DiagramNode[] | null = null;
 let cachedEdges: RelationEdge[] | null = null;
 let cachedOffsets: Map<string, number> | null = null;
 
 export function computeEdgeOffsets(
-    nodes: TableNode[],
+    allNodes: DiagramNode[],
     edges: RelationEdge[],
 ): Map<string, number> {
-    if (cachedOffsets && nodes === cachedNodes && edges === cachedEdges) {
+    if (cachedOffsets && allNodes === cachedAllNodes && edges === cachedEdges) {
         return cachedOffsets;
     }
 
+    // During drag/resize gestures positions change every frame but obstacle routing
+    // doesn't need to update until the gesture ends — return stale offsets for free.
+    if (historyPausedRef.current && cachedOffsets) {
+        return cachedOffsets;
+    }
+
+    const nodes = allNodes.filter(isTableNode);
     const nodeById = new Map<string, TableNode>();
     const boundsById = new Map<string, NodeBounds>();
     for (const n of nodes) {
@@ -101,7 +110,7 @@ export function computeEdgeOffsets(
         );
     }
 
-    cachedNodes = nodes;
+    cachedAllNodes = allNodes;
     cachedEdges = edges;
     cachedOffsets = offsets;
     return offsets;
@@ -113,10 +122,7 @@ export function computeEdgeOffsets(
  */
 export function useEdgeOffset(edgeId: string): number {
     return useDiagramStore((s) => {
-        const offsets = computeEdgeOffsets(
-            s.nodes.filter(isTableNode),
-            s.edges,
-        );
+        const offsets = computeEdgeOffsets(s.nodes, s.edges);
         return offsets.get(edgeId) ?? EDGE_STYLE.baseOffset;
     });
 }

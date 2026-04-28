@@ -36,7 +36,6 @@ export function useBoxNodeEditorState({
     color,
     opacity,
 }: UseBoxNodeEditorStateArgs) {
-    const updateBox = useDiagramStore((s) => s.updateBox);
     const boxes = useDiagramStore(useShallow((s) => s.nodes.filter(isBoxNode)));
     const { beginGesture, endGesture } = useHistoryGestureHandlers();
 
@@ -50,10 +49,10 @@ export function useBoxNodeEditorState({
     const hexInputRef = useRef<HTMLInputElement>(null);
 
     const commitColor = useRafThrottle((next: string) => {
-        updateBox(nodeId, { color: next });
+        useDiagramStore.getState().updateBox(nodeId,{ color: next });
     });
     const commitOpacity = useRafThrottle((next: number) => {
-        updateBox(nodeId, { opacity: next });
+        useDiagramStore.getState().updateBox(nodeId,{ opacity: next });
     });
 
     const onColorChange = useCallback(
@@ -85,9 +84,9 @@ export function useBoxNodeEditorState({
             return;
         }
         clearError();
-        updateBox(nodeId, { title: result.value });
+        useDiagramStore.getState().updateBox(nodeId,{ title: result.value });
         setDraftTitle(result.value);
-    }, [boxes, clearError, draftTitle, nodeId, setError, title, updateBox]);
+    }, [boxes, clearError, draftTitle, nodeId, setError, title]);
 
     const cancelTitle = useCallback(() => {
         setDraftTitle(title);
@@ -108,12 +107,12 @@ export function useBoxNodeEditorState({
         const next = normalizeHex(hexDraft);
         if (next) {
             setDraftColor(next);
-            updateBox(nodeId, { color: next });
+            useDiagramStore.getState().updateBox(nodeId,{ color: next });
         } else {
             setHexDraft(draftColor);
         }
         setEditingHex(false);
-    }, [draftColor, hexDraft, nodeId, updateBox]);
+    }, [draftColor, hexDraft, nodeId]);
 
     useEffect(() => {
         if (!editingHex) return;
