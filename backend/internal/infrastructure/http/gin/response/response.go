@@ -31,6 +31,7 @@ func Created[T any](c *gin.Context, message string, data T) {
 // NoContent sends a 204 response with no body.
 func NoContent(c *gin.Context) {
 	c.Status(http.StatusNoContent)
+	c.Writer.WriteHeaderNow()
 }
 
 // Fail sends an error response with data set to nil.

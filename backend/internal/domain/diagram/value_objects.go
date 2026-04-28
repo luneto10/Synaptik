@@ -1,6 +1,10 @@
 package diagram
 
-import "errors"
+import (
+	"fmt"
+
+	"github.com/luneto10/synaptik/backend/internal/domain/apperrors"
+)
 
 // ColumnType represents the SQL column data type.
 type ColumnType string
@@ -23,7 +27,7 @@ func NewColumnType(raw string) (ColumnType, error) {
 		ColumnTypeBigint, ColumnTypeBoolean, ColumnTypeTimestamp, ColumnTypeJSONB, ColumnTypeFloat:
 		return ColumnType(raw), nil
 	}
-	return "", errors.New("invalid column type: " + raw)
+	return "", fmt.Errorf("invalid column type %q: %w", raw, apperrors.ErrInvalid)
 }
 
 // RelationshipType represents the cardinality between two tables.
@@ -40,5 +44,5 @@ func NewRelationshipType(raw string) (RelationshipType, error) {
 	case RelationshipOneToOne, RelationshipOneToMany, RelationshipManyToMany:
 		return RelationshipType(raw), nil
 	}
-	return "", errors.New("invalid relationship type: " + raw)
+	return "", fmt.Errorf("invalid relationship type %q: %w", raw, apperrors.ErrInvalid)
 }
