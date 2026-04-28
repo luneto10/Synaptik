@@ -73,7 +73,6 @@ export const DUPLICATE_OFFSET = 40;
 
 /** Category box defaults. Resized freely, but clamped to MIN values. */
 export const BOX = {
-    /** Hex RGB (no alpha). Fill alpha comes from DEFAULT_OPACITY; border is always opaque. */
     DEFAULT_COLOR: "#6366f1",
     DEFAULT_OPACITY: 0.1,
     MIN_WIDTH: 160,
