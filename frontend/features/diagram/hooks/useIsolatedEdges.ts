@@ -12,18 +12,25 @@ export function useIsolatedEdges(
     selectedNodeIds: string[],
     enabled: boolean,
 ): RelationEdge[] {
+    const selected = useMemo(
+        () => new Set(selectedNodeIds),
+        [selectedNodeIds],
+    );
+
     return useMemo(() => {
-        if (!enabled || selectedNodeIds.length === 0) return edges;
-        const selected = new Set(selectedNodeIds);
-        let changed = false;
-        const next = edges.map((edge) => {
+        if (!enabled || selected.size === 0) return edges;
+
+        let next: RelationEdge[] | null = null;
+        for (let i = 0; i < edges.length; i++) {
+            const edge = edges[i];
             const shouldHide = !(
                 selected.has(edge.source) || selected.has(edge.target)
             );
-            if (shouldHide === !!edge.hidden) return edge;
-            changed = true;
-            return { ...edge, hidden: shouldHide };
-        });
-        return changed ? next : edges;
-    }, [edges, enabled, selectedNodeIds]);
+            if (shouldHide === !!edge.hidden) continue;
+            if (!next) next = edges.slice();
+            next[i] = { ...edge, hidden: shouldHide };
+        }
+
+        return next ?? edges;
+    }, [edges, enabled, selected]);
 }

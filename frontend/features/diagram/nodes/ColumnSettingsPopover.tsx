@@ -59,11 +59,6 @@ export default function ColumnSettingsPopover({
     const [open, setOpen] = useState(false);
     const [snap, setSnap] = useState<Snapshot>(EMPTY_SNAPSHOT);
 
-    // Only stable action selectors — these never change and do not cause re-renders on drag
-    const flipColumnHandleSide = useDiagramStore((s) => s.flipColumnHandleSide);
-    const retargetFkColumn = useDiagramStore((s) => s.retargetFkColumn);
-    const deleteEdgeOnly = useDiagramStore((s) => s.deleteEdgeOnly);
-
     const readSnapshot = useCallback((): Snapshot => {
         const { nodes, edges } = useDiagramStore.getState();
         const otherNodes = nodes.filter(
@@ -94,7 +89,7 @@ export default function ColumnSettingsPopover({
     const handleUpdate = useCallback(
         (updated: DbColumn) => {
             if (column.isForeignKey && !updated.isForeignKey) {
-                const { edges } = useDiagramStore.getState();
+                const { edges, deleteEdgeOnly } = useDiagramStore.getState();
                 const edge = edges.find(
                     (e) => e.target === nodeId && e.data?.targetColumnId === column.id,
                 );
@@ -102,17 +97,17 @@ export default function ColumnSettingsPopover({
             }
             onUpdate(updated);
         },
-        [column.isForeignKey, column.id, nodeId, deleteEdgeOnly, onUpdate],
+        [column.isForeignKey, column.id, nodeId, onUpdate],
     );
 
     // After each action, refresh the snapshot so the UI reflects the change immediately
     const handleFlipSide = () => {
-        flipColumnHandleSide(nodeId, column.id);
+        useDiagramStore.getState().flipColumnHandleSide(nodeId, column.id);
         setSnap(readSnapshot());
     };
 
     const handleRetarget = (nId: string, colId: string, tableId: string) => {
-        retargetFkColumn(nId, colId, tableId);
+        useDiagramStore.getState().retargetFkColumn(nId, colId, tableId);
         setSnap(readSnapshot());
     };
 

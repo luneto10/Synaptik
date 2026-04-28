@@ -2,6 +2,17 @@ import type { RelationshipType } from "./types/flow.types";
 import type { FitViewOptions } from "@xyflow/react";
 
 export const HISTORY_LIMIT = 50;
+/** Enable React Flow visible-element culling only for large diagrams. */
+export const LARGE_DIAGRAM_NODE_THRESHOLD = 400;
+/** Use progressive chunked loading for very large diagrams. */
+export const BULK_LOAD_NODE_THRESHOLD = 500;
+/** Initial node batch size for progressive loading. */
+export const BULK_LOAD_CHUNK_SIZE_INITIAL = 120;
+/** Min/max adaptive chunk bounds while loading. */
+export const BULK_LOAD_CHUNK_SIZE_MIN = 60;
+export const BULK_LOAD_CHUNK_SIZE_MAX = 320;
+/** Target frame budget (ms) while progressively loading nodes. */
+export const BULK_LOAD_FRAME_BUDGET_MS = 12;
 /** Padding applied when fitting the view to diagram content. */
 export const FIT_VIEW_PADDING = 0.3;
 

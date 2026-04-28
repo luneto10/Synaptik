@@ -1,12 +1,14 @@
 "use client";
 
 import { useCallback, useRef } from "react";
-import { Download, Upload } from "lucide-react";
+import { Download, Upload, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useDiagramStore } from "../../store/diagramStore";
 import type { DiagramNode, RelationEdge } from "../../types/flow.types";
+import stressData from "../../mock/stress.json";
 import { FIT_VIEW_PADDING } from "../../constants";
 import { useDeferredFitView } from "../../hooks/useDeferredFitView";
+import { createPersistedDiagramSnapshot } from "../../utils/diagramSnapshot";
 
 interface Snapshot {
     nodes: DiagramNode[];
@@ -24,13 +26,12 @@ function makeExportName() {
 }
 
 export function DevToolbar() {
-    const loadDiagram = useDiagramStore((s) => s.loadDiagram);
     const fileRef = useRef<HTMLInputElement>(null);
     const { deferredFitView } = useDeferredFitView();
 
     const handleExport = useCallback(() => {
         const { nodes, edges } = useDiagramStore.getState();
-        const snapshot: Snapshot = { nodes, edges };
+        const snapshot: Snapshot = createPersistedDiagramSnapshot(nodes, edges);
         const blob = new Blob([JSON.stringify(snapshot, null, 2)], {
             type: "application/json",
         });
@@ -62,8 +63,12 @@ export function DevToolbar() {
                         throw new Error("Invalid snapshot shape");
                     }
 
-                    loadDiagram(snapshot.nodes, snapshot.edges);
-                    deferredFitView({ padding: FIT_VIEW_PADDING });
+                    void useDiagramStore
+                        .getState()
+                        .loadDiagramAdaptive(snapshot.nodes, snapshot.edges)
+                        .then(() => {
+                            deferredFitView({ padding: FIT_VIEW_PADDING });
+                        });
                 } catch (err) {
                     console.error("[DevToolbar] Failed to load snapshot:", err);
                     alert("Invalid diagram JSON - check the console for details.");
@@ -71,12 +76,22 @@ export function DevToolbar() {
             };
             reader.readAsText(file);
         },
-        [deferredFitView, loadDiagram],
+        [deferredFitView],
     );
 
     const openImportPicker = useCallback(() => {
         fileRef.current?.click();
     }, []);
+
+    const handleLoadStress = useCallback(() => {
+        const { nodes, edges } = stressData as Snapshot;
+        void useDiagramStore
+            .getState()
+            .loadDiagramAdaptive(nodes, edges)
+            .then(() => {
+                deferredFitView({ padding: FIT_VIEW_PADDING });
+            });
+    }, [deferredFitView]);
 
     return (
         <>
@@ -112,6 +127,17 @@ export function DevToolbar() {
                 onClick={openImportPicker}
             >
                 <Upload className="h-3.5 w-3.5" />
+            </Button>
+
+            <Button
+                variant="ghost"
+                size="icon"
+                title="Load stress test"
+                aria-label="Load stress test"
+                className="h-7 w-7 text-amber-500/70 hover:text-amber-400"
+                onClick={handleLoadStress}
+            >
+                <Zap className="h-3.5 w-3.5" />
             </Button>
         </>
     );

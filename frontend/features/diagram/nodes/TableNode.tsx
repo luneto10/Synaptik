@@ -4,13 +4,16 @@ import {
     memo,
     useCallback,
     useState,
+    useMemo,
     Fragment,
 } from "react";
-import { NodeResizer, Handle, Position, useStore } from "@xyflow/react";
+import { NodeResizer, Handle, Position } from "@xyflow/react";
 import type { NodeProps } from "@xyflow/react";
 import { useDiagramStore } from "../store/diagramStore";
 import type { TableNode as TableNodeType } from "../types/flow.types";
 import type { DbColumn } from "../types/db.types";
+
+const getStore = () => useDiagramStore.getState();
 import TableNodeHeader from "./TableNodeHeader";
 import TableNodeColumns from "./TableNodeColumns";
 import TableNodeFooter from "./TableNodeFooter";
@@ -27,66 +30,20 @@ import {
     visibleDotStyle,
 } from "./tableNodeHandles";
 
-function TableNode({ id, data, selected, dragging }: NodeProps<TableNodeType>) {
-    const addColumn = useDiagramStore((s) => s.addColumn);
-    const updateColumn = useDiagramStore((s) => s.updateColumn);
-    const removeColumn = useDiagramStore((s) => s.removeColumn);
+// Invariant — side never changes, so these are stable module-level objects.
+const INVISIBLE_TARGET_LEFT = invisibleTargetStyle("left");
+const INVISIBLE_TARGET_RIGHT = invisibleTargetStyle("right");
 
-    const [focusColId, setFocusColId] = useState<string | null>(null);
-    const [isResizing, setIsResizing] = useState(false);
-    const { endGesture, endGestureIfActive } = useHistoryGestureHandlers();
-    const selectedCount = useStore((s) => s.nodes.filter((n) => n.selected).length);
-    const isSolelySelected = selected && selectedCount === 1;
-
-    const handleAddColumn = useCallback(() => {
-        const newId = crypto.randomUUID();
-        addColumn(id, newId);
-        setFocusColId(newId);
-    }, [id, addColumn]);
-
-    const handleFocusConsumed = useCallback(() => setFocusColId(null), []);
-
-    const handleUpdateColumn = useCallback(
-        (col: DbColumn) => updateColumn(id, col),
-        [id, updateColumn],
-    );
-
-    const handleRemoveColumn = useCallback(
-        (colId: string) => removeColumn(id, colId),
-        [id, removeColumn],
-    );
-
-    // Handles are visible only when solely selected and not being dragged or resized
-    const showHandles = isSolelySelected && !dragging && !isResizing;
-
-    // Dynamic minimum height: must fit all PK + FK rows so user can't resize them away
-    const requiredRows = data.columns.filter(
-        (c) => c.isPrimaryKey || c.isForeignKey,
-    ).length;
-    const minHeight = computeTableMinHeight(requiredRows);
-
-    const nh = handleIds(id);
-
+// Separated from the parent so dragging/selection changes don't cause the
+// column routing handles to re-render (they only depend on columns).
+const RoutingHandles = memo(function RoutingHandles({
+    columns,
+}: {
+    columns: DbColumn[];
+}) {
     return (
         <>
-            <NodeResizer
-                minWidth={LAYOUT.MIN_NODE_WIDTH}
-                minHeight={minHeight}
-                isVisible={isSolelySelected}
-                lineClassName="border-indigo-500/20! border-solid!"
-                handleClassName="!w-[9px] !h-[9px] !rounded-full !bg-background !border !border-indigo-500/60 !ring-1 !ring-indigo-500/30 hover:!border-indigo-400 hover:!ring-indigo-500/40 !transition-colors !duration-100 !shadow-sm"
-                onResizeStart={() => {
-                    endGestureIfActive();
-                    setIsResizing(true);
-                }}
-                onResizeEnd={() => {
-                    setIsResizing(false);
-                    endGesture();
-                }}
-            />
-
-            {/* ── Column routing handles — invisible, at each row's Y center ── */}
-            {data.columns.map((col, i) => {
+            {columns.map((col, i) => {
                 const yc = rowCenterY(i);
                 const ch = handleIds(col.id);
                 return (
@@ -118,36 +75,100 @@ function TableNode({ id, data, selected, dragging }: NodeProps<TableNodeType>) {
                     </Fragment>
                 );
             })}
+        </>
+    );
+});
 
-            {/* ── Node-level interaction dots — visible source + invisible target ── */}
+function TableNode({ id, data, selected, dragging }: NodeProps<TableNodeType>) {
+    const [focusColId, setFocusColId] = useState<string | null>(null);
+    const [isResizing, setIsResizing] = useState(false);
+    const { endGesture, endGestureIfActive } = useHistoryGestureHandlers();
+
+    const isSolelySelected = useDiagramStore(
+        useCallback((s) => s.selectedCount === 1 && selected, [selected])
+    );
+
+    const handleAddColumn = useCallback(() => {
+        const newId = crypto.randomUUID();
+        getStore().addColumn(id, newId);
+        setFocusColId(newId);
+    }, [id]);
+
+    const handleFocusConsumed = useCallback(() => setFocusColId(null), []);
+
+    const handleUpdateColumn = useCallback(
+        (col: DbColumn) => getStore().updateColumn(id, col),
+        [id],
+    );
+
+    const handleRemoveColumn = useCallback(
+        (colId: string) => getStore().removeColumn(id, colId),
+        [id],
+    );
+
+    const showHandles = isSolelySelected && !dragging && !isResizing;
+
+    const minHeight = useMemo(() => {
+        let requiredRows = 0;
+        for (const column of data.columns) {
+            if (column.isPrimaryKey || column.isForeignKey) requiredRows++;
+        }
+        return computeTableMinHeight(requiredRows);
+    }, [data.columns]);
+
+    // Stable string values — memo prevents object churn on drag frames.
+    const nh = useMemo(() => handleIds(id), [id]);
+    const dotLeftStyle = useMemo(() => visibleDotStyle("left", showHandles), [showHandles]);
+    const dotRightStyle = useMemo(() => visibleDotStyle("right", showHandles), [showHandles]);
+
+    return (
+        <>
+            <NodeResizer
+                minWidth={LAYOUT.MIN_NODE_WIDTH}
+                minHeight={minHeight}
+                isVisible={isSolelySelected}
+                lineClassName="border-indigo-500/20! border-solid!"
+                handleClassName="!w-[9px] !h-[9px] !rounded-full !bg-background !border !border-indigo-500/60 !ring-1 !ring-indigo-500/30 hover:!border-indigo-400 hover:!ring-indigo-500/40 !transition-colors !duration-100 !shadow-sm"
+                onResizeStart={() => {
+                    endGestureIfActive();
+                    setIsResizing(true);
+                }}
+                onResizeEnd={() => {
+                    setIsResizing(false);
+                    endGesture();
+                }}
+            />
+
+            <RoutingHandles columns={data.columns} />
+
             <Handle
                 type="source"
                 position={Position.Left}
                 id={nh.sourceLeft}
-                style={visibleDotStyle("left", showHandles)}
+                style={dotLeftStyle}
             />
             <Handle
                 type="source"
                 position={Position.Right}
                 id={nh.sourceRight}
-                style={visibleDotStyle("right", showHandles)}
+                style={dotRightStyle}
             />
             <Handle
                 type="target"
                 position={Position.Left}
                 id={nh.targetLeft}
-                style={invisibleTargetStyle("left")}
+                style={INVISIBLE_TARGET_LEFT}
             />
             <Handle
                 type="target"
                 position={Position.Right}
                 id={nh.targetRight}
-                style={invisibleTargetStyle("right")}
+                style={INVISIBLE_TARGET_RIGHT}
             />
 
             <div
                 className={cn(
-                    "bg-card rounded-xl border w-full h-full flex flex-col overflow-hidden cursor-grab active:cursor-grabbing",
+                    "diagram-node-surface bg-card rounded-xl border w-full h-full flex flex-col overflow-hidden cursor-grab active:cursor-grabbing",
                     "transition-all duration-150",
                     selected && data.isJunction
                         ? "border-violet-500/70 shadow-xl shadow-violet-500/15 ring-1 ring-violet-500/20"
@@ -156,7 +177,6 @@ function TableNode({ id, data, selected, dragging }: NodeProps<TableNodeType>) {
                         : "border-border/60 shadow-md hover:border-border hover:shadow-lg",
                 )}
             >
-                {/* ── Header — shrink-0 so it's never compressed by flex ── */}
                 <div className="shrink-0">
                     <TableNodeHeader
                         nodeId={id}
@@ -166,7 +186,6 @@ function TableNode({ id, data, selected, dragging }: NodeProps<TableNodeType>) {
                     />
                 </div>
 
-                {/* ── Columns — flex-1 scroll area ── */}
                 <TableNodeColumns
                     nodeId={id}
                     columns={data.columns}
@@ -176,7 +195,6 @@ function TableNode({ id, data, selected, dragging }: NodeProps<TableNodeType>) {
                     onRemove={handleRemoveColumn}
                 />
 
-                {/* ── Footer — shrink-0 so it's never pushed out of view ── */}
                 <div className="shrink-0">
                     <TableNodeFooter onAddColumn={handleAddColumn} />
                 </div>

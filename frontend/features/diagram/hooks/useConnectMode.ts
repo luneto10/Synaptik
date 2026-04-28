@@ -25,8 +25,6 @@ function nodeIdFromEvent(event: MouseEvent | TouchEvent): string | null {
 
 export function useConnectMode(activeTool: DiagramTool) {
     const displayNodes = useDiagramStore((s) => s.nodes);
-    const addEdgeWithType = useDiagramStore((s) => s.addEdgeWithType);
-    const createJunctionTable = useDiagramStore((s) => s.createJunctionTable);
 
     const [pendingConn, setPendingConn] = useState<Connection | null>(null);
     const [pendingConnectSource, setPendingConnectSource] = useState<
@@ -107,6 +105,7 @@ export function useConnectMode(activeTool: DiagramTool) {
     const handleConfirmRelation = useCallback(
         (type: RelationshipType, fkName: string, doCreateJunction: boolean) => {
             if (!pendingConn?.source || !pendingConn?.target) return;
+            const { createJunctionTable, addEdgeWithType } = useDiagramStore.getState();
             if (doCreateJunction) {
                 createJunctionTable(pendingConn.source, pendingConn.target);
             } else {
@@ -114,7 +113,7 @@ export function useConnectMode(activeTool: DiagramTool) {
             }
             setPendingConn(null);
         },
-        [pendingConn, addEdgeWithType, createJunctionTable],
+        [pendingConn],
     );
 
     return {

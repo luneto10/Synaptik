@@ -29,16 +29,177 @@ import { findSpawnPosition } from "../utils/geometry";
 import { normalizeEdgeHandles } from "../utils/handleNormalization";
 import { createBoxActions } from "./boxActions";
 import { hasMeaningfulNodeChanges } from "./nodeChangeGuards";
+import { withoutHistory } from "./diagramHistory";
+import {
+    BULK_LOAD_CHUNK_SIZE_INITIAL,
+    BULK_LOAD_CHUNK_SIZE_MAX,
+    BULK_LOAD_CHUNK_SIZE_MIN,
+    BULK_LOAD_FRAME_BUDGET_MS,
+    BULK_LOAD_NODE_THRESHOLD,
+} from "../constants";
+
+let latestChunkLoadToken = 0;
+
+function normalizeLoadedNode(node: DiagramNode): DiagramNode {
+    if (isBoxNode(node) && node.zIndex === undefined) {
+        return { ...node, zIndex: -1 };
+    }
+    if (isTableNode(node) && node.zIndex === undefined) {
+        return { ...node, zIndex: 1 };
+    }
+    return node;
+}
+
+function countSelectedNodes(nodes: DiagramNode[]): number {
+    let selectedCount = 0;
+    for (const node of nodes) {
+        if (node.selected) selectedCount++;
+    }
+    return selectedCount;
+}
+
+function applyLoadedDiagramToDraft(
+    draft: { nodes: DiagramNode[]; edges: RelationEdge[]; selectedCount: number },
+    nodes: DiagramNode[],
+    edges: RelationEdge[],
+) {
+    const normalizedNodes = nodes.map(normalizeLoadedNode);
+    draft.nodes = normalizedNodes;
+    draft.edges = normalizeEdgeHandles(
+        normalizedNodes.filter(isTableNode),
+        edges,
+    );
+    draft.selectedCount = countSelectedNodes(normalizedNodes);
+}
 
 export function createNodeActions(set: SetState) {
+    const loadDiagramChunked = async (
+        nodes: DiagramNode[],
+        edges: RelationEdge[],
+    ) => {
+        const loadToken = ++latestChunkLoadToken;
+        const normalizedNodes = nodes.map(normalizeLoadedNode);
+        const normalizedEdges = normalizeEdgeHandles(
+            normalizedNodes.filter(isTableNode),
+            edges,
+        );
+        const totalNodes = normalizedNodes.length;
+        const schedule =
+            typeof requestAnimationFrame === "function"
+                ? requestAnimationFrame
+                : (cb: FrameRequestCallback) =>
+                      setTimeout(
+                          () =>
+                              cb(
+                                  typeof performance !== "undefined"
+                                      ? performance.now()
+                                      : Date.now(),
+                              ),
+                          0,
+                      );
+
+        let chunkSize = BULK_LOAD_CHUNK_SIZE_INITIAL;
+        let loaded = 0;
+        while (loaded < totalNodes) {
+            if (loadToken !== latestChunkLoadToken) return;
+            const frameStart =
+                typeof performance !== "undefined"
+                    ? performance.now()
+                    : Date.now();
+            loaded = Math.min(totalNodes, loaded + chunkSize);
+            const loadedNodes = normalizedNodes.slice(0, loaded);
+            const isFinalChunk = loaded >= totalNodes;
+
+            withoutHistory(() => {
+                set((draft) => {
+                    draft.nodes = loadedNodes;
+                    draft.edges = isFinalChunk ? normalizedEdges : [];
+                    draft.selectedCount = isFinalChunk
+                        ? countSelectedNodes(loadedNodes)
+                        : 0;
+                });
+            });
+
+            const elapsed =
+                (typeof performance !== "undefined"
+                    ? performance.now()
+                    : Date.now()) - frameStart;
+            if (elapsed > BULK_LOAD_FRAME_BUDGET_MS * 1.2) {
+                chunkSize = Math.max(
+                    BULK_LOAD_CHUNK_SIZE_MIN,
+                    Math.floor(chunkSize * 0.8),
+                );
+            } else if (elapsed < BULK_LOAD_FRAME_BUDGET_MS * 0.6) {
+                chunkSize = Math.min(
+                    BULK_LOAD_CHUNK_SIZE_MAX,
+                    Math.floor(chunkSize * 1.15),
+                );
+            }
+
+            if (!isFinalChunk) {
+                await new Promise<void>((resolve) => {
+                    schedule(() => resolve());
+                });
+            }
+        }
+    };
+
     return {
         onNodesChange: (changes: NodeChange[]) =>
             set((draft) => {
                 if (!hasMeaningfulNodeChanges(draft.nodes, changes)) return;
+                const hasSelectChanges = changes.some(
+                    (change) => change.type === "select",
+                );
+                if (!hasSelectChanges) {
+                    draft.nodes = applyNodeChanges(
+                        changes,
+                        draft.nodes,
+                    ) as DiagramNode[];
+                    return;
+                }
+                const selectedById = new Map<string, boolean>();
+                let previousSelectedCount = 0;
+                for (const node of draft.nodes) {
+                    const selected = !!node.selected;
+                    selectedById.set(node.id, selected);
+                    if (selected) previousSelectedCount++;
+                }
+
+                let selectedDelta = 0;
+                let hasNonSelectChange = false;
                 draft.nodes = applyNodeChanges(
                     changes,
                     draft.nodes,
                 ) as DiagramNode[];
+
+                for (const change of changes) {
+                    if (change.type !== "select") {
+                        hasNonSelectChange = true;
+                        continue;
+                    }
+                    const wasSelected = selectedById.get(change.id);
+                    if (wasSelected === undefined || wasSelected === change.selected) {
+                        continue;
+                    }
+                    selectedDelta += change.selected ? 1 : -1;
+                }
+
+                if (!hasNonSelectChange) {
+                    const nextSelectedCount =
+                        previousSelectedCount + selectedDelta;
+                    draft.selectedCount = Math.max(
+                        0,
+                        Math.min(draft.nodes.length, nextSelectedCount),
+                    );
+                    return;
+                }
+
+                let selectedCount = 0;
+                for (const node of draft.nodes) {
+                    if (node.selected) selectedCount++;
+                }
+                draft.selectedCount = selectedCount;
             }),
 
         addTable: (name: string, position?: { x: number; y: number }) =>
@@ -252,19 +413,19 @@ export function createNodeActions(set: SetState) {
 
         loadDiagram: (nodes: DiagramNode[], edges: RelationEdge[]) =>
             set((draft) => {
-                draft.nodes = nodes.map((node) => {
-                    if (isBoxNode(node) && node.zIndex === undefined) {
-                        return { ...node, zIndex: -1 };
-                    }
-                    if (isTableNode(node) && node.zIndex === undefined) {
-                        return { ...node, zIndex: 1 };
-                    }
-                    return node;
-                });
-                draft.edges = normalizeEdgeHandles(
-                    nodes.filter(isTableNode),
-                    edges,
-                );
+                applyLoadedDiagramToDraft(draft, nodes, edges);
             }),
+
+        loadDiagramChunked,
+
+        loadDiagramAdaptive: async (nodes: DiagramNode[], edges: RelationEdge[]) => {
+            if (nodes.length < BULK_LOAD_NODE_THRESHOLD) {
+                set((draft) => {
+                    applyLoadedDiagramToDraft(draft, nodes, edges);
+                });
+                return;
+            }
+            await loadDiagramChunked(nodes, edges);
+        },
     };
 }
