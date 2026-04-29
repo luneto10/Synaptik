@@ -43,6 +43,24 @@ func TestValidateTable(t *testing.T) {
 			}),
 			wantErr: true,
 		},
+		{
+			name: "invalid: varchar length above max",
+			table: diagram.NewDbTable("t1", "users", []diagram.DbColumn{
+				diagram.NewDbColumn("c1", "email", diagram.ColumnTypeVarchar, diagram.DbColumnProps{
+					TypeOptions: diagram.NewColumnTypeOptions(intPtr(70000), nil, nil),
+				}),
+			}),
+			wantErr: true,
+		},
+		{
+			name: "invalid: decimal scale above precision",
+			table: diagram.NewDbTable("t1", "orders", []diagram.DbColumn{
+				diagram.NewDbColumn("c1", "total", diagram.ColumnTypeDecimal, diagram.DbColumnProps{
+					TypeOptions: diagram.NewColumnTypeOptions(nil, intPtr(4), intPtr(5)),
+				}),
+			}),
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -64,3 +82,6 @@ func TestValidateTable(t *testing.T) {
 	}
 }
 
+func intPtr(value int) *int {
+	return &value
+}

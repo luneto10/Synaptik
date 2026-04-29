@@ -22,7 +22,11 @@ import ColumnBadges from "./ColumnBadges";
 import ColumnSettingsPopover from "./ColumnSettingsPopover";
 import { useTableColumnNameEdit } from "../hooks/useTableColumnNameEdit";
 import InlineFieldError from "../components/common/InlineFieldError";
-import { getDiagramDialect, getDialectType, formatColumnTypeLabel } from "../dialects";
+import {
+    applyColumnTypeChange,
+    formatColumnTypeLabel,
+    getDiagramDialect,
+} from "../dialects";
 import { useDiagramStore } from "../store/diagramStore";
 
 interface Props {
@@ -122,20 +126,9 @@ function TableNodeColumnRow({
             <div className="w-32 min-w-0 px-0.5 py-1 shrink-0 flex items-center justify-end overflow-hidden">
                 <Select
                     value={column.type}
-                    onValueChange={(value) => {
-                        const typeDef = getDialectType(dialect, value);
-                        onUpdate({
-                            ...column,
-                            type: value,
-                            typeOptions: typeDef?.defaultArguments,
-                            isAutoIncrement:
-                                typeDef?.supportsAutoIncrement === true &&
-                                column.isAutoIncrement === true,
-                            isGeneratedUuid:
-                                typeDef?.semanticType === "uuid" &&
-                                column.isGeneratedUuid === true,
-                        });
-                    }}
+                    onValueChange={(value) =>
+                        onUpdate(applyColumnTypeChange(dialect, column, value))
+                    }
                 >
                     <SelectTrigger
                         onPointerDown={(event) => event.stopPropagation()}

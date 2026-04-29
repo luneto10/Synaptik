@@ -11,13 +11,6 @@ func supportsAutoIncrementType(columnType diagram.ColumnType) bool {
 	return columnType == diagram.ColumnTypeInt || columnType == diagram.ColumnTypeBigint
 }
 
-func requirePositive(columnName, label string, value *int) (*int, error) {
-	if value == nil || *value <= 0 {
-		return nil, fmt.Errorf("column %q: %s must be a positive integer: %w", columnName, label, apperrors.ErrInvalid)
-	}
-	return value, nil
-}
-
 func positiveOrDefault(value *int, fallback int) *int {
 	if value == nil || *value <= 0 {
 		return &fallback

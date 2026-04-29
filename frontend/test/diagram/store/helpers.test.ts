@@ -143,6 +143,13 @@ describe("convertColumnsToDialect", () => {
                     name: "active",
                     type: "bool",
                 },
+                {
+                    ...basePk,
+                    id: "c3",
+                    name: "country_code",
+                    type: "char",
+                    typeOptions: { length: 2 },
+                },
             ],
             "postgres",
             "mysql",
@@ -150,6 +157,8 @@ describe("convertColumnsToDialect", () => {
 
         expect(result[0]?.type).toBe("json");
         expect(result[1]?.type).toBe("bool");
+        expect(result[2]?.type).toBe("char");
+        expect(result[2]?.typeOptions).toEqual({ length: 2 });
     });
 });
 

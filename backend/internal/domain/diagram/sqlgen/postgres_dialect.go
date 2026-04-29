@@ -70,6 +70,9 @@ func (postgresDialect) formatType(column diagram.DbColumn) (string, error) {
 		return "uuid", nil
 	case diagram.ColumnTypeText:
 		return "text", nil
+	case diagram.ColumnTypeChar:
+		length := positiveOrDefault(column.TypeOptions().Length(), 1)
+		return fmt.Sprintf("char(%d)", *length), nil
 	case diagram.ColumnTypeVarchar:
 		length := positiveOrDefault(column.TypeOptions().Length(), 255)
 		return fmt.Sprintf("varchar(%d)", *length), nil

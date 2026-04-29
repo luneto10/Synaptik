@@ -162,6 +162,33 @@ func TestToDomainDiagram_DuplicateColumnNames(t *testing.T) {
 	}
 }
 
+func TestToDomainDiagram_InvalidVarcharLength(t *testing.T) {
+	req := diagramapp.DiagramRequest{
+		Tables: []diagramapp.DbTableRequest{
+			{
+				ID:   "t1",
+				Name: "users",
+				Columns: []diagramapp.DbColumnRequest{
+					{
+						ID:   "c1",
+						Name: "email",
+						Type: "varchar",
+						TypeOptions: diagramapp.ColumnTypeOptionsRequest{
+							Length: intPtr(70000),
+						},
+					},
+				},
+			},
+		},
+		Relationships: []diagramapp.RelationshipRequest{},
+	}
+
+	_, _, err := diagramapp.ToDomainDiagram(req)
+	if err == nil {
+		t.Fatal("expected error for invalid varchar length, got nil")
+	}
+}
+
 func TestToDomainDiagram_EmptyTables(t *testing.T) {
 	req := diagramapp.DiagramRequest{
 		Tables:        []diagramapp.DbTableRequest{},

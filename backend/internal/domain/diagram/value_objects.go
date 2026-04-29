@@ -13,6 +13,7 @@ type ColumnType string
 const (
 	ColumnTypeUUID      ColumnType = "uuid"
 	ColumnTypeText      ColumnType = "text"
+	ColumnTypeChar      ColumnType = "char"
 	ColumnTypeVarchar   ColumnType = "varchar"
 	ColumnTypeInt       ColumnType = "int"
 	ColumnTypeBigint    ColumnType = "bigint"
@@ -40,9 +41,11 @@ const (
 )
 
 func NewDialect(raw string) (Dialect, error) {
-	switch Dialect(strings.TrimSpace(strings.ToLower(raw))) {
+	normalized := Dialect(strings.TrimSpace(strings.ToLower(raw)))
+
+	switch normalized {
 	case DialectPostgres, DialectMySQL:
-		return Dialect(strings.TrimSpace(strings.ToLower(raw))), nil
+		return normalized, nil
 	}
 	return "", fmt.Errorf("invalid dialect %q: %w", raw, apperrors.ErrInvalid)
 }

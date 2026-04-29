@@ -105,7 +105,7 @@ func TestConvertToSQLUseCase_Execute_InvalidRelationshipType(t *testing.T) {
 	}
 }
 
-func TestConvertToSQLUseCase_Execute_SaveFixtureOutput(t *testing.T) {
+func TestConvertToSQLUseCase_Execute_SavePostgresFixtureOutput(t *testing.T) {
 	data, err := os.ReadFile("../../domain/diagram/sqlgen/fixtures/postgres_request.json")
 	if err != nil {
 		t.Fatalf("read fixture: %v", err)
@@ -121,11 +121,11 @@ func TestConvertToSQLUseCase_Execute_SaveFixtureOutput(t *testing.T) {
 		t.Fatalf("Execute failed: %v", err)
 	}
 
-	if err := os.WriteFile("../../domain/diagram/sqlgen/fixtures/output.sql", []byte(sql), 0644); err != nil {
+	if err := os.WriteFile("../../domain/diagram/sqlgen/fixtures/postgres_output.sql", []byte(sql), 0644); err != nil {
 		t.Fatalf("write output: %v", err)
 	}
 
-	t.Logf("generated SQL written to fixtures/output.sql:\n%s", sql)
+	t.Logf("generated SQL written to fixtures/postgres_output.sql:\n%s", sql)
 }
 
 func TestConvertToSQLUseCase_Execute_ManyToManyFixture(t *testing.T) {
@@ -185,12 +185,16 @@ func TestConvertToSQLUseCase_Execute_MySQLFixture(t *testing.T) {
 		desc string
 		want string
 	}{
-		{"users table created", "CREATE TABLE users"},
-		{"auto increment pk", "id int AUTO_INCREMENT PRIMARY KEY"},
-		{"bool mapped to tinyint", "is_active tinyint(1) NOT NULL"},
-		{"varchar length emitted", "email varchar(180) NOT NULL UNIQUE"},
-		{"decimal precision emitted", "credit_limit decimal(12, 2) NOT NULL"},
-		{"orders fk emitted", "user_id int NOT NULL REFERENCES users (id)"},
+		{"categories table created", "CREATE TABLE categories"},
+		{"products table created", "CREATE TABLE products"},
+		{"orders table created", "CREATE TABLE orders"},
+		{"generated uuid pk", "id char(36) DEFAULT (UUID()) PRIMARY KEY"},
+		{"varchar length emitted", "name varchar(255) NOT NULL"},
+		{"decimal precision emitted", "price decimal(10, 2) NOT NULL"},
+		{"products fk emitted", "category_id char(36) NOT NULL REFERENCES categories (id)"},
+		{"junction table created", "CREATE TABLE order_product"},
+		{"junction fk to orders", "order_id char(36) NOT NULL REFERENCES orders (id)"},
+		{"junction fk to products", "product_id char(36) NOT NULL REFERENCES products (id)"},
 	}
 
 	for _, ch := range checks {
@@ -198,6 +202,29 @@ func TestConvertToSQLUseCase_Execute_MySQLFixture(t *testing.T) {
 			t.Errorf("%s: missing %q in output", ch.desc, ch.want)
 		}
 	}
+}
+
+func TestConvertToSQLUseCase_Execute_SaveMySQLFixtureOutput(t *testing.T) {
+	data, err := os.ReadFile("../../domain/diagram/sqlgen/fixtures/mysql_request.json")
+	if err != nil {
+		t.Fatalf("read fixture: %v", err)
+	}
+
+	var req diagramapp.DiagramRequest
+	if err := json.Unmarshal(data, &req); err != nil {
+		t.Fatalf("unmarshal fixture: %v", err)
+	}
+
+	sql, err := diagramapp.NewConvertToSQLUseCase().Execute(req)
+	if err != nil {
+		t.Fatalf("Execute failed: %v", err)
+	}
+
+	if err := os.WriteFile("../../domain/diagram/sqlgen/fixtures/output.sql", []byte(sql), 0644); err != nil {
+		t.Fatalf("write output: %v", err)
+	}
+
+	t.Logf("generated SQL written to fixtures/output.sql:\n%s", sql)
 }
 
 func TestConvertToSQLUseCase_Execute_MySQLDialect(t *testing.T) {
@@ -296,6 +323,42 @@ func TestConvertToSQLUseCase_Execute_MySQLGeneratedUUID(t *testing.T) {
 	}
 }
 
+func TestConvertToSQLUseCase_Execute_CharType(t *testing.T) {
+	uc := diagramapp.NewConvertToSQLUseCase()
+
+	req := diagramapp.DiagramRequest{
+		Dialect: "postgres",
+		Tables: []diagramapp.DbTableRequest{
+			{
+				ID:   "t1",
+				Name: "countries",
+				Columns: []diagramapp.DbColumnRequest{
+					{
+						ID:   "c1",
+						Name: "code",
+						Type: "char",
+						TypeOptions: diagramapp.ColumnTypeOptionsRequest{
+							Length: intPtr(2),
+						},
+						IsNullable: false,
+						IsUnique:   true,
+					},
+				},
+			},
+		},
+		Relationships: []diagramapp.RelationshipRequest{},
+	}
+
+	sql, err := uc.Execute(req)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(sql, "code char(2) NOT NULL UNIQUE") {
+		t.Fatalf("missing char type output: %s", sql)
+	}
+}
+
+//go:fix inline
 func intPtr(value int) *int {
-	return &value
+	return new(value)
 }

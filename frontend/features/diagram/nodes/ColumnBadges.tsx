@@ -26,6 +26,7 @@ import type { DiagramSemanticType } from "../dialects/types";
 const TYPE_ICONS: Record<DiagramSemanticType, LucideIcon | IconType> = {
     uuid: Fingerprint,
     text: IoText,
+    char: IoText,
     varchar: IoText,
     int: Binary,
     bigint: Binary,

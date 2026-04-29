@@ -12,6 +12,13 @@ export const mysqlDialect: DiagramDialectDefinition = {
     types: [
         { id: "uuid", label: "uuid", semanticType: "uuid" },
         {
+            id: "char",
+            label: "char",
+            semanticType: "char",
+            argumentKind: "length",
+            defaultArguments: { length: 1 },
+        },
+        {
             id: "varchar",
             label: "varchar",
             semanticType: "varchar",

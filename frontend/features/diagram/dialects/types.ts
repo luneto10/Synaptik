@@ -3,6 +3,7 @@ import type { ColumnTypeArguments, DiagramDialectId } from "../types/db.types";
 export type DiagramSemanticType =
     | "uuid"
     | "text"
+    | "char"
     | "varchar"
     | "int"
     | "bigint"

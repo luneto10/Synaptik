@@ -68,6 +68,9 @@ func (mysqlDialect) formatType(column diagram.DbColumn) (string, error) {
 	switch column.Type() {
 	case diagram.ColumnTypeUUID:
 		return "char(36)", nil
+	case diagram.ColumnTypeChar:
+		length := positiveOrDefault(column.TypeOptions().Length(), 1)
+		return fmt.Sprintf("char(%d)", *length), nil
 	case diagram.ColumnTypeVarchar:
 		length := positiveOrDefault(column.TypeOptions().Length(), 255)
 		return fmt.Sprintf("varchar(%d)", *length), nil

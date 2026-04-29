@@ -13,6 +13,13 @@ export const postgresDialect: DiagramDialectDefinition = {
         { id: "uuid", label: "uuid", semanticType: "uuid" },
         { id: "text", label: "text", semanticType: "text" },
         {
+            id: "char",
+            label: "char",
+            semanticType: "char",
+            argumentKind: "length",
+            defaultArguments: { length: 1 },
+        },
+        {
             id: "varchar",
             label: "varchar",
             semanticType: "varchar",

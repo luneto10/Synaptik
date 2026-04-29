@@ -105,6 +105,48 @@ export function formatColumnTypeLabel(
     return baseLabel;
 }
 
+export function applyColumnTypeChange(
+    dialectId: DiagramDialectId,
+    column: DbColumn,
+    nextTypeId: string,
+): DbColumn {
+    const nextTypeDef = getDialectType(dialectId, nextTypeId);
+
+    return {
+        ...column,
+        type: nextTypeId,
+        typeOptions: nextTypeDef?.defaultArguments,
+        isAutoIncrement:
+            nextTypeDef?.supportsAutoIncrement === true &&
+            column.isAutoIncrement === true,
+        isGeneratedUuid:
+            nextTypeDef?.semanticType === "uuid" &&
+            column.isGeneratedUuid === true,
+    };
+}
+
+export function canConfigureAutoIncrement(
+    column: Pick<DbColumn, "isForeignKey" | "type">,
+    dialectId: DiagramDialectId,
+): boolean {
+    if (column.isForeignKey) {
+        return false;
+    }
+
+    return getDialectType(dialectId, column.type)?.supportsAutoIncrement === true;
+}
+
+export function canConfigureGeneratedUuid(
+    column: Pick<DbColumn, "isForeignKey" | "type">,
+    dialectId: DiagramDialectId,
+): boolean {
+    if (column.isForeignKey) {
+        return false;
+    }
+
+    return getDialectType(dialectId, column.type)?.semanticType === "uuid";
+}
+
 export function normalizeColumnTypeForDialect(
     column: DbColumn,
     sourceDialectId: DiagramDialectId,
