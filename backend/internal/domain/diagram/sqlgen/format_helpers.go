@@ -12,23 +12,11 @@ func getPrimaryKeyColumns(t diagram.DbTable) []string {
 	return names
 }
 
-// buildTableDDL returns the column definition lines for a CREATE TABLE statement.
+// buildTableDDLForDialect returns the column definition lines for a CREATE TABLE statement.
 // FK references are emitted inline (e.g. REFERENCES users (id)) rather than as
 // separate ALTER TABLE statements — this is only safe because sortByDependency
 // guarantees referenced tables always precede the tables that depend on them.
 // Circular FK dependencies are rejected upstream, so ALTER TABLE is never needed.
-func buildTableDDL(t diagram.DbTable, colIndex map[diagram.ColumnID]columnInfo) []string {
-	dialect, err := getDialect(diagram.DialectPostgres)
-	if err != nil {
-		return nil
-	}
-	columnDefs, err := buildTableDDLForDialect(dialect, t, colIndex)
-	if err != nil {
-		return nil
-	}
-	return columnDefs
-}
-
 func buildTableDDLForDialect(dialect Dialect, t diagram.DbTable, colIndex map[diagram.ColumnID]columnInfo) ([]string, error) {
 	pkCols := getPrimaryKeyColumns(t)
 	compositePK := t.IsJunction() && len(pkCols) > 1

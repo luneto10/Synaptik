@@ -15,7 +15,7 @@ func init() {
 }
 
 func (mysqlDialect) ID() diagram.Dialect {
-	return diagram.DialectMySQL
+	return "mysql"
 }
 
 func (mysqlDialect) CreateTable(tableName string, columnDefs []string) string {

@@ -11,7 +11,7 @@ import (
 )
 
 func TestGenerate_EmptyInput(t *testing.T) {
-	sql, err := sqlgen.Generate(nil, nil)
+	sql, err := sqlgen.GenerateForDialect("postgres", nil, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -28,7 +28,7 @@ func TestGenerate_SingleTable(t *testing.T) {
 		}),
 	}
 
-	sql, err := sqlgen.Generate(tables, nil)
+	sql, err := sqlgen.GenerateForDialect("postgres", tables, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -57,7 +57,7 @@ func TestGenerate_FKOrdering(t *testing.T) {
 		}),
 	}
 
-	sql, err := sqlgen.Generate(tables, nil)
+	sql, err := sqlgen.GenerateForDialect("postgres", tables, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -93,7 +93,7 @@ func TestGenerate_CircularDependency(t *testing.T) {
 		}),
 	}
 
-	_, err := sqlgen.Generate(tables, nil)
+	_, err := sqlgen.GenerateForDialect("postgres", tables, nil)
 	if err == nil {
 		t.Fatal("expected circular dependency error, got nil")
 	}
@@ -117,7 +117,7 @@ func TestGenerate_ManyToMany(t *testing.T) {
 		diagram.NewRelationship("rel-posts-tags", "col-post-id", "col-tag-id", diagram.RelationshipManyToMany),
 	}
 
-	sql, err := sqlgen.Generate(tables, rels)
+	sql, err := sqlgen.GenerateForDialect("postgres", tables, rels)
 	if err != nil {
 		t.Fatalf("Generate failed: %v", err)
 	}

@@ -15,7 +15,7 @@ func init() {
 }
 
 func (postgresDialect) ID() diagram.Dialect {
-	return diagram.DialectPostgres
+	return "postgres"
 }
 
 func (postgresDialect) CreateTable(tableName string, columnDefs []string) string {

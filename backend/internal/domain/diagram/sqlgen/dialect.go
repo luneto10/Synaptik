@@ -2,8 +2,6 @@ package sqlgen
 
 import (
 	"fmt"
-	"sort"
-	"strings"
 
 	"github.com/luneto10/synaptik/backend/internal/domain/apperrors"
 	"github.com/luneto10/synaptik/backend/internal/domain/diagram"
@@ -25,6 +23,7 @@ var dialectRegistry = map[diagram.Dialect]Dialect{}
 
 func RegisterDialect(dialect Dialect) {
 	dialectRegistry[dialect.ID()] = dialect
+	diagram.RegisterDialect(dialect.ID())
 }
 
 func getDialect(id diagram.Dialect) (Dialect, error) {
@@ -33,15 +32,4 @@ func getDialect(id diagram.Dialect) (Dialect, error) {
 		return nil, fmt.Errorf("unsupported dialect %q: %w", id, apperrors.ErrInvalid)
 	}
 	return dialect, nil
-}
-
-func RegisteredDialects() []diagram.Dialect {
-	ids := make([]diagram.Dialect, 0, len(dialectRegistry))
-	for id := range dialectRegistry {
-		ids = append(ids, id)
-	}
-	sort.Slice(ids, func(i, j int) bool {
-		return strings.Compare(string(ids[i]), string(ids[j])) < 0
-	})
-	return ids
 }

@@ -53,11 +53,16 @@ func TestInternalGetPrimaryKeyColumns(t *testing.T) {
 }
 
 func TestInternalBuildTableDDL(t *testing.T) {
+	dialect := postgresDialect{}
+
 	t.Run("regular PK: PRIMARY KEY inline, no NOT NULL", func(t *testing.T) {
 		table := diagram.NewDbTable("t1", "users", []diagram.DbColumn{
 			newDbColumn("c1", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
 		})
-		defs := buildTableDDL(table, buildColumnIndex([]diagram.DbTable{table}))
+		defs, err := buildTableDDLForDialect(dialect, table, buildColumnIndex([]diagram.DbTable{table}))
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
 		if len(defs) != 1 {
 			t.Fatalf("expected 1 def, got %d", len(defs))
 		}
@@ -73,7 +78,10 @@ func TestInternalBuildTableDDL(t *testing.T) {
 		table := diagram.NewDbTable("t1", "users", []diagram.DbColumn{
 			newDbColumn("c1", "name", diagram.ColumnTypeText, false, false, false, false, nil),
 		})
-		defs := buildTableDDL(table, buildColumnIndex([]diagram.DbTable{table}))
+		defs, err := buildTableDDLForDialect(dialect, table, buildColumnIndex([]diagram.DbTable{table}))
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
 		if !strings.Contains(defs[0], "NOT NULL") {
 			t.Errorf("expected NOT NULL in: %s", defs[0])
 		}
@@ -91,7 +99,10 @@ func TestInternalBuildTableDDL(t *testing.T) {
 			newDbColumn("c2", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
 			newDbColumn("c3", "user_id", diagram.ColumnTypeUUID, false, true, false, false, &ref),
 		})
-		defs := buildTableDDL(posts, buildColumnIndex([]diagram.DbTable{users, posts}))
+		defs, err := buildTableDDLForDialect(dialect, posts, buildColumnIndex([]diagram.DbTable{users, posts}))
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
 		joined := strings.Join(defs, "\n")
 		if !strings.Contains(joined, "REFERENCES users (id)") {
 			t.Errorf("expected inline REFERENCES users (id), got:\n%s", joined)
@@ -115,7 +126,10 @@ func TestInternalBuildTableDDL(t *testing.T) {
 			newDbColumn("j2", "tag_id", diagram.ColumnTypeUUID, true, true, false, false, &tgtRef),
 		})
 		colIndex := buildColumnIndex([]diagram.DbTable{posts, tags, junction})
-		defs := buildTableDDL(junction, colIndex)
+		defs, err := buildTableDDLForDialect(dialect, junction, colIndex)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
 		joined := strings.Join(defs, "\n")
 
 		if !strings.Contains(joined, "PRIMARY KEY (post_id, tag_id)") {

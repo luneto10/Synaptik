@@ -49,3 +49,22 @@ func TestNewRelationshipType_Invalid(t *testing.T) {
 		t.Fatal("expected error for unknown relationship type, got nil")
 	}
 }
+
+func TestNewDialect_UsesRegistry(t *testing.T) {
+	diagram.RegisterDialect("custom")
+
+	dialect, err := diagram.NewDialect(" Custom ")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if dialect != "custom" {
+		t.Fatalf("got %q, want %q", dialect, "custom")
+	}
+}
+
+func TestNewDialect_Invalid(t *testing.T) {
+	_, err := diagram.NewDialect("unknown")
+	if err == nil {
+		t.Fatal("expected error for unknown dialect, got nil")
+	}
+}

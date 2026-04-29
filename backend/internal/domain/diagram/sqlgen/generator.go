@@ -2,11 +2,6 @@ package sqlgen
 
 import "github.com/luneto10/synaptik/backend/internal/domain/diagram"
 
-// Generate converts domain tables into PostgreSQL DDL.
-func Generate(tables []diagram.DbTable, rels []diagram.Relationship) (string, error) {
-	return GenerateForDialect(diagram.DialectPostgres, tables, rels)
-}
-
 // GenerateForDialect converts domain tables into DDL for the requested SQL dialect.
 func GenerateForDialect(dialectID diagram.Dialect, tables []diagram.DbTable, rels []diagram.Relationship) (string, error) {
 	if len(tables) == 0 {

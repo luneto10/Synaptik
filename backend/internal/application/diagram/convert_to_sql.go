@@ -12,7 +12,7 @@ func NewConvertToSQLUseCase() *ConvertToSQLUseCase {
 func (uc *ConvertToSQLUseCase) Execute(req DiagramRequest) (string, error) {
 	dialectID := req.Dialect
 	if dialectID == "" {
-		dialectID = string(diagram.DialectPostgres)
+		dialectID = "postgres"
 	}
 
 	dialect, err := diagram.NewDialect(dialectID)

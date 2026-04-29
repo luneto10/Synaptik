@@ -35,16 +35,10 @@ func NewColumnType(raw string) (ColumnType, error) {
 
 type Dialect string
 
-const (
-	DialectPostgres Dialect = "postgres"
-	DialectMySQL    Dialect = "mysql"
-)
-
 func NewDialect(raw string) (Dialect, error) {
 	normalized := Dialect(strings.TrimSpace(strings.ToLower(raw)))
 
-	switch normalized {
-	case DialectPostgres, DialectMySQL:
+	if IsRegisteredDialect(normalized) {
 		return normalized, nil
 	}
 	return "", fmt.Errorf("invalid dialect %q: %w", raw, apperrors.ErrInvalid)
