@@ -2,7 +2,6 @@ package sqlgen
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/luneto10/synaptik/backend/internal/domain/apperrors"
 	"github.com/luneto10/synaptik/backend/internal/domain/diagram"
@@ -19,11 +18,11 @@ func (mysqlDialect) ID() diagram.Dialect {
 }
 
 func (mysqlDialect) CreateTable(tableName string, columnDefs []string) string {
-	return fmt.Sprintf("CREATE TABLE %s (\n%s\n);", tableName, strings.Join(columnDefs, ",\n"))
+	return CreateTable(tableName, columnDefs)
 }
 
 func (mysqlDialect) BuildCompositePrimaryKey(columns []string) string {
-	return fmt.Sprintf("\tPRIMARY KEY (%s)", strings.Join(columns, ", "))
+	return CompositePrimaryKey(columns...)
 }
 
 func (d mysqlDialect) BuildColumnDefinition(column diagram.DbColumn, ctx columnContext) (string, error) {
@@ -43,10 +42,10 @@ func (d mysqlDialect) BuildColumnDefinition(column diagram.DbColumn, ctx columnC
 		modifiers = append(modifiers, " DEFAULT (UUID())")
 	}
 	if !column.IsNullable() && (!column.IsPrimaryKey() || ctx.compositePrimaryKey) {
-		modifiers = append(modifiers, " NOT NULL")
+		modifiers = append(modifiers, NotNull())
 	}
 	if column.IsUnique() && !column.IsPrimaryKey() {
-		modifiers = append(modifiers, " UNIQUE")
+		modifiers = append(modifiers, Unique())
 	}
 	if column.IsAutoIncrement() {
 		if !supportsAutoIncrementType(column.Type()) {
@@ -55,13 +54,13 @@ func (d mysqlDialect) BuildColumnDefinition(column diagram.DbColumn, ctx columnC
 		modifiers = append(modifiers, " AUTO_INCREMENT")
 	}
 	if ctx.reference != nil {
-		modifiers = append(modifiers, fmt.Sprintf(" REFERENCES %s (%s)", ctx.reference.tableName, ctx.reference.columnName))
+		modifiers = append(modifiers, InlineReference(ctx.reference.tableName, ctx.reference.columnName))
 	}
 	if column.IsPrimaryKey() && !ctx.compositePrimaryKey {
-		modifiers = append(modifiers, " PRIMARY KEY")
+		modifiers = append(modifiers, PrimaryKey())
 	}
 
-	return fmt.Sprintf("\t%s %s%s", column.Name(), dataType, strings.Join(modifiers, "")), nil
+	return ColumnDef(column.Name(), dataType, modifiers...), nil
 }
 
 func (mysqlDialect) formatType(column diagram.DbColumn) (string, error) {
