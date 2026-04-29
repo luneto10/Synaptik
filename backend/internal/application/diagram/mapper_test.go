@@ -40,14 +40,14 @@ func TestToDomainDiagram_ValidInput(t *testing.T) {
 	}
 }
 
-func TestToDomainDiagram_InvalidColumnType(t *testing.T) {
+func TestToDomainDiagram_EmptyColumnType(t *testing.T) {
 	req := diagramapp.DiagramRequest{
 		Tables: []diagramapp.DbTableRequest{
 			{
 				ID:   "t1",
 				Name: "users",
 				Columns: []diagramapp.DbColumnRequest{
-					{ID: "c1", Name: "id", Type: "badtype"},
+					{ID: "c1", Name: "id", Type: ""},
 				},
 			},
 		},
@@ -56,7 +56,7 @@ func TestToDomainDiagram_InvalidColumnType(t *testing.T) {
 
 	_, _, err := diagramapp.ToDomainDiagram(req)
 	if err == nil {
-		t.Fatal("expected error for invalid column type, got nil")
+		t.Fatal("expected error for empty column type, got nil")
 	}
 }
 

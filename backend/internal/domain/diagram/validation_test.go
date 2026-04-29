@@ -17,8 +17,8 @@ func TestValidateTable(t *testing.T) {
 		{
 			name: "valid table: unique column names",
 			table: diagram.NewDbTable("t1", "users", []diagram.DbColumn{
-				diagram.NewDbColumn("c1", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
-				diagram.NewDbColumn("c2", "email", diagram.ColumnTypeText, false, false, false, true, nil),
+				newDbColumn("c1", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
+				newDbColumn("c2", "email", diagram.ColumnTypeText, false, false, false, true, nil),
 			}),
 			wantErr: false,
 		},
@@ -30,16 +30,16 @@ func TestValidateTable(t *testing.T) {
 		{
 			name: "invalid: duplicate column name",
 			table: diagram.NewDbTable("t1", "users", []diagram.DbColumn{
-				diagram.NewDbColumn("c1", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
-				diagram.NewDbColumn("c2", "id", diagram.ColumnTypeText, false, false, false, false, nil),
+				newDbColumn("c1", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
+				newDbColumn("c2", "id", diagram.ColumnTypeText, false, false, false, false, nil),
 			}),
 			wantErr: true,
 		},
 		{
 			name: "invalid: duplicate in junction table",
 			table: diagram.NewJunctionTable("j1", "post_tag", []diagram.DbColumn{
-				diagram.NewDbColumn("c1", "post_id", diagram.ColumnTypeUUID, true, false, false, false, nil),
-				diagram.NewDbColumn("c2", "post_id", diagram.ColumnTypeUUID, true, false, false, false, nil),
+				newDbColumn("c1", "post_id", diagram.ColumnTypeUUID, true, false, false, false, nil),
+				newDbColumn("c2", "post_id", diagram.ColumnTypeUUID, true, false, false, false, nil),
 			}),
 			wantErr: true,
 		},
@@ -63,3 +63,4 @@ func TestValidateTable(t *testing.T) {
 		})
 	}
 }
+

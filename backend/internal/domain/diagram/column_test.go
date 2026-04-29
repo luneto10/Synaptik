@@ -8,7 +8,7 @@ import (
 
 func TestNewDbColumn_Getters(t *testing.T) {
 	ref := diagram.NewColumnReference("t2", "c2")
-	col := diagram.NewDbColumn("c1", "email", diagram.ColumnTypeText, false, false, true, true, &ref)
+	col := newDbColumn("c1", "email", diagram.ColumnTypeText, false, false, true, true, &ref)
 
 	if col.ID() != "c1" {
 		t.Errorf("ID = %q, want %q", col.ID(), "c1")
@@ -40,7 +40,7 @@ func TestNewDbColumn_Getters(t *testing.T) {
 }
 
 func TestNewDbColumn_NoReference(t *testing.T) {
-	col := diagram.NewDbColumn("c1", "id", diagram.ColumnTypeUUID, true, false, false, false, nil)
+	col := newDbColumn("c1", "id", diagram.ColumnTypeUUID, true, false, false, false, nil)
 	if col.References() != nil {
 		t.Errorf("References = %v, want nil", col.References())
 	}
@@ -63,7 +63,7 @@ func TestNewDbColumn_Flags(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			col := diagram.NewDbColumn("c1", "col", diagram.ColumnTypeText,
+			col := newDbColumn("c1", "col", diagram.ColumnTypeText,
 				tt.isPrimaryKey, tt.isForeignKey, tt.isNullable, tt.isUnique, nil)
 			if col.IsPrimaryKey() != tt.isPrimaryKey {
 				t.Errorf("IsPrimaryKey = %v, want %v", col.IsPrimaryKey(), tt.isPrimaryKey)
@@ -80,3 +80,4 @@ func TestNewDbColumn_Flags(t *testing.T) {
 		})
 	}
 }
+

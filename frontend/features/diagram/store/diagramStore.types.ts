@@ -4,12 +4,14 @@ import type {
     RelationEdge,
     RelationshipType,
 } from "../types/flow.types";
-import type { DbColumn } from "../types/db.types";
+import type { DbColumn, DiagramDialectId } from "../types/db.types";
 
 export interface DiagramState {
+    dialect: DiagramDialectId;
     nodes: DiagramNode[];
     edges: RelationEdge[];
     selectedCount: number;
+    setDialect: (dialect: DiagramDialectId) => void;
     onNodesChange: (changes: NodeChange[]) => void;
     onEdgesChange: (changes: EdgeChange[]) => void;
     /**

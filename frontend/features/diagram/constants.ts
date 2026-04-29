@@ -47,7 +47,7 @@ export const LAYOUT = {
     DEFAULT_NODE_WIDTH: 280,
     DEFAULT_NODE_HEIGHT: 200,
     /** NodeResizer constraints. */
-    MIN_NODE_WIDTH: 280,
+    MIN_NODE_WIDTH: 320,
     MIN_NODE_HEIGHT: 120,
 } as const;
 

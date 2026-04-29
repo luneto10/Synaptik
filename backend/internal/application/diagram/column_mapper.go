@@ -25,10 +25,18 @@ func toDomainColumn(req DbColumnRequest) (diagram.DbColumn, error) {
 		diagram.ColumnID(req.ID),
 		req.Name,
 		colType,
-		req.IsPrimaryKey,
-		req.IsForeignKey,
-		req.IsNullable,
-		req.IsUnique,
-		ref,
+		diagram.DbColumnProps{
+			TypeOptions: diagram.NewColumnTypeOptions(
+				req.TypeOptions.Length,
+				req.TypeOptions.Precision,
+				req.TypeOptions.Scale,
+			),
+			IsPrimaryKey:    req.IsPrimaryKey,
+			IsForeignKey:    req.IsForeignKey,
+			IsNullable:      req.IsNullable,
+			IsUnique:        req.IsUnique,
+			IsAutoIncrement: req.IsAutoIncrement,
+			References:      ref,
+		},
 	), nil
 }

@@ -1,0 +1,88 @@
+{
+  "dialect": "mysql",
+  "tables": [
+    {
+      "id": "tbl-users",
+      "name": "users",
+      "columns": [
+        {
+          "id": "col-user-id",
+          "name": "id",
+          "type": "int",
+          "isPrimaryKey": true,
+          "isNullable": false,
+          "isAutoIncrement": true
+        },
+        {
+          "id": "col-user-email",
+          "name": "email",
+          "type": "varchar",
+          "typeOptions": {
+            "length": 180
+          },
+          "isNullable": false,
+          "isUnique": true
+        },
+        {
+          "id": "col-user-active",
+          "name": "is_active",
+          "type": "bool",
+          "isNullable": false
+        },
+        {
+          "id": "col-user-limit",
+          "name": "credit_limit",
+          "type": "decimal",
+          "typeOptions": {
+            "precision": 12,
+            "scale": 2
+          },
+          "isNullable": false
+        }
+      ]
+    },
+    {
+      "id": "tbl-orders",
+      "name": "orders",
+      "columns": [
+        {
+          "id": "col-order-id",
+          "name": "id",
+          "type": "int",
+          "isPrimaryKey": true,
+          "isNullable": false,
+          "isAutoIncrement": true
+        },
+        {
+          "id": "col-order-user-id",
+          "name": "user_id",
+          "type": "int",
+          "isForeignKey": true,
+          "isNullable": false,
+          "references": {
+            "tableId": "tbl-users",
+            "columnId": "col-user-id"
+          }
+        },
+        {
+          "id": "col-order-total",
+          "name": "total_amount",
+          "type": "decimal",
+          "typeOptions": {
+            "precision": 10,
+            "scale": 2
+          },
+          "isNullable": false
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "id": "rel-order-user",
+      "sourceColumnId": "col-order-user-id",
+      "targetColumnId": "col-user-id",
+      "relationshipType": "one-to-many"
+    }
+  ]
+}

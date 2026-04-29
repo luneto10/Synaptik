@@ -8,8 +8,8 @@ import (
 
 func TestNewDbTable_Getters(t *testing.T) {
 	cols := []diagram.DbColumn{
-		diagram.NewDbColumn("c1", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
-		diagram.NewDbColumn("c2", "name", diagram.ColumnTypeText, false, false, true, false, nil),
+		newDbColumn("c1", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
+		newDbColumn("c2", "name", diagram.ColumnTypeText, false, false, true, false, nil),
 	}
 
 	table := diagram.NewDbTable("t1", "users", cols)
@@ -30,8 +30,8 @@ func TestNewDbTable_Getters(t *testing.T) {
 
 func TestNewJunctionTable_IsJunction(t *testing.T) {
 	cols := []diagram.DbColumn{
-		diagram.NewDbColumn("c1", "post_id", diagram.ColumnTypeUUID, true, false, false, false, nil),
-		diagram.NewDbColumn("c2", "tag_id", diagram.ColumnTypeUUID, true, false, false, false, nil),
+		newDbColumn("c1", "post_id", diagram.ColumnTypeUUID, true, false, false, false, nil),
+		newDbColumn("c2", "tag_id", diagram.ColumnTypeUUID, true, false, false, false, nil),
 	}
 	table := diagram.NewJunctionTable("j1", "post_tag", cols)
 
@@ -48,3 +48,4 @@ func TestNewJunctionTable_IsJunction(t *testing.T) {
 		t.Errorf("Columns len = %d, want 2", len(table.Columns()))
 	}
 }
+

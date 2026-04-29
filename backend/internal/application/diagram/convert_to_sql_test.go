@@ -74,7 +74,7 @@ func TestConvertToSQLUseCase_Execute_InvalidRelationshipType(t *testing.T) {
 }
 
 func TestConvertToSQLUseCase_Execute_SaveFixtureOutput(t *testing.T) {
-	data, err := os.ReadFile("../../domain/diagram/sqlgen/fixtures/request.json")
+	data, err := os.ReadFile("../../domain/diagram/sqlgen/fixtures/postgres_request.json")
 	if err != nil {
 		t.Fatalf("read fixture: %v", err)
 	}
@@ -97,7 +97,7 @@ func TestConvertToSQLUseCase_Execute_SaveFixtureOutput(t *testing.T) {
 }
 
 func TestConvertToSQLUseCase_Execute_ManyToManyFixture(t *testing.T) {
-	data, err := os.ReadFile("../../domain/diagram/sqlgen/fixtures/request.json")
+	data, err := os.ReadFile("../../domain/diagram/sqlgen/fixtures/postgres_request.json")
 	if err != nil {
 		t.Fatalf("read fixture: %v", err)
 	}
@@ -131,4 +131,106 @@ func TestConvertToSQLUseCase_Execute_ManyToManyFixture(t *testing.T) {
 			t.Errorf("%s: missing %q in output", ch.desc, ch.want)
 		}
 	}
+}
+
+func TestConvertToSQLUseCase_Execute_MySQLFixture(t *testing.T) {
+	data, err := os.ReadFile("../../domain/diagram/sqlgen/fixtures/mysql_request.json")
+	if err != nil {
+		t.Fatalf("read fixture: %v", err)
+	}
+
+	var req diagramapp.DiagramRequest
+	if err := json.Unmarshal(data, &req); err != nil {
+		t.Fatalf("unmarshal fixture: %v", err)
+	}
+
+	sql, err := diagramapp.NewConvertToSQLUseCase().Execute(req)
+	if err != nil {
+		t.Fatalf("Execute failed: %v", err)
+	}
+
+	checks := []struct {
+		desc string
+		want string
+	}{
+		{"users table created", "CREATE TABLE users"},
+		{"auto increment pk", "id int AUTO_INCREMENT PRIMARY KEY"},
+		{"bool mapped to tinyint", "is_active tinyint(1) NOT NULL"},
+		{"varchar length emitted", "email varchar(180) NOT NULL UNIQUE"},
+		{"decimal precision emitted", "credit_limit decimal(12, 2) NOT NULL"},
+		{"orders fk emitted", "user_id int NOT NULL REFERENCES users (id)"},
+	}
+
+	for _, ch := range checks {
+		if !strings.Contains(sql, ch.want) {
+			t.Errorf("%s: missing %q in output", ch.desc, ch.want)
+		}
+	}
+}
+
+func TestConvertToSQLUseCase_Execute_MySQLDialect(t *testing.T) {
+	uc := diagramapp.NewConvertToSQLUseCase()
+
+	req := diagramapp.DiagramRequest{
+		Dialect: "mysql",
+		Tables: []diagramapp.DbTableRequest{
+			{
+				ID:   "t1",
+				Name: "users",
+				Columns: []diagramapp.DbColumnRequest{
+					{
+						ID:              "c1",
+						Name:            "id",
+						Type:            "int",
+						IsPrimaryKey:    true,
+						IsAutoIncrement: true,
+					},
+					{
+						ID:          "c2",
+						Name:        "email",
+						Type:        "varchar",
+						TypeOptions: diagramapp.ColumnTypeOptionsRequest{Length: intPtr(120)},
+						IsNullable:  false,
+						IsUnique:    true,
+					},
+					{
+						ID:          "c3",
+						Name:        "is_admin",
+						Type:        "bool",
+						IsNullable:  false,
+					},
+					{
+						ID:          "c4",
+						Name:        "credit_limit",
+						Type:        "decimal",
+						TypeOptions: diagramapp.ColumnTypeOptionsRequest{Precision: intPtr(12), Scale: intPtr(2)},
+						IsNullable:  false,
+					},
+				},
+			},
+		},
+		Relationships: []diagramapp.RelationshipRequest{},
+	}
+
+	sql, err := uc.Execute(req)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	checks := []string{
+		"id int AUTO_INCREMENT PRIMARY KEY",
+		"email varchar(120) NOT NULL UNIQUE",
+		"is_admin tinyint(1) NOT NULL",
+		"credit_limit decimal(12, 2) NOT NULL",
+	}
+
+	for _, want := range checks {
+		if !strings.Contains(sql, want) {
+			t.Errorf("missing %q in output: %s", want, sql)
+		}
+	}
+}
+
+func intPtr(value int) *int {
+	return &value
 }

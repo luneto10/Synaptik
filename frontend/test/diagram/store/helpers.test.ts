@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { TableNode, RelationEdge } from "../../../features/diagram/types/flow.types";
 import type { DbColumn } from "../../../features/diagram/types/db.types";
 import {
+    convertColumnsToDialect,
     cascadeJunction,
     defaultFkColumnName,
     insertForeignKeyColumn,
@@ -105,6 +106,12 @@ describe("makePkCol", () => {
         expect(col.type).toBe("uuid");
         expect(col.id).toBeTruthy();
     });
+
+    it("uses mysql defaults when requested", () => {
+        const col = makePkCol("mysql");
+        expect(col.type).toBe("int");
+        expect(col.isAutoIncrement).toBe(true);
+    });
 });
 
 describe("makeFkCol", () => {
@@ -118,6 +125,30 @@ describe("makeFkCol", () => {
     it("creates a unique FK when unique=true", () => {
         const fk = makeFkCol("fk-1", "user_id", "users", "pk-users", true);
         expect(fk.isUnique).toBe(true);
+    });
+});
+
+describe("convertColumnsToDialect", () => {
+    it("maps postgres-specific types to mysql equivalents", () => {
+        const result = convertColumnsToDialect(
+            [
+                {
+                    ...basePk,
+                    type: "jsonb",
+                },
+                {
+                    ...basePk,
+                    id: "c2",
+                    name: "active",
+                    type: "bool",
+                },
+            ],
+            "postgres",
+            "mysql",
+        );
+
+        expect(result[0]?.type).toBe("json");
+        expect(result[1]?.type).toBe("bool");
     });
 });
 

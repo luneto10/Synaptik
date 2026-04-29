@@ -6,6 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import {
     Tooltip,
     TooltipContent,
     TooltipTrigger,
@@ -20,12 +25,15 @@ import {
     FlaskConical,
     Search,
     Command,
+    ChevronDown,
 } from "lucide-react";
 import { onInputCommit } from "../../utils/onInputCommit";
 import { IS_MAC } from "../../utils/isMac";
 import { cn } from "@/lib/utils";
 import { DevToolbar } from "./DevToolbar";
 import InlineFieldError from "../common/InlineFieldError";
+import type { DiagramDialectId } from "../../types/db.types";
+import { listDiagramDialects } from "../../dialects";
 
 /** Vertical rule for toolbars: avoids Radix Separator `self-stretch` fighting `h-*` in flex rows. */
 function ToolbarDivider() {
@@ -38,6 +46,7 @@ function ToolbarDivider() {
 }
 
 interface FlowToolbarProps {
+    dialect: DiagramDialectId;
     nodeCount: number;
     edgeCount: number;
     isPending: boolean;
@@ -45,6 +54,7 @@ interface FlowToolbarProps {
     onAutoLayout: () => void;
     onLoadExample: () => void;
     onSearch: () => void;
+    onDialectChange: (dialect: DiagramDialectId) => void;
 }
 
 const SHOW_DEV_TOOLS =
@@ -52,6 +62,7 @@ const SHOW_DEV_TOOLS =
     process.env.NEXT_PUBLIC_DIAGRAM_DEV_TOOLS === "true";
 
 function FlowToolbar({
+    dialect,
     nodeCount,
     edgeCount,
     isPending,
@@ -59,12 +70,18 @@ function FlowToolbar({
     onAutoLayout,
     onLoadExample,
     onSearch,
+    onDialectChange,
 }: FlowToolbarProps) {
     const { theme, setTheme } = useTheme();
     const [projectName, setProjectName] = useState("untitled");
     const [editingName, setEditingName] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const lastValidName = useRef("untitled");
+    const [dialectPickerOpen, setDialectPickerOpen] = useState(false);
+    const dialects = listDiagramDialects();
+    const activeDialect =
+        dialects.find((dialectOption) => dialectOption.id === dialect) ??
+        dialects[0];
 
     const validateAndCommit = useCallback(() => {
         const trimmed = projectName.trim();
@@ -148,12 +165,53 @@ function FlowToolbar({
                 )}
             </div>
 
-            <Badge
-                variant="outline"
-                className="text-[10px] font-mono text-foreground bg-neutral-300/50 dark:bg-muted px-1.5 py-0.5 rounded border border-border/60"
+            <Popover
+                open={dialectPickerOpen}
+                onOpenChange={setDialectPickerOpen}
             >
-                PostgreSQL
-            </Badge>
+                <PopoverTrigger asChild>
+                    <button
+                        type="button"
+                        aria-label="Choose SQL dialect"
+                        className="focus-visible:outline-none"
+                    >
+                        <Badge
+                            variant="outline"
+                            className="flex cursor-pointer items-center gap-1 rounded border-border/60 bg-neutral-300/50 px-2 py-1 text-[10px] font-mono text-foreground transition-colors hover:bg-neutral-300/70 dark:bg-muted dark:hover:bg-muted/80"
+                        >
+                            {activeDialect?.badgeLabel ?? dialect}
+                            <ChevronDown className="h-3 w-3 opacity-60" />
+                        </Badge>
+                    </button>
+                </PopoverTrigger>
+                <PopoverContent
+                    align="start"
+                    className="w-40 p-1"
+                >
+                    <div className="flex flex-col gap-1">
+                        {dialects.map((dialectOption) => (
+                            <button
+                                key={dialectOption.id}
+                                type="button"
+                                onClick={() => {
+                                    onDialectChange(
+                                        dialectOption.id as DiagramDialectId,
+                                    );
+                                    setDialectPickerOpen(false);
+                                }}
+                                className={cn(
+                                    "flex w-full items-center rounded-md px-2 py-1.5 text-left text-xs font-mono transition-colors",
+                                    dialectOption.id === dialect
+                                        ? "bg-muted text-foreground"
+                                        : "text-muted-foreground hover:bg-muted/70 hover:text-foreground",
+                                )}
+                            >
+                                {dialectOption.badgeLabel}
+                            </button>
+                        ))}
+                    </div>
+                </PopoverContent>
+            </Popover>
 
             <ToolbarDivider />
 

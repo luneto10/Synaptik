@@ -27,7 +27,7 @@ func TestSortByDependency(t *testing.T) {
 	t.Run("single table with no deps", func(t *testing.T) {
 		tables := []diagram.DbTable{
 			diagram.NewDbTable("t1", "users", []diagram.DbColumn{
-				diagram.NewDbColumn("c1", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
+				newDbColumn("c1", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
 			}),
 		}
 		got, err := sortByDependency(tables)
@@ -42,11 +42,11 @@ func TestSortByDependency(t *testing.T) {
 	t.Run("FK dependency: referenced table placed first", func(t *testing.T) {
 		tables := []diagram.DbTable{
 			diagram.NewDbTable("t2", "posts", []diagram.DbColumn{
-				diagram.NewDbColumn("c3", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
-				diagram.NewDbColumn("c4", "user_id", diagram.ColumnTypeUUID, false, true, false, false, ref("t1", "c1")),
+				newDbColumn("c3", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
+				newDbColumn("c4", "user_id", diagram.ColumnTypeUUID, false, true, false, false, ref("t1", "c1")),
 			}),
 			diagram.NewDbTable("t1", "users", []diagram.DbColumn{
-				diagram.NewDbColumn("c1", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
+				newDbColumn("c1", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
 			}),
 		}
 		got, err := sortByDependency(tables)
@@ -63,8 +63,8 @@ func TestSortByDependency(t *testing.T) {
 		selfRef := diagram.NewColumnReference("t1", "c1")
 		tables := []diagram.DbTable{
 			diagram.NewDbTable("t1", "employees", []diagram.DbColumn{
-				diagram.NewDbColumn("c1", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
-				diagram.NewDbColumn("c2", "manager_id", diagram.ColumnTypeUUID, false, true, true, false, &selfRef),
+				newDbColumn("c1", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
+				newDbColumn("c2", "manager_id", diagram.ColumnTypeUUID, false, true, true, false, &selfRef),
 			}),
 		}
 		_, err := sortByDependency(tables)
@@ -76,12 +76,12 @@ func TestSortByDependency(t *testing.T) {
 	t.Run("circular dependency: error wraps ErrInvalid", func(t *testing.T) {
 		tables := []diagram.DbTable{
 			diagram.NewDbTable("t1", "a", []diagram.DbColumn{
-				diagram.NewDbColumn("c1", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
-				diagram.NewDbColumn("c2", "b_id", diagram.ColumnTypeUUID, false, true, false, false, ref("t2", "c3")),
+				newDbColumn("c1", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
+				newDbColumn("c2", "b_id", diagram.ColumnTypeUUID, false, true, false, false, ref("t2", "c3")),
 			}),
 			diagram.NewDbTable("t2", "b", []diagram.DbColumn{
-				diagram.NewDbColumn("c3", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
-				diagram.NewDbColumn("c4", "a_id", diagram.ColumnTypeUUID, false, true, false, false, ref("t1", "c1")),
+				newDbColumn("c3", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
+				newDbColumn("c4", "a_id", diagram.ColumnTypeUUID, false, true, false, false, ref("t1", "c1")),
 			}),
 		}
 		_, err := sortByDependency(tables)
@@ -97,20 +97,20 @@ func TestSortByDependency(t *testing.T) {
 		// D depends on A and B; A and B both depend on C.
 		tables := []diagram.DbTable{
 			diagram.NewDbTable("tD", "d", []diagram.DbColumn{
-				diagram.NewDbColumn("cd1", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
-				diagram.NewDbColumn("cd2", "a_id", diagram.ColumnTypeUUID, false, true, false, false, ref("tA", "ca1")),
-				diagram.NewDbColumn("cd3", "b_id", diagram.ColumnTypeUUID, false, true, false, false, ref("tB", "cb1")),
+				newDbColumn("cd1", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
+				newDbColumn("cd2", "a_id", diagram.ColumnTypeUUID, false, true, false, false, ref("tA", "ca1")),
+				newDbColumn("cd3", "b_id", diagram.ColumnTypeUUID, false, true, false, false, ref("tB", "cb1")),
 			}),
 			diagram.NewDbTable("tA", "a", []diagram.DbColumn{
-				diagram.NewDbColumn("ca1", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
-				diagram.NewDbColumn("ca2", "c_id", diagram.ColumnTypeUUID, false, true, false, false, ref("tC", "cc1")),
+				newDbColumn("ca1", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
+				newDbColumn("ca2", "c_id", diagram.ColumnTypeUUID, false, true, false, false, ref("tC", "cc1")),
 			}),
 			diagram.NewDbTable("tB", "b", []diagram.DbColumn{
-				diagram.NewDbColumn("cb1", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
-				diagram.NewDbColumn("cb2", "c_id", diagram.ColumnTypeUUID, false, true, false, false, ref("tC", "cc1")),
+				newDbColumn("cb1", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
+				newDbColumn("cb2", "c_id", diagram.ColumnTypeUUID, false, true, false, false, ref("tC", "cc1")),
 			}),
 			diagram.NewDbTable("tC", "c", []diagram.DbColumn{
-				diagram.NewDbColumn("cc1", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
+				newDbColumn("cc1", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
 			}),
 		}
 		got, err := sortByDependency(tables)
@@ -142,12 +142,12 @@ func TestSortByDependency(t *testing.T) {
 		// posts has two columns referencing users — inDegree should be 1, not 2.
 		tables := []diagram.DbTable{
 			diagram.NewDbTable("t2", "posts", []diagram.DbColumn{
-				diagram.NewDbColumn("c3", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
-				diagram.NewDbColumn("c4", "author_id", diagram.ColumnTypeUUID, false, true, false, false, ref("t1", "c1")),
-				diagram.NewDbColumn("c5", "editor_id", diagram.ColumnTypeUUID, false, true, true, false, ref("t1", "c1")),
+				newDbColumn("c3", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
+				newDbColumn("c4", "author_id", diagram.ColumnTypeUUID, false, true, false, false, ref("t1", "c1")),
+				newDbColumn("c5", "editor_id", diagram.ColumnTypeUUID, false, true, true, false, ref("t1", "c1")),
 			}),
 			diagram.NewDbTable("t1", "users", []diagram.DbColumn{
-				diagram.NewDbColumn("c1", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
+				newDbColumn("c1", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
 			}),
 		}
 		got, err := sortByDependency(tables)
@@ -167,3 +167,4 @@ func tableNames(tables []diagram.DbTable) []string {
 	}
 	return names
 }
+

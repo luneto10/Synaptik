@@ -7,7 +7,7 @@ import (
 )
 
 func TestNewColumnType_Valid(t *testing.T) {
-	valid := []string{"uuid", "text", "varchar", "int", "bigint", "boolean", "timestamp", "jsonb", "float"}
+	valid := []string{"uuid", "text", "varchar", "int", "bigint", "bool", "boolean", "timestamp", "json", "jsonb", "decimal", "float"}
 	for _, raw := range valid {
 		t.Run(raw, func(t *testing.T) {
 			ct, err := diagram.NewColumnType(raw)
@@ -22,9 +22,9 @@ func TestNewColumnType_Valid(t *testing.T) {
 }
 
 func TestNewColumnType_Invalid(t *testing.T) {
-	_, err := diagram.NewColumnType("notype")
+	_, err := diagram.NewColumnType("   ")
 	if err == nil {
-		t.Fatal("expected error for unknown column type, got nil")
+		t.Fatal("expected error for empty column type, got nil")
 	}
 }
 

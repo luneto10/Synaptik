@@ -4,6 +4,7 @@ import { useCallback, useRef } from "react";
 import { Download, Upload, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useDiagramStore } from "../../store/diagramStore";
+import type { DiagramDialectId } from "../../types/db.types";
 import type { DiagramNode, RelationEdge } from "../../types/flow.types";
 import stressData from "../../mock/stress.json";
 import { FIT_VIEW_PADDING } from "../../constants";
@@ -11,6 +12,7 @@ import { useDeferredFitView } from "../../hooks/useDeferredFitView";
 import { createPersistedDiagramSnapshot } from "../../utils/diagramSnapshot";
 
 interface Snapshot {
+    dialect?: DiagramDialectId;
     nodes: DiagramNode[];
     edges: RelationEdge[];
 }
@@ -30,8 +32,12 @@ export function DevToolbar() {
     const { deferredFitView } = useDeferredFitView();
 
     const handleExport = useCallback(() => {
-        const { nodes, edges } = useDiagramStore.getState();
-        const snapshot: Snapshot = createPersistedDiagramSnapshot(nodes, edges);
+        const { dialect, nodes, edges } = useDiagramStore.getState();
+        const snapshot: Snapshot = createPersistedDiagramSnapshot(
+            dialect,
+            nodes,
+            edges,
+        );
         const blob = new Blob([JSON.stringify(snapshot, null, 2)], {
             type: "application/json",
         });
@@ -63,8 +69,12 @@ export function DevToolbar() {
                         throw new Error("Invalid snapshot shape");
                     }
 
-                    void useDiagramStore
-                        .getState()
+                    const store = useDiagramStore.getState();
+                    if (snapshot.dialect) {
+                        store.setDialect(snapshot.dialect);
+                    }
+
+                    void store
                         .loadDiagramAdaptive(snapshot.nodes, snapshot.edges)
                         .then(() => {
                             deferredFitView({ padding: FIT_VIEW_PADDING });

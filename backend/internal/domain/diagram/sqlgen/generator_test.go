@@ -23,8 +23,8 @@ func TestGenerate_EmptyInput(t *testing.T) {
 func TestGenerate_SingleTable(t *testing.T) {
 	tables := []diagram.DbTable{
 		diagram.NewDbTable("t1", "users", []diagram.DbColumn{
-			diagram.NewDbColumn("c1", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
-			diagram.NewDbColumn("c2", "email", diagram.ColumnTypeText, false, false, false, true, nil),
+			newDbColumn("c1", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
+			newDbColumn("c2", "email", diagram.ColumnTypeText, false, false, false, true, nil),
 		}),
 	}
 
@@ -49,11 +49,11 @@ func TestGenerate_FKOrdering(t *testing.T) {
 	tables := []diagram.DbTable{
 		// posts is listed first in input but depends on users
 		diagram.NewDbTable("t2", "posts", []diagram.DbColumn{
-			diagram.NewDbColumn("c3", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
-			diagram.NewDbColumn("c4", "user_id", diagram.ColumnTypeUUID, false, true, false, false, &ref),
+			newDbColumn("c3", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
+			newDbColumn("c4", "user_id", diagram.ColumnTypeUUID, false, true, false, false, &ref),
 		}),
 		diagram.NewDbTable("t1", "users", []diagram.DbColumn{
-			diagram.NewDbColumn("c1", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
+			newDbColumn("c1", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
 		}),
 	}
 
@@ -84,12 +84,12 @@ func TestGenerate_CircularDependency(t *testing.T) {
 	refBtoA := diagram.NewColumnReference("t1", "c1")
 	tables := []diagram.DbTable{
 		diagram.NewDbTable("t1", "a", []diagram.DbColumn{
-			diagram.NewDbColumn("c1", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
-			diagram.NewDbColumn("c2", "b_id", diagram.ColumnTypeUUID, false, true, false, false, &refAtoB),
+			newDbColumn("c1", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
+			newDbColumn("c2", "b_id", diagram.ColumnTypeUUID, false, true, false, false, &refAtoB),
 		}),
 		diagram.NewDbTable("t2", "b", []diagram.DbColumn{
-			diagram.NewDbColumn("c3", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
-			diagram.NewDbColumn("c4", "a_id", diagram.ColumnTypeUUID, false, true, false, false, &refBtoA),
+			newDbColumn("c3", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
+			newDbColumn("c4", "a_id", diagram.ColumnTypeUUID, false, true, false, false, &refBtoA),
 		}),
 	}
 
@@ -105,12 +105,12 @@ func TestGenerate_CircularDependency(t *testing.T) {
 func TestGenerate_ManyToMany(t *testing.T) {
 	tables := []diagram.DbTable{
 		diagram.NewDbTable("tbl-posts", "posts", []diagram.DbColumn{
-			diagram.NewDbColumn("col-post-id", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
-			diagram.NewDbColumn("col-post-title", "title", diagram.ColumnTypeVarchar, false, false, false, false, nil),
+			newDbColumn("col-post-id", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
+			newDbColumn("col-post-title", "title", diagram.ColumnTypeVarchar, false, false, false, false, nil),
 		}),
 		diagram.NewDbTable("tbl-tags", "tags", []diagram.DbColumn{
-			diagram.NewDbColumn("col-tag-id", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
-			diagram.NewDbColumn("col-tag-name", "name", diagram.ColumnTypeVarchar, false, false, false, true, nil),
+			newDbColumn("col-tag-id", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
+			newDbColumn("col-tag-name", "name", diagram.ColumnTypeVarchar, false, false, false, true, nil),
 		}),
 	}
 	rels := []diagram.Relationship{
@@ -137,3 +137,4 @@ func TestGenerate_ManyToMany(t *testing.T) {
 		t.Errorf("unexpected ALTER TABLE — FKs should be inline: %s", sql)
 	}
 }
+

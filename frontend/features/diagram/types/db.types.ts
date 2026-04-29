@@ -1,35 +1,23 @@
-export type ColumnType =
-    | "uuid"
-    | "text"
-    | "varchar"
-    | "int"
-    | "bigint"
-    | "boolean"
-    | "timestamp"
-    | "jsonb"
-    | "float";
+export type DiagramDialectId = "postgres" | "mysql";
 
-/** Ordered list used to populate type-picker dropdowns. */
-export const COLUMN_TYPES: ColumnType[] = [
-    "uuid",
-    "text",
-    "varchar",
-    "int",
-    "bigint",
-    "boolean",
-    "timestamp",
-    "jsonb",
-    "float",
-];
+export type ColumnType = string;
+
+export interface ColumnTypeArguments {
+    length?: number;
+    precision?: number;
+    scale?: number;
+}
 
 export interface DbColumn {
     id: string;
     name: string;
     type: ColumnType;
+    typeOptions?: ColumnTypeArguments;
     isPrimaryKey: boolean;
     isForeignKey: boolean;
     isNullable: boolean;
     isUnique: boolean;
+    isAutoIncrement?: boolean;
     references?: {
         tableId: string;
         columnId: string;

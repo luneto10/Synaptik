@@ -13,6 +13,7 @@ vi.mock("next-themes", () => ({
 }));
 
 const mockProps = {
+    dialect: "postgres" as const,
     nodeCount: 5,
     edgeCount: 3,
     isPending: false,
@@ -20,6 +21,7 @@ const mockProps = {
     onAutoLayout: vi.fn(),
     onLoadExample: vi.fn(),
     onSearch: vi.fn(),
+    onDialectChange: vi.fn(),
 };
 
 afterEach(() => {

@@ -10,15 +10,24 @@ import (
 // FK references are inline within each CREATE TABLE, so no deferred ALTER TABLE
 // statements are needed.
 type ddlBuilder struct {
-	stmts []string
+	dialect Dialect
+	stmts   []string
 }
 
-func newDDLBuilder(tableCount int) ddlBuilder {
-	return ddlBuilder{stmts: make([]string, 0, tableCount)}
+func newDDLBuilder(dialect Dialect, tableCount int) ddlBuilder {
+	return ddlBuilder{
+		dialect: dialect,
+		stmts:   make([]string, 0, tableCount),
+	}
 }
 
-func (b *ddlBuilder) add(t diagram.DbTable, colIndex map[diagram.ColumnID]columnInfo) {
-	b.stmts = append(b.stmts, CreateTable(t.Name(), buildTableDDL(t, colIndex)))
+func (b *ddlBuilder) add(t diagram.DbTable, colIndex map[diagram.ColumnID]columnInfo) error {
+	columnDefs, err := buildTableDDLForDialect(b.dialect, t, colIndex)
+	if err != nil {
+		return err
+	}
+	b.stmts = append(b.stmts, b.dialect.CreateTable(t.Name(), columnDefs))
+	return nil
 }
 
 func (b *ddlBuilder) build() string {

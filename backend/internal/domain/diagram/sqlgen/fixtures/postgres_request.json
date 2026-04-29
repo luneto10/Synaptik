@@ -1,4 +1,5 @@
 {
+  "dialect": "postgres",
   "tables": [
     {
       "id": "tbl-categories",
@@ -15,6 +16,9 @@
           "id": "col-cat-name",
           "name": "name",
           "type": "varchar",
+          "typeOptions": {
+            "length": 255
+          },
           "isNullable": false
         }
       ]
@@ -34,12 +38,19 @@
           "id": "col-prod-name",
           "name": "name",
           "type": "varchar",
+          "typeOptions": {
+            "length": 255
+          },
           "isNullable": false
         },
         {
           "id": "col-prod-price",
           "name": "price",
-          "type": "float",
+          "type": "decimal",
+          "typeOptions": {
+            "precision": 10,
+            "scale": 2
+          },
           "isNullable": false
         },
         {

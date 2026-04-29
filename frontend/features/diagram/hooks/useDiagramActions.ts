@@ -19,8 +19,8 @@ export function useDiagramActions() {
     >({ mutationFn: saveDiagram });
 
     const handleSave = useCallback(() => {
-        const { nodes, edges } = useDiagramStore.getState();
-        save(createPersistedDiagramSnapshot(nodes, edges));
+        const { dialect, nodes, edges } = useDiagramStore.getState();
+        save(createPersistedDiagramSnapshot(dialect, nodes, edges));
     }, [save]);
 
     const handleLoadExample = useCallback(async () => {

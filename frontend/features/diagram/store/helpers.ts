@@ -6,9 +6,13 @@ import type {
     TableNode,
 } from "../types/flow.types";
 import { isBoxNode, isTableNode } from "../types/flow.types";
-import type { DbColumn } from "../types/db.types";
+import type { DbColumn, DiagramDialectId } from "../types/db.types";
 import { handleIds } from "../utils/handleIds";
 import pluralize from "pluralize";
+import {
+    getDiagramDialect,
+    normalizeColumnTypeForDialect,
+} from "../dialects";
 
 // ── Node lookup ───────────────────────────────────────────────────────────────
 
@@ -107,15 +111,40 @@ export function insertForeignKeyColumn(
 // ── Column builders ───────────────────────────────────────────────────────────
 
 /** Default primary-key column (used when creating tables). */
-export function makePkCol(): DbColumn {
+export function makePkCol(dialectId: DiagramDialectId = "postgres"): DbColumn {
+    const dialect = getDiagramDialect(dialectId);
     return {
         id: crypto.randomUUID(),
         name: "id",
-        type: "uuid",
+        type: dialect.defaultPrimaryKey.type,
+        typeOptions: dialect.defaultPrimaryKey.typeOptions,
         isPrimaryKey: true,
         isForeignKey: false,
         isNullable: false,
         isUnique: true,
+        isAutoIncrement: dialect.defaultPrimaryKey.isAutoIncrement ?? false,
+    };
+}
+
+export function makeDefaultCol(
+    dialectId: DiagramDialectId,
+    id?: string,
+): DbColumn {
+    const dialect = getDiagramDialect(dialectId);
+    const defaultType = dialect.types.find(
+        (typeDef) => typeDef.id === dialect.defaultColumnType,
+    );
+
+    return {
+        id: id ?? crypto.randomUUID(),
+        name: "column_name",
+        type: dialect.defaultColumnType,
+        typeOptions: defaultType?.defaultArguments,
+        isPrimaryKey: false,
+        isForeignKey: false,
+        isNullable: true,
+        isUnique: false,
+        isAutoIncrement: false,
     };
 }
 
@@ -125,18 +154,41 @@ export function makeFkCol(
     name: string,
     tableId: string,
     columnId: string,
-    unique = false,
+    referencedColumnOrUnique?: DbColumn | boolean,
+    uniqueArg = false,
 ): DbColumn {
+    const referencedColumn =
+        referencedColumnOrUnique &&
+        typeof referencedColumnOrUnique !== "boolean"
+            ? referencedColumnOrUnique
+            : undefined;
+    const unique =
+        typeof referencedColumnOrUnique === "boolean"
+            ? referencedColumnOrUnique
+            : uniqueArg;
+
     return {
         id,
         name,
-        type: "uuid",
+        type: referencedColumn?.type ?? "uuid",
+        typeOptions: referencedColumn?.typeOptions,
         isPrimaryKey: false,
         isForeignKey: true,
         isNullable: false,
         isUnique: unique,
+        isAutoIncrement: false,
         references: { tableId, columnId },
     };
+}
+
+export function convertColumnsToDialect(
+    columns: DbColumn[],
+    sourceDialectId: DiagramDialectId,
+    targetDialectId: DiagramDialectId,
+): DbColumn[] {
+    return columns.map((column) =>
+        normalizeColumnTypeForDialect(column, sourceDialectId, targetDialectId),
+    );
 }
 
 // ── Edge builders ─────────────────────────────────────────────────────────────

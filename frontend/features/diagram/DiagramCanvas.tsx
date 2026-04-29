@@ -38,6 +38,7 @@ const PAN_ON_DRAG_MIDDLE_RIGHT: number[] = [1, 2];
 export function DiagramCanvas() {
     const {
         containerRef,
+        dialect,
         nodeCount,
         edgeCount,
         displayNodes,
@@ -75,6 +76,7 @@ export function DiagramCanvas() {
         handleSave,
         handleAutoLayout,
         handleLoadExample,
+        setDialect,
         onMouseDownCapture,
         onMouseUpCapture,
         onMouseMoveCapture,
@@ -96,6 +98,7 @@ export function DiagramCanvas() {
             onMouseMoveCapture={onMouseMoveCapture}
         >
             <FlowToolbar
+                dialect={dialect}
                 nodeCount={nodeCount}
                 edgeCount={edgeCount}
                 isPending={isPending}
@@ -103,6 +106,7 @@ export function DiagramCanvas() {
                 onAutoLayout={handleAutoLayout}
                 onLoadExample={handleLoadExample}
                 onSearch={handleToggleSearch}
+                onDialectChange={setDialect}
             />
 
             <div

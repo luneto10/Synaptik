@@ -19,6 +19,7 @@ export const useDiagramStore = create<DiagramState>()(
         immer<DiagramState>((set) => {
             const s = set as unknown as SetState;
             return {
+                dialect: "postgres",
                 nodes: [],
                 edges: [],
                 selectedCount: 0,
@@ -31,7 +32,11 @@ export const useDiagramStore = create<DiagramState>()(
         {
             limit: HISTORY_LIMIT,
             partialize: (state) =>
-                createHistoryDiagramSnapshot(state.nodes, state.edges),
+                createHistoryDiagramSnapshot(
+                    state.dialect,
+                    state.nodes,
+                    state.edges,
+                ),
             equality: (a, b) => a.nodes === b.nodes && a.edges === b.edges,
         },
     ),

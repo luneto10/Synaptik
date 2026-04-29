@@ -59,21 +59,29 @@ func resolveManyToMany(tables []diagram.DbTable, rels []diagram.Relationship, co
 				diagram.ColumnID(junctionName+"_"+srcColName),
 				srcColName,
 				diagram.ColumnType(src.columnType),
-				true,  // PK
-				true,  // FK
-				false, // Not null
-				false, // Unique (composite PK handles it)
-				&srcRef,
+				diagram.DbColumnProps{
+					TypeOptions:     diagram.NewColumnTypeOptions(nil, nil, nil),
+					IsPrimaryKey:    true,
+					IsForeignKey:    true,
+					IsNullable:      false,
+					IsUnique:        false,
+					IsAutoIncrement: false,
+					References:      &srcRef,
+				},
 			),
 			diagram.NewDbColumn(
 				diagram.ColumnID(junctionName+"_"+tgtColName),
 				tgtColName,
 				diagram.ColumnType(tgt.columnType),
-				true,  // PK
-				true,  // FK
-				false, // Not null
-				false, // Unique (composite PK handles it)
-				&tgtRef,
+				diagram.DbColumnProps{
+					TypeOptions:     diagram.NewColumnTypeOptions(nil, nil, nil),
+					IsPrimaryKey:    true,
+					IsForeignKey:    true,
+					IsNullable:      false,
+					IsUnique:        false,
+					IsAutoIncrement: false,
+					References:      &tgtRef,
+				},
 			),
 		}
 

@@ -111,7 +111,14 @@ export function createEdgeActions(set: SetState) {
                 }
 
                 const fkColId = crypto.randomUUID();
-                const fkCol = makeFkCol(fkColId, resolvedName, connection.source!, pkCol.id, type === "one-to-one");
+                const fkCol = makeFkCol(
+                    fkColId,
+                    resolvedName,
+                    connection.source!,
+                    pkCol.id,
+                    pkCol,
+                    type === "one-to-one",
+                );
 
                 const { sourceHandle, targetHandle } = columnHandles(
                     pkCol.id, fkColId,
@@ -198,6 +205,9 @@ export function createEdgeActions(set: SetState) {
                     cols.map((c) => c.id !== columnId ? c : {
                         ...c,
                         name: defaultFkColumnName(newRefNode.data.name),
+                        type: newPk.type,
+                        typeOptions: newPk.typeOptions,
+                        isAutoIncrement: false,
                         references: { tableId: newRefTableId, columnId: newPk.id },
                     }),
                 );

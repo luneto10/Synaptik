@@ -9,6 +9,8 @@ import {
 } from "../types/flow.types";
 import { LAYOUT } from "../constants";
 import {
+    convertColumnsToDialect,
+    makeDefaultCol,
     makePkCol,
     makeFkCol,
     makeEdge,
@@ -232,8 +234,26 @@ export function createNodeActions(set: SetState) {
                     type: TABLE_NODE_TYPE,
                     position: pos,
                     zIndex: 1,
-                    data: { id, name: finalName, columns: [makePkCol()] },
+                    data: {
+                        id,
+                        name: finalName,
+                        columns: [makePkCol(draft.dialect)],
+                    },
                 });
+            }),
+        setDialect: (dialect: "postgres" | "mysql") =>
+            set((draft) => {
+                if (draft.dialect === dialect) return;
+                const sourceDialect = draft.dialect;
+                for (const node of draft.nodes) {
+                    if (!isTableNode(node)) continue;
+                    node.data.columns = convertColumnsToDialect(
+                        node.data.columns,
+                        sourceDialect,
+                        dialect,
+                    );
+                }
+                draft.dialect = dialect;
             }),
         ...createBoxActions(set),
 
@@ -241,15 +261,7 @@ export function createNodeActions(set: SetState) {
             set((draft) => {
                 const node = findTable(draft.nodes, nodeId);
                 if (!node) return;
-                node.data.columns.push({
-                    id: columnId ?? crypto.randomUUID(),
-                    name: "column_name",
-                    type: "text",
-                    isPrimaryKey: false,
-                    isForeignKey: false,
-                    isNullable: true,
-                    isUnique: false,
-                });
+                node.data.columns.push(makeDefaultCol(draft.dialect, columnId));
             }),
 
         updateColumn: (nodeId: string, column: DbColumn) =>
@@ -355,18 +367,20 @@ export function createNodeActions(set: SetState) {
                         isJunction: true,
                         name: `${singularizeTableName(sourceNode.data.name)}_${singularizeTableName(targetNode.data.name)}`,
                         columns: [
-                            makePkCol(),
+                            makePkCol(draft.dialect),
                             makeFkCol(
                                 fkSourceColId,
                                 defaultFkColumnName(sourceNode.data.name),
                                 sourceNodeId,
                                 sourcePk.id,
+                                sourcePk,
                             ),
                             makeFkCol(
                                 fkTargetColId,
                                 defaultFkColumnName(targetNode.data.name),
                                 targetNodeId,
                                 targetPk.id,
+                                targetPk,
                             ),
                         ],
                     },

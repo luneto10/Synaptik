@@ -17,25 +17,32 @@ import {
 } from "lucide-react";
 import { IoText } from "react-icons/io5";
 import type { IconType } from "react-icons";
-import type { DbColumn, ColumnType } from "../types/db.types";
+import type { DbColumn } from "../types/db.types";
 import { cn } from "@/lib/utils";
+import { useDiagramStore } from "../store/diagramStore";
+import { formatColumnTypeLabel, getDialectType } from "../dialects";
+import type { DiagramSemanticType } from "../dialects/types";
 
-const TYPE_ICONS: Record<ColumnType, LucideIcon | IconType> = {
+const TYPE_ICONS: Record<DiagramSemanticType, LucideIcon | IconType> = {
     uuid: Fingerprint,
     text: IoText,
     varchar: IoText,
     int: Binary,
     bigint: Binary,
-    boolean: ToggleLeft,
+    bool: ToggleLeft,
     timestamp: Clock,
-    jsonb: Braces,
+    json: Braces,
+    decimal: DecimalsArrowRight,
     float: DecimalsArrowRight,
 };
 
 export const ICON_CLS = "w-3 h-3 shrink-0";
 
-function TypeIcon({ type }: { type: ColumnType }) {
-    const Icon = TYPE_ICONS[type];
+function TypeIcon({ column }: { column: DbColumn }) {
+    const dialect = useDiagramStore((state) => state.dialect);
+    const semanticType =
+        getDialectType(dialect, column.type)?.semanticType ?? "text";
+    const Icon = TYPE_ICONS[semanticType];
     return (
         <Tooltip>
             <TooltipTrigger asChild>
@@ -48,7 +55,7 @@ function TypeIcon({ type }: { type: ColumnType }) {
                 className="font-mono"
                 data-node-tooltip=""
             >
-                {type}
+                {formatColumnTypeLabel(dialect, column)}
             </TooltipContent>
         </Tooltip>
     );
@@ -72,7 +79,7 @@ function Pill({ label, cls }: { label: string; cls: string }) {
 function ColumnBadges({ column }: { column: DbColumn }) {
     return (
         <div className="flex gap-0.5 items-center flex-wrap">
-            <TypeIcon type={column.type} />
+            <TypeIcon column={column} />
             {column.isPrimaryKey && (
                 <Pill label="PK" cls="bg-amber-500/15 text-amber-500 border border-amber-500/25" />
             )}
@@ -84,6 +91,9 @@ function ColumnBadges({ column }: { column: DbColumn }) {
             )}
             {column.isNullable && (
                 <Pill label="?" cls="bg-muted/60 text-muted-foreground/50 border border-border/40" />
+            )}
+            {column.isAutoIncrement && (
+                <Pill label="AI" cls="bg-emerald-500/15 text-emerald-400 border border-emerald-500/25" />
             )}
         </div>
     );

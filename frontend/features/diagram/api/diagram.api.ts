@@ -1,7 +1,9 @@
 import axios from "axios";
 import type { DiagramNode, RelationEdge } from "../types/flow.types";
+import type { DiagramDialectId } from "../types/db.types";
 
 export interface DiagramPayload {
+    dialect: DiagramDialectId;
     nodes: DiagramNode[];
     edges: RelationEdge[];
 }

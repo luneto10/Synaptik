@@ -8,13 +8,13 @@ import (
 
 func TestResolveManyToMany(t *testing.T) {
 	posts := diagram.NewDbTable("t-posts", "posts", []diagram.DbColumn{
-		diagram.NewDbColumn("c-post-id", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
+		newDbColumn("c-post-id", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
 	})
 	tags := diagram.NewDbTable("t-tags", "tags", []diagram.DbColumn{
-		diagram.NewDbColumn("c-tag-id", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
+		newDbColumn("c-tag-id", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
 	})
 	users := diagram.NewDbTable("t-users", "users", []diagram.DbColumn{
-		diagram.NewDbColumn("c-user-id", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
+		newDbColumn("c-user-id", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
 	})
 
 	t.Run("no relationships: returns copy of input", func(t *testing.T) {
@@ -90,8 +90,8 @@ func TestResolveManyToMany(t *testing.T) {
 
 	t.Run("pre-existing junction table is not duplicated", func(t *testing.T) {
 		existing := diagram.NewJunctionTable("post_tag", "post_tag", []diagram.DbColumn{
-			diagram.NewDbColumn("j1", "post_id", diagram.ColumnTypeUUID, true, false, false, false, nil),
-			diagram.NewDbColumn("j2", "tag_id", diagram.ColumnTypeUUID, true, false, false, false, nil),
+			newDbColumn("j1", "post_id", diagram.ColumnTypeUUID, true, false, false, false, nil),
+			newDbColumn("j2", "tag_id", diagram.ColumnTypeUUID, true, false, false, false, nil),
 		})
 		tables := []diagram.DbTable{posts, tags, existing}
 		rels := []diagram.Relationship{
@@ -126,3 +126,4 @@ func columnNames(cols []diagram.DbColumn) map[string]bool {
 	}
 	return names
 }
+

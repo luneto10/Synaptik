@@ -4,8 +4,10 @@ import {
     type DiagramNode,
     type RelationEdge,
 } from "../types/flow.types";
+import type { DiagramDialectId } from "../types/db.types";
 
 export interface DiagramSnapshot {
+    dialect: DiagramDialectId;
     nodes: DiagramNode[];
     edges: RelationEdge[];
 }
@@ -64,26 +66,54 @@ function sanitizeEdge(edge: RelationEdge): RelationEdge {
 }
 
 function createDiagramSnapshot(
+    dialect: DiagramDialectId,
     nodes: DiagramNode[],
     edges: RelationEdge[],
     options: SnapshotOptions,
 ): DiagramSnapshot {
     return {
+        dialect,
         nodes: nodes.map((node) => sanitizeNode(node, options)),
         edges: edges.map(sanitizeEdge),
     };
 }
 
 export function createPersistedDiagramSnapshot(
-    nodes: DiagramNode[],
-    edges: RelationEdge[],
+    dialectOrNodes: DiagramDialectId | DiagramNode[],
+    nodesOrEdges: DiagramNode[] | RelationEdge[],
+    maybeEdges?: RelationEdge[],
 ): DiagramSnapshot {
-    return createDiagramSnapshot(nodes, edges, { includeMeasured: false });
+    const dialect = Array.isArray(dialectOrNodes)
+        ? "postgres"
+        : dialectOrNodes;
+    const nodes = Array.isArray(dialectOrNodes)
+        ? dialectOrNodes
+        : (nodesOrEdges as DiagramNode[]);
+    const edges = Array.isArray(dialectOrNodes)
+        ? (nodesOrEdges as RelationEdge[])
+        : (maybeEdges ?? []);
+
+    return createDiagramSnapshot(dialect, nodes, edges, {
+        includeMeasured: false,
+    });
 }
 
 export function createHistoryDiagramSnapshot(
-    nodes: DiagramNode[],
-    edges: RelationEdge[],
+    dialectOrNodes: DiagramDialectId | DiagramNode[],
+    nodesOrEdges: DiagramNode[] | RelationEdge[],
+    maybeEdges?: RelationEdge[],
 ): DiagramSnapshot {
-    return createDiagramSnapshot(nodes, edges, { includeMeasured: true });
+    const dialect = Array.isArray(dialectOrNodes)
+        ? "postgres"
+        : dialectOrNodes;
+    const nodes = Array.isArray(dialectOrNodes)
+        ? dialectOrNodes
+        : (nodesOrEdges as DiagramNode[]);
+    const edges = Array.isArray(dialectOrNodes)
+        ? (nodesOrEdges as RelationEdge[])
+        : (maybeEdges ?? []);
+
+    return createDiagramSnapshot(dialect, nodes, edges, {
+        includeMeasured: true,
+    });
 }

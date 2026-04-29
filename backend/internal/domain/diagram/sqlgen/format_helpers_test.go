@@ -16,23 +16,23 @@ func TestInternalGetPrimaryKeyColumns(t *testing.T) {
 		{
 			name: "no PK columns",
 			table: diagram.NewDbTable("t1", "logs", []diagram.DbColumn{
-				diagram.NewDbColumn("c1", "msg", diagram.ColumnTypeText, false, false, true, false, nil),
+				newDbColumn("c1", "msg", diagram.ColumnTypeText, false, false, true, false, nil),
 			}),
 			want: nil,
 		},
 		{
 			name: "single PK",
 			table: diagram.NewDbTable("t1", "users", []diagram.DbColumn{
-				diagram.NewDbColumn("c1", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
-				diagram.NewDbColumn("c2", "email", diagram.ColumnTypeText, false, false, false, false, nil),
+				newDbColumn("c1", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
+				newDbColumn("c2", "email", diagram.ColumnTypeText, false, false, false, false, nil),
 			}),
 			want: []string{"id"},
 		},
 		{
 			name: "composite PK on junction table",
 			table: diagram.NewJunctionTable("j1", "post_tag", []diagram.DbColumn{
-				diagram.NewDbColumn("c1", "post_id", diagram.ColumnTypeUUID, true, false, false, false, nil),
-				diagram.NewDbColumn("c2", "tag_id", diagram.ColumnTypeUUID, true, false, false, false, nil),
+				newDbColumn("c1", "post_id", diagram.ColumnTypeUUID, true, false, false, false, nil),
+				newDbColumn("c2", "tag_id", diagram.ColumnTypeUUID, true, false, false, false, nil),
 			}),
 			want: []string{"post_id", "tag_id"},
 		},
@@ -55,7 +55,7 @@ func TestInternalGetPrimaryKeyColumns(t *testing.T) {
 func TestInternalBuildTableDDL(t *testing.T) {
 	t.Run("regular PK: PRIMARY KEY inline, no NOT NULL", func(t *testing.T) {
 		table := diagram.NewDbTable("t1", "users", []diagram.DbColumn{
-			diagram.NewDbColumn("c1", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
+			newDbColumn("c1", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
 		})
 		defs := buildTableDDL(table, buildColumnIndex([]diagram.DbTable{table}))
 		if len(defs) != 1 {
@@ -71,7 +71,7 @@ func TestInternalBuildTableDDL(t *testing.T) {
 
 	t.Run("non-nullable non-PK: NOT NULL, no PRIMARY KEY", func(t *testing.T) {
 		table := diagram.NewDbTable("t1", "users", []diagram.DbColumn{
-			diagram.NewDbColumn("c1", "name", diagram.ColumnTypeText, false, false, false, false, nil),
+			newDbColumn("c1", "name", diagram.ColumnTypeText, false, false, false, false, nil),
 		})
 		defs := buildTableDDL(table, buildColumnIndex([]diagram.DbTable{table}))
 		if !strings.Contains(defs[0], "NOT NULL") {
@@ -85,11 +85,11 @@ func TestInternalBuildTableDDL(t *testing.T) {
 	t.Run("FK column: inline REFERENCES, no ALTER TABLE", func(t *testing.T) {
 		ref := diagram.NewColumnReference("t1", "c1")
 		users := diagram.NewDbTable("t1", "users", []diagram.DbColumn{
-			diagram.NewDbColumn("c1", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
+			newDbColumn("c1", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
 		})
 		posts := diagram.NewDbTable("t2", "posts", []diagram.DbColumn{
-			diagram.NewDbColumn("c2", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
-			diagram.NewDbColumn("c3", "user_id", diagram.ColumnTypeUUID, false, true, false, false, &ref),
+			newDbColumn("c2", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
+			newDbColumn("c3", "user_id", diagram.ColumnTypeUUID, false, true, false, false, &ref),
 		})
 		defs := buildTableDDL(posts, buildColumnIndex([]diagram.DbTable{users, posts}))
 		joined := strings.Join(defs, "\n")
@@ -105,14 +105,14 @@ func TestInternalBuildTableDDL(t *testing.T) {
 		srcRef := diagram.NewColumnReference("t1", "c1")
 		tgtRef := diagram.NewColumnReference("t2", "c2")
 		posts := diagram.NewDbTable("t1", "posts", []diagram.DbColumn{
-			diagram.NewDbColumn("c1", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
+			newDbColumn("c1", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
 		})
 		tags := diagram.NewDbTable("t2", "tags", []diagram.DbColumn{
-			diagram.NewDbColumn("c2", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
+			newDbColumn("c2", "id", diagram.ColumnTypeUUID, true, false, false, false, nil),
 		})
 		junction := diagram.NewJunctionTable("j1", "post_tag", []diagram.DbColumn{
-			diagram.NewDbColumn("j1", "post_id", diagram.ColumnTypeUUID, true, true, false, false, &srcRef),
-			diagram.NewDbColumn("j2", "tag_id", diagram.ColumnTypeUUID, true, true, false, false, &tgtRef),
+			newDbColumn("j1", "post_id", diagram.ColumnTypeUUID, true, true, false, false, &srcRef),
+			newDbColumn("j2", "tag_id", diagram.ColumnTypeUUID, true, true, false, false, &tgtRef),
 		})
 		colIndex := buildColumnIndex([]diagram.DbTable{posts, tags, junction})
 		defs := buildTableDDL(junction, colIndex)
@@ -138,3 +138,4 @@ func TestInternalBuildTableDDL(t *testing.T) {
 		}
 	})
 }
+

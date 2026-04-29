@@ -3,11 +3,6 @@
 import { useState, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import {
-    Tooltip,
-    TooltipContent,
-    TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
     Popover,
     PopoverContent,
     PopoverTrigger,
@@ -30,6 +25,7 @@ import { isTableNode } from "../types/flow.types";
 import { useDiagramStore } from "../store/diagramStore";
 import { SidePicker } from "../components/SidePicker";
 import { getHandleSide } from "../utils/handleIds";
+import { getDiagramDialect, getDialectType } from "../dialects";
 
 // ── Snapshot (read once on open — zero subscriptions during drag) ─────────────
 
@@ -58,6 +54,7 @@ export default function ColumnSettingsPopover({
 }: ColumnSettingsPopoverProps) {
     const [open, setOpen] = useState(false);
     const [snap, setSnap] = useState<Snapshot>(EMPTY_SNAPSHOT);
+    const dialect = useDiagramStore((state) => state.dialect);
 
     const readSnapshot = useCallback((): Snapshot => {
         const { nodes, edges } = useDiagramStore.getState();
@@ -117,22 +114,18 @@ export default function ColumnSettingsPopover({
 
     return (
         <Popover open={open} onOpenChange={handleOpenChange}>
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <PopoverTrigger asChild>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-5 w-5 text-muted-foreground hover:text-foreground"
-                        >
-                            <Settings2 className="w-3 h-3" />
-                        </Button>
-                    </PopoverTrigger>
-                </TooltipTrigger>
-                <TooltipContent side="top" data-node-tooltip="">
-                    Column settings
-                </TooltipContent>
-            </Tooltip>
+            <PopoverTrigger asChild>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onPointerDown={(event) => event.stopPropagation()}
+                    className="nodrag nopan h-5 w-5 shrink-0 text-muted-foreground hover:text-foreground"
+                    aria-label="Column settings"
+                    title="Column settings"
+                >
+                    <Settings2 className="w-3 h-3" />
+                </Button>
+            </PopoverTrigger>
 
             <PopoverContent className="w-64 p-3 space-y-3" side="right">
                 <p className="text-xs font-semibold">
@@ -145,6 +138,12 @@ export default function ColumnSettingsPopover({
                 <Separator />
 
                 <ColumnFlagToggles column={column} onUpdate={handleUpdate} />
+
+                <ColumnTypeSettingsSection
+                    column={column}
+                    dialect={dialect}
+                    onUpdate={handleUpdate}
+                />
 
                 {snap.currentSide !== null && (
                     <div className="space-y-1.5 pt-1 border-t border-border">
@@ -216,6 +215,139 @@ function ColumnFlagToggles({
                 }
             />
         </>
+    );
+}
+
+function ColumnTypeSettingsSection({
+    column,
+    dialect,
+    onUpdate,
+}: {
+    column: DbColumn;
+    dialect: ReturnType<typeof useDiagramStore.getState>["dialect"];
+    onUpdate: (c: DbColumn) => void;
+}) {
+    const typeDef = getDialectType(dialect, column.type);
+    const allTypes = getDiagramDialect(dialect).types;
+
+    const updateLength = (value: string) => {
+        const parsed = Number.parseInt(value, 10);
+        onUpdate({
+            ...column,
+            typeOptions: Number.isFinite(parsed)
+                ? { ...column.typeOptions, length: parsed }
+                : column.typeOptions,
+        });
+    };
+
+    const updatePrecisionScale = (field: "precision" | "scale", value: string) => {
+        const parsed = Number.parseInt(value, 10);
+        onUpdate({
+            ...column,
+            typeOptions: Number.isFinite(parsed)
+                ? { ...column.typeOptions, [field]: parsed }
+                : column.typeOptions,
+        });
+    };
+
+    return (
+        <div className="space-y-2 pt-1 border-t border-border">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">
+                Type
+            </p>
+            <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Dialect type</Label>
+                <Select
+                    value={column.type}
+                    onValueChange={(nextType) => {
+                        const nextTypeDef = getDialectType(dialect, nextType);
+                        onUpdate({
+                            ...column,
+                            type: nextType,
+                            typeOptions: nextTypeDef?.defaultArguments,
+                            isAutoIncrement:
+                                nextTypeDef?.supportsAutoIncrement === true &&
+                                column.isAutoIncrement === true,
+                        });
+                    }}
+                >
+                    <SelectTrigger className="h-7 text-xs font-mono">
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {allTypes.map((availableType) => (
+                            <SelectItem
+                                key={availableType.id}
+                                value={availableType.id}
+                                className="text-xs font-mono"
+                            >
+                                {availableType.label}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+
+            {typeDef?.argumentKind === "length" && (
+                <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Length</Label>
+                    <input
+                        type="number"
+                        min={1}
+                        onPointerDown={(event) => event.stopPropagation()}
+                        value={column.typeOptions?.length ?? ""}
+                        onChange={(event) => updateLength(event.target.value)}
+                        className="nodrag nopan h-7 w-full rounded-md border border-input bg-transparent px-2 text-xs font-mono outline-none"
+                    />
+                </div>
+            )}
+
+            {typeDef?.argumentKind === "precision-scale" && (
+                <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Precision</Label>
+                        <input
+                            type="number"
+                            min={1}
+                            onPointerDown={(event) => event.stopPropagation()}
+                            value={column.typeOptions?.precision ?? ""}
+                            onChange={(event) =>
+                                updatePrecisionScale("precision", event.target.value)
+                            }
+                            className="nodrag nopan h-7 w-full rounded-md border border-input bg-transparent px-2 text-xs font-mono outline-none"
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Scale</Label>
+                        <input
+                            type="number"
+                            min={1}
+                            onPointerDown={(event) => event.stopPropagation()}
+                            value={column.typeOptions?.scale ?? ""}
+                            onChange={(event) =>
+                                updatePrecisionScale("scale", event.target.value)
+                            }
+                            className="nodrag nopan h-7 w-full rounded-md border border-input bg-transparent px-2 text-xs font-mono outline-none"
+                        />
+                    </div>
+                </div>
+            )}
+
+            {typeDef?.supportsAutoIncrement && (
+                <ToggleRow
+                    id={`autoincrement-${column.id}`}
+                    label="Auto increment"
+                    checked={column.isAutoIncrement === true}
+                    onCheckedChange={(checked) =>
+                        onUpdate({
+                            ...column,
+                            isAutoIncrement: checked,
+                            isNullable: checked ? false : column.isNullable,
+                        })
+                    }
+                />
+            )}
+        </div>
     );
 }
 
