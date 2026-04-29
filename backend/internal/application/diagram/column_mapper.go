@@ -36,6 +36,7 @@ func toDomainColumn(req DbColumnRequest) (diagram.DbColumn, error) {
 			IsNullable:      req.IsNullable,
 			IsUnique:        req.IsUnique,
 			IsAutoIncrement: req.IsAutoIncrement,
+			IsGeneratedUUID: req.IsGeneratedUUID,
 			References:      ref,
 		},
 	), nil

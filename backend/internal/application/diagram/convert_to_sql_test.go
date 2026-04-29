@@ -35,6 +35,38 @@ func TestConvertToSQLUseCase_Execute_ValidRequest(t *testing.T) {
 	}
 }
 
+func TestConvertToSQLUseCase_Execute_PostgresGeneratedUUID(t *testing.T) {
+	uc := diagramapp.NewConvertToSQLUseCase()
+
+	req := diagramapp.DiagramRequest{
+		Dialect: "postgres",
+		Tables: []diagramapp.DbTableRequest{
+			{
+				ID:   "t1",
+				Name: "users",
+				Columns: []diagramapp.DbColumnRequest{
+					{
+						ID:              "c1",
+						Name:            "id",
+						Type:            "uuid",
+						IsPrimaryKey:    true,
+						IsGeneratedUUID: true,
+					},
+				},
+			},
+		},
+		Relationships: []diagramapp.RelationshipRequest{},
+	}
+
+	sql, err := uc.Execute(req)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(sql, "id uuid DEFAULT gen_random_uuid() PRIMARY KEY") {
+		t.Fatalf("missing postgres generated uuid default: %s", sql)
+	}
+}
+
 func TestConvertToSQLUseCase_Execute_InvalidColumnType(t *testing.T) {
 	uc := diagramapp.NewConvertToSQLUseCase()
 
@@ -61,7 +93,7 @@ func TestConvertToSQLUseCase_Execute_InvalidRelationshipType(t *testing.T) {
 	uc := diagramapp.NewConvertToSQLUseCase()
 
 	req := diagramapp.DiagramRequest{
-		Tables:        []diagramapp.DbTableRequest{},
+		Tables: []diagramapp.DbTableRequest{},
 		Relationships: []diagramapp.RelationshipRequest{
 			{ID: "r1", SourceColumnID: "c1", TargetColumnID: "c2", RelationshipType: "bad-type"},
 		},
@@ -194,10 +226,10 @@ func TestConvertToSQLUseCase_Execute_MySQLDialect(t *testing.T) {
 						IsUnique:    true,
 					},
 					{
-						ID:          "c3",
-						Name:        "is_admin",
-						Type:        "bool",
-						IsNullable:  false,
+						ID:         "c3",
+						Name:       "is_admin",
+						Type:       "bool",
+						IsNullable: false,
 					},
 					{
 						ID:          "c4",
@@ -228,6 +260,39 @@ func TestConvertToSQLUseCase_Execute_MySQLDialect(t *testing.T) {
 		if !strings.Contains(sql, want) {
 			t.Errorf("missing %q in output: %s", want, sql)
 		}
+	}
+}
+
+func TestConvertToSQLUseCase_Execute_MySQLGeneratedUUID(t *testing.T) {
+	uc := diagramapp.NewConvertToSQLUseCase()
+
+	req := diagramapp.DiagramRequest{
+		Dialect: "mysql",
+		Tables: []diagramapp.DbTableRequest{
+			{
+				ID:   "t1",
+				Name: "users",
+				Columns: []diagramapp.DbColumnRequest{
+					{
+						ID:              "c1",
+						Name:            "public_id",
+						Type:            "uuid",
+						IsNullable:      false,
+						IsUnique:        true,
+						IsGeneratedUUID: true,
+					},
+				},
+			},
+		},
+		Relationships: []diagramapp.RelationshipRequest{},
+	}
+
+	sql, err := uc.Execute(req)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(sql, "public_id char(36) DEFAULT (UUID()) NOT NULL UNIQUE") {
+		t.Fatalf("missing mysql generated uuid default: %s", sql)
 	}
 }
 

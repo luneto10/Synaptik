@@ -123,6 +123,7 @@ export function makePkCol(dialectId: DiagramDialectId = "postgres"): DbColumn {
         isNullable: false,
         isUnique: true,
         isAutoIncrement: dialect.defaultPrimaryKey.isAutoIncrement ?? false,
+        isGeneratedUuid: dialect.defaultPrimaryKey.isGeneratedUuid ?? false,
     };
 }
 
@@ -145,6 +146,7 @@ export function makeDefaultCol(
         isNullable: true,
         isUnique: false,
         isAutoIncrement: false,
+        isGeneratedUuid: false,
     };
 }
 
@@ -177,6 +179,7 @@ export function makeFkCol(
         isNullable: false,
         isUnique: unique,
         isAutoIncrement: false,
+        isGeneratedUuid: false,
         references: { tableId, columnId },
     };
 }

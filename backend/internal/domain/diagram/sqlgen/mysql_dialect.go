@@ -33,6 +33,15 @@ func (d mysqlDialect) BuildColumnDefinition(column diagram.DbColumn, ctx columnC
 	}
 
 	modifiers := make([]string, 0, 5)
+	if column.IsGeneratedUUID() {
+		if column.Type() != diagram.ColumnTypeUUID {
+			return "", fmt.Errorf("column %q: generated uuid is only supported for uuid columns: %w", column.Name(), apperrors.ErrInvalid)
+		}
+		if column.IsAutoIncrement() {
+			return "", fmt.Errorf("column %q: generated uuid cannot be combined with autoincrement: %w", column.Name(), apperrors.ErrInvalid)
+		}
+		modifiers = append(modifiers, " DEFAULT (UUID())")
+	}
 	if !column.IsNullable() && (!column.IsPrimaryKey() || ctx.compositePrimaryKey) {
 		modifiers = append(modifiers, " NOT NULL")
 	}

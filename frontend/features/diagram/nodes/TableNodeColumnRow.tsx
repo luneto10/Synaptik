@@ -119,7 +119,7 @@ function TableNodeColumnRow({
                 />
             </div>
 
-            <div className="w-24 px-0.5 py-1 shrink-0 flex items-center justify-end">
+            <div className="w-32 min-w-0 px-0.5 py-1 shrink-0 flex items-center justify-end overflow-hidden">
                 <Select
                     value={column.type}
                     onValueChange={(value) => {
@@ -131,16 +131,23 @@ function TableNodeColumnRow({
                             isAutoIncrement:
                                 typeDef?.supportsAutoIncrement === true &&
                                 column.isAutoIncrement === true,
+                            isGeneratedUuid:
+                                typeDef?.semanticType === "uuid" &&
+                                column.isGeneratedUuid === true,
                         });
                     }}
                 >
                     <SelectTrigger
                         onPointerDown={(event) => event.stopPropagation()}
-                        className="nodrag nopan h-6 text-[11px] border-0! bg-transparent! dark:bg-transparent! dark:hover:bg-transparent! shadow-none px-1 focus-visible:ring-0! focus-visible:border-0! text-muted-foreground justify-end! gap-0.5 w-full [&>svg]:opacity-50 [&>svg]:size-2.5! font-mono"
+                        className="nodrag nopan h-6 min-w-0 text-[11px] border-0! bg-transparent! dark:bg-transparent! dark:hover:bg-transparent! shadow-none px-1 focus-visible:ring-0! focus-visible:border-0! text-muted-foreground justify-end! gap-0.5 w-full overflow-hidden [&>svg]:opacity-50 [&>svg]:size-2.5! font-mono"
+                        aria-label={`Column type ${formatColumnTypeLabel(dialect, column)}`}
                     >
-                        <SelectValue
-                            placeholder={formatColumnTypeLabel(dialect, column)}
-                        />
+                        <span className="sr-only">
+                            <SelectValue />
+                        </span>
+                        <span className="min-w-0 flex-1 overflow-hidden truncate whitespace-nowrap text-right text-[11px] text-muted-foreground font-mono">
+                            {formatColumnTypeLabel(dialect, column)}
+                        </span>
                     </SelectTrigger>
                     <SelectContent>
                         {availableTypes.map((typeDef) => (

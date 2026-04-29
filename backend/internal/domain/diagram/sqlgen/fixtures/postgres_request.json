@@ -10,6 +10,7 @@
           "name": "id",
           "type": "uuid",
           "isPrimaryKey": true,
+          "isGeneratedUuid": true,
           "isNullable": false
         },
         {
@@ -32,6 +33,7 @@
           "name": "id",
           "type": "uuid",
           "isPrimaryKey": true,
+          "isGeneratedUuid": true,
           "isNullable": false
         },
         {
@@ -75,6 +77,7 @@
           "name": "id",
           "type": "uuid",
           "isPrimaryKey": true,
+          "isGeneratedUuid": true,
           "isNullable": false
         },
         {

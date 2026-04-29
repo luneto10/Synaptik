@@ -104,6 +104,7 @@ describe("makePkCol", () => {
         expect(col.isPrimaryKey).toBe(true);
         expect(col.name).toBe("id");
         expect(col.type).toBe("uuid");
+        expect(col.isGeneratedUuid).toBe(true);
         expect(col.id).toBeTruthy();
     });
 

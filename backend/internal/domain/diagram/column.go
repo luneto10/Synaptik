@@ -31,6 +31,7 @@ type DbColumn struct {
 	isNullable      bool
 	isUnique        bool
 	isAutoIncrement bool
+	isGeneratedUUID bool
 	references      *ColumnReference
 }
 
@@ -41,6 +42,7 @@ type DbColumnProps struct {
 	IsNullable      bool
 	IsUnique        bool
 	IsAutoIncrement bool
+	IsGeneratedUUID bool
 	References      *ColumnReference
 }
 
@@ -64,6 +66,7 @@ func NewDbColumn(
 		isNullable:      props.IsNullable,
 		isUnique:        props.IsUnique,
 		isAutoIncrement: props.IsAutoIncrement,
+		isGeneratedUUID: props.IsGeneratedUUID,
 		references:      props.References,
 	}
 }
@@ -77,6 +80,7 @@ func (c DbColumn) IsForeignKey() bool             { return c.isForeignKey }
 func (c DbColumn) IsNullable() bool               { return c.isNullable }
 func (c DbColumn) IsUnique() bool                 { return c.isUnique }
 func (c DbColumn) IsAutoIncrement() bool          { return c.isAutoIncrement }
+func (c DbColumn) IsGeneratedUUID() bool          { return c.isGeneratedUUID }
 func (c DbColumn) References() *ColumnReference   { return c.references }
 
 // ColumnReference points to the column this FK references.

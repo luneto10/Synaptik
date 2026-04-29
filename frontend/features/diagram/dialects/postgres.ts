@@ -7,6 +7,7 @@ export const postgresDialect: DiagramDialectDefinition = {
     defaultColumnType: "text",
     defaultPrimaryKey: {
         type: "uuid",
+        isGeneratedUuid: true,
     },
     types: [
         { id: "uuid", label: "uuid", semanticType: "uuid" },

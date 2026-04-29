@@ -83,17 +83,23 @@ export function formatColumnTypeLabel(
 ): string {
     const typeDef = getDialectType(dialectId, column.type);
     const baseLabel = typeDef?.label ?? column.type;
+    const defaultLength = typeDef?.defaultArguments?.length;
+    const defaultPrecision = typeDef?.defaultArguments?.precision;
+    const defaultScale = typeDef?.defaultArguments?.scale;
 
-    if (typeDef?.argumentKind === "length" && column.typeOptions?.length) {
-        return `${baseLabel}(${column.typeOptions.length})`;
+    if (typeDef?.argumentKind === "length") {
+        const length = column.typeOptions?.length ?? defaultLength;
+        if (length) {
+            return `${baseLabel}(${length})`;
+        }
     }
 
-    if (
-        typeDef?.argumentKind === "precision-scale" &&
-        column.typeOptions?.precision &&
-        column.typeOptions?.scale !== undefined
-    ) {
-        return `${baseLabel}(${column.typeOptions.precision}, ${column.typeOptions.scale})`;
+    if (typeDef?.argumentKind === "precision-scale") {
+        const precision = column.typeOptions?.precision ?? defaultPrecision;
+        const scale = column.typeOptions?.scale ?? defaultScale;
+        if (precision && scale !== undefined) {
+            return `${baseLabel}(${precision},${scale})`;
+        }
     }
 
     return baseLabel;
@@ -114,6 +120,7 @@ export function normalizeColumnTypeForDialect(
             ...column,
             type: fallbackType,
             isAutoIncrement: false,
+            isGeneratedUuid: false,
             typeOptions: normalizeTypeOptions(
                 getDialectType(targetDialectId, fallbackType) ?? {
                     id: fallbackType,
@@ -137,5 +144,9 @@ export function normalizeColumnTypeForDialect(
         isAutoIncrement:
             targetType.supportsAutoIncrement === true &&
             column.isAutoIncrement === true,
+        isGeneratedUuid:
+            targetType.semanticType === "uuid" &&
+            sourceType.semanticType === "uuid" &&
+            column.isGeneratedUuid === true,
     };
 }

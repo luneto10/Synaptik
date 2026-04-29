@@ -18,6 +18,7 @@ export interface DbColumn {
     isNullable: boolean;
     isUnique: boolean;
     isAutoIncrement?: boolean;
+    isGeneratedUuid?: boolean;
     references?: {
         tableId: string;
         columnId: string;

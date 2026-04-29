@@ -33,6 +33,7 @@ export interface DiagramDialectDefinition {
         type: string;
         typeOptions?: ColumnTypeArguments;
         isAutoIncrement?: boolean;
+        isGeneratedUuid?: boolean;
     };
     types: readonly DiagramDialectTypeDefinition[];
 }

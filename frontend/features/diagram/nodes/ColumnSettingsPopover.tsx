@@ -268,6 +268,9 @@ function ColumnTypeSettingsSection({
                             isAutoIncrement:
                                 nextTypeDef?.supportsAutoIncrement === true &&
                                 column.isAutoIncrement === true,
+                            isGeneratedUuid:
+                                nextTypeDef?.semanticType === "uuid" &&
+                                column.isGeneratedUuid === true,
                         });
                     }}
                 >
@@ -342,6 +345,27 @@ function ColumnTypeSettingsSection({
                         onUpdate({
                             ...column,
                             isAutoIncrement: checked,
+                            isGeneratedUuid: checked
+                                ? false
+                                : column.isGeneratedUuid,
+                            isNullable: checked ? false : column.isNullable,
+                        })
+                    }
+                />
+            )}
+
+            {typeDef?.semanticType === "uuid" && (
+                <ToggleRow
+                    id={`generated-uuid-${column.id}`}
+                    label="Generate UUID"
+                    checked={column.isGeneratedUuid === true}
+                    onCheckedChange={(checked) =>
+                        onUpdate({
+                            ...column,
+                            isGeneratedUuid: checked,
+                            isAutoIncrement: checked
+                                ? false
+                                : column.isAutoIncrement,
                             isNullable: checked ? false : column.isNullable,
                         })
                     }

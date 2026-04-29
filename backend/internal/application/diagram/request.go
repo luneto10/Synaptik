@@ -23,6 +23,7 @@ type DbColumnRequest struct {
 	IsNullable      bool                     `json:"isNullable"`
 	IsUnique        bool                     `json:"isUnique"`
 	IsAutoIncrement bool                     `json:"isAutoIncrement"`
+	IsGeneratedUUID bool                     `json:"isGeneratedUuid"`
 	References      *ColumnReferenceRequest  `json:"references,omitempty"`
 }
 
