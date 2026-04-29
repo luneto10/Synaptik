@@ -24,10 +24,6 @@ func sortByDependency(tables []diagram.DbTable) ([]diagram.DbTable, error) {
 	dependents := make(map[diagram.TableID][]diagram.TableID)
 
 	for _, t := range tables {
-		inDegree[t.ID()] = 0
-	}
-
-	for _, t := range tables {
 		counted := make(map[diagram.TableID]bool)
 		for _, col := range t.Columns() {
 			if col.References() == nil {

@@ -6,7 +6,6 @@ import (
 	"github.com/luneto10/synaptik/backend/internal/domain/diagram"
 )
 
-// columnDef builds the DDL definition for a single column.
 func columnDef(c diagram.DbColumn) string {
 	var mods []string
 	if c.IsPrimaryKey() {
@@ -21,7 +20,6 @@ func columnDef(c diagram.DbColumn) string {
 	return ColumnDef(c.Name(), string(c.Type()), mods...)
 }
 
-// foreignKey builds the ALTER TABLE FK statement for a column with a reference.
 func foreignKey(t diagram.DbTable, c diagram.DbColumn, colIndex map[diagram.ColumnID]columnInfo) (string, bool) {
 	info, ok := colIndex[c.References().ColumnID()]
 	if !ok {
@@ -31,7 +29,6 @@ func foreignKey(t diagram.DbTable, c diagram.DbColumn, colIndex map[diagram.Colu
 	return AddForeignKey(t.Name(), constraint, c.Name(), info.tableName, info.columnName), true
 }
 
-// modsWithoutPK returns column modifiers excluding PRIMARY KEY.
 // Used when building junction table composite-PK columns.
 func modsWithoutPK(c diagram.DbColumn) []string {
 	var mods []string
@@ -44,7 +41,6 @@ func modsWithoutPK(c diagram.DbColumn) []string {
 	return mods
 }
 
-// getPrimaryKeyColumns returns the names of all primary key columns in a table.
 func getPrimaryKeyColumns(t diagram.DbTable) []string {
 	var names []string
 	for _, c := range t.Columns() {
@@ -55,7 +51,6 @@ func getPrimaryKeyColumns(t diagram.DbTable) []string {
 	return names
 }
 
-// buildTableDDL returns the column definitions and FK ALTER TABLE statements for a table.
 func buildTableDDL(t diagram.DbTable, colIndex map[diagram.ColumnID]columnInfo) (colDefs []string, fkStmts []string) {
 	for _, c := range t.Columns() {
 		colDefs = append(colDefs, columnDef(c))
@@ -69,8 +64,6 @@ func buildTableDDL(t diagram.DbTable, colIndex map[diagram.ColumnID]columnInfo) 
 	return
 }
 
-// applyCompositePK rewrites colDefs for junction tables that have multiple PK columns.
-// It strips per-column PRIMARY KEY modifiers and appends a composite PRIMARY KEY constraint.
 func applyCompositePK(t diagram.DbTable, colDefs []string) []string {
 	pkCols := getPrimaryKeyColumns(t)
 	if !t.IsJunction() || len(pkCols) <= 1 {

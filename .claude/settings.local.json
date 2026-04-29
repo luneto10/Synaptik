@@ -12,7 +12,8 @@
       "Bash(npm view *)",
       "Bash(npm pack *)",
       "Bash(go build *)",
-      "Bash(go test *)"
+      "Bash(go test *)",
+      "Bash(python3 *)"
     ]
   }
 }

@@ -141,6 +141,27 @@ func TestToDomainDiagram_JunctionTable(t *testing.T) {
 	}
 }
 
+func TestToDomainDiagram_DuplicateColumnNames(t *testing.T) {
+	req := diagramapp.DiagramRequest{
+		Tables: []diagramapp.DbTableRequest{
+			{
+				ID:   "t1",
+				Name: "users",
+				Columns: []diagramapp.DbColumnRequest{
+					{ID: "c1", Name: "id", Type: "uuid", IsPrimaryKey: true},
+					{ID: "c2", Name: "id", Type: "text"},
+				},
+			},
+		},
+		Relationships: []diagramapp.RelationshipRequest{},
+	}
+
+	_, _, err := diagramapp.ToDomainDiagram(req)
+	if err == nil {
+		t.Fatal("expected error for duplicate column names, got nil")
+	}
+}
+
 func TestToDomainDiagram_EmptyTables(t *testing.T) {
 	req := diagramapp.DiagramRequest{
 		Tables:        []diagramapp.DbTableRequest{},
