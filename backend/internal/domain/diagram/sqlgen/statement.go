@@ -38,3 +38,10 @@ func Unique() string { return fmtUnique }
 func CompositePrimaryKey(columns ...string) string {
 	return fmt.Sprintf(fmtCompositePK, strings.Join(columns, ", "))
 }
+
+// InlineReference returns the REFERENCES clause appended directly to a column definition.
+// Use this for FK columns when the referenced table is guaranteed to exist before this one.
+// Fall back to AddForeignKey only for circular dependencies.
+func InlineReference(referencesTable, referencesColumn string) string {
+	return fmt.Sprintf(fmtInlineRef, referencesTable, referencesColumn)
+}

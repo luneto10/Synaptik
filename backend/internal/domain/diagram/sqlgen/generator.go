@@ -1,10 +1,6 @@
 package sqlgen
 
-import (
-	"strings"
-
-	"github.com/luneto10/synaptik/backend/internal/domain/diagram"
-)
+import "github.com/luneto10/synaptik/backend/internal/domain/diagram"
 
 // Generate converts domain tables into PostgreSQL DDL.
 func Generate(tables []diagram.DbTable, rels []diagram.Relationship) (string, error) {
@@ -23,12 +19,10 @@ func Generate(tables []diagram.DbTable, rels []diagram.Relationship) (string, er
 	// Rebuild index including generated junction tables for FK resolution.
 	colIndex = buildColumnIndex(allTables)
 
-	var createStmts, fkStmts []string
+	b := newDDLBuilder(len(ordered))
 	for _, t := range ordered {
-		colDefs, tableFKs := buildTableDDL(t, colIndex)
-		fkStmts = append(fkStmts, tableFKs...)
-		createStmts = append(createStmts, CreateTable(t.Name(), colDefs))
+		b.add(t, colIndex)
 	}
-
-	return strings.Join(append(createStmts, fkStmts...), "\n\n"), nil
+	return b.build(), nil
 }
+

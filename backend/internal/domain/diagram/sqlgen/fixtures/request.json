@@ -1,40 +1,75 @@
 {
   "tables": [
     {
-      "id": "tbl-posts",
-      "name": "posts",
+      "id": "tbl-categories",
+      "name": "categories",
       "columns": [
         {
-          "id": "col-post-id",
+          "id": "col-cat-id",
           "name": "id",
           "type": "uuid",
           "isPrimaryKey": true,
           "isNullable": false
         },
         {
-          "id": "col-post-title",
-          "name": "title",
+          "id": "col-cat-name",
+          "name": "name",
           "type": "varchar",
           "isNullable": false
         }
       ]
     },
     {
-      "id": "tbl-tags",
-      "name": "tags",
+      "id": "tbl-products",
+      "name": "products",
       "columns": [
         {
-          "id": "col-tag-id",
+          "id": "col-prod-id",
           "name": "id",
           "type": "uuid",
           "isPrimaryKey": true,
           "isNullable": false
         },
         {
-          "id": "col-tag-name",
+          "id": "col-prod-name",
           "name": "name",
           "type": "varchar",
-          "isUnique": true,
+          "isNullable": false
+        },
+        {
+          "id": "col-prod-price",
+          "name": "price",
+          "type": "float",
+          "isNullable": false
+        },
+        {
+          "id": "col-prod-cat",
+          "name": "category_id",
+          "type": "uuid",
+          "isForeignKey": true,
+          "isNullable": false,
+          "references": {
+            "tableId": "tbl-categories",
+            "columnId": "col-cat-id"
+          }
+        }
+      ]
+    },
+    {
+      "id": "tbl-orders",
+      "name": "orders",
+      "columns": [
+        {
+          "id": "col-order-id",
+          "name": "id",
+          "type": "uuid",
+          "isPrimaryKey": true,
+          "isNullable": false
+        },
+        {
+          "id": "col-order-date",
+          "name": "created_at",
+          "type": "timestamp",
           "isNullable": false
         }
       ]
@@ -42,9 +77,15 @@
   ],
   "relationships": [
     {
-      "id": "rel-posts-tags",
-      "sourceColumnId": "col-post-id",
-      "targetColumnId": "col-tag-id",
+      "id": "rel-prod-cat",
+      "sourceColumnId": "col-prod-cat",
+      "targetColumnId": "col-cat-id",
+      "relationshipType": "one-to-many"
+    },
+    {
+      "id": "rel-order-prod",
+      "sourceColumnId": "col-order-id",
+      "targetColumnId": "col-prod-id",
       "relationshipType": "many-to-many"
     }
   ]

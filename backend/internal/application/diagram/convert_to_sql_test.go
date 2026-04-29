@@ -1,7 +1,6 @@
 package diagramapp_test
 
 import (
-	"context"
 	"encoding/json"
 	"os"
 	"strings"
@@ -27,7 +26,7 @@ var validRequest = diagramapp.DiagramRequest{
 func TestConvertToSQLUseCase_Execute_ValidRequest(t *testing.T) {
 	uc := diagramapp.NewConvertToSQLUseCase()
 
-	sql, err := uc.Execute(context.Background(), validRequest)
+	sql, err := uc.Execute(validRequest)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -52,7 +51,7 @@ func TestConvertToSQLUseCase_Execute_InvalidColumnType(t *testing.T) {
 		Relationships: []diagramapp.RelationshipRequest{},
 	}
 
-	_, err := uc.Execute(context.Background(), req)
+	_, err := uc.Execute(req)
 	if err == nil {
 		t.Fatal("expected error for invalid column type, got nil")
 	}
@@ -62,20 +61,41 @@ func TestConvertToSQLUseCase_Execute_InvalidRelationshipType(t *testing.T) {
 	uc := diagramapp.NewConvertToSQLUseCase()
 
 	req := diagramapp.DiagramRequest{
-		Tables: []diagramapp.DbTableRequest{},
+		Tables:        []diagramapp.DbTableRequest{},
 		Relationships: []diagramapp.RelationshipRequest{
 			{ID: "r1", SourceColumnID: "c1", TargetColumnID: "c2", RelationshipType: "bad-type"},
 		},
 	}
 
-	_, err := uc.Execute(context.Background(), req)
+	_, err := uc.Execute(req)
 	if err == nil {
 		t.Fatal("expected error for invalid relationship type, got nil")
 	}
 }
 
-// TestConvertToSQLUseCase_Execute_ManyToManyFixture loads the shared request.json
-// fixture and verifies the full many-to-many DDL output end-to-end.
+func TestConvertToSQLUseCase_Execute_SaveFixtureOutput(t *testing.T) {
+	data, err := os.ReadFile("../../domain/diagram/sqlgen/fixtures/request.json")
+	if err != nil {
+		t.Fatalf("read fixture: %v", err)
+	}
+
+	var req diagramapp.DiagramRequest
+	if err := json.Unmarshal(data, &req); err != nil {
+		t.Fatalf("unmarshal fixture: %v", err)
+	}
+
+	sql, err := diagramapp.NewConvertToSQLUseCase().Execute(req)
+	if err != nil {
+		t.Fatalf("Execute failed: %v", err)
+	}
+
+	if err := os.WriteFile("../../domain/diagram/sqlgen/fixtures/output.sql", []byte(sql), 0644); err != nil {
+		t.Fatalf("write output: %v", err)
+	}
+
+	t.Logf("generated SQL written to fixtures/output.sql:\n%s", sql)
+}
+
 func TestConvertToSQLUseCase_Execute_ManyToManyFixture(t *testing.T) {
 	data, err := os.ReadFile("../../domain/diagram/sqlgen/fixtures/request.json")
 	if err != nil {
@@ -88,7 +108,7 @@ func TestConvertToSQLUseCase_Execute_ManyToManyFixture(t *testing.T) {
 	}
 
 	uc := diagramapp.NewConvertToSQLUseCase()
-	sql, err := uc.Execute(context.Background(), req)
+	sql, err := uc.Execute(req)
 	if err != nil {
 		t.Fatalf("Execute failed: %v", err)
 	}
@@ -97,12 +117,14 @@ func TestConvertToSQLUseCase_Execute_ManyToManyFixture(t *testing.T) {
 		desc string
 		want string
 	}{
-		{"posts table created", "CREATE TABLE posts"},
-		{"tags table created", "CREATE TABLE tags"},
-		{"junction table created", "CREATE TABLE post_tag"},
-		{"composite PK on junction", "PRIMARY KEY (post_id, tag_id)"},
-		{"FK from junction to posts", "REFERENCES posts (id)"},
-		{"FK from junction to tags", "REFERENCES tags (id)"},
+		{"categories table created", "CREATE TABLE categories"},
+		{"products table created", "CREATE TABLE products"},
+		{"orders table created", "CREATE TABLE orders"},
+		{"junction table created", "CREATE TABLE order_product"},
+		{"composite PK on junction", "PRIMARY KEY (order_id, product_id)"},
+		{"inline FK to orders", "order_id uuid NOT NULL REFERENCES orders (id)"},
+		{"inline FK to products", "product_id uuid NOT NULL REFERENCES products (id)"},
+		{"products inline FK to categories", "category_id uuid NOT NULL REFERENCES categories (id)"},
 	}
 	for _, ch := range checks {
 		if !strings.Contains(sql, ch.want) {

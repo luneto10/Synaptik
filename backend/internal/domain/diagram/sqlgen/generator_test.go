@@ -70,11 +70,11 @@ func TestGenerate_FKOrdering(t *testing.T) {
 	if usersPos > postsPos {
 		t.Error("users must appear before posts (FK dependency order)")
 	}
-	if !strings.Contains(sql, "ALTER TABLE posts") {
-		t.Errorf("missing FK ALTER TABLE: %q", sql)
-	}
 	if !strings.Contains(sql, "REFERENCES users") {
-		t.Errorf("missing FK REFERENCES clause: %q", sql)
+		t.Errorf("missing inline REFERENCES users: %q", sql)
+	}
+	if strings.Contains(sql, "ALTER TABLE") {
+		t.Errorf("unexpected ALTER TABLE — FKs should be inline: %q", sql)
 	}
 }
 
@@ -127,10 +127,13 @@ func TestGenerate_ManyToMany(t *testing.T) {
 	if !strings.Contains(sql, "PRIMARY KEY (post_id, tag_id)") {
 		t.Error("missing composite primary key on post_tag")
 	}
-	if !strings.Contains(sql, "ALTER TABLE post_tag ADD CONSTRAINT fk_post_tag_post_id FOREIGN KEY (post_id) REFERENCES posts (id)") {
-		t.Error("missing FK constraint for post_id")
+	if !strings.Contains(sql, "post_id uuid NOT NULL REFERENCES posts (id)") {
+		t.Errorf("missing inline FK for post_id: %s", sql)
 	}
-	if !strings.Contains(sql, "ALTER TABLE post_tag ADD CONSTRAINT fk_post_tag_tag_id FOREIGN KEY (tag_id) REFERENCES tags (id)") {
-		t.Error("missing FK constraint for tag_id")
+	if !strings.Contains(sql, "tag_id uuid NOT NULL REFERENCES tags (id)") {
+		t.Errorf("missing inline FK for tag_id: %s", sql)
+	}
+	if strings.Contains(sql, "ALTER TABLE") {
+		t.Errorf("unexpected ALTER TABLE — FKs should be inline: %s", sql)
 	}
 }

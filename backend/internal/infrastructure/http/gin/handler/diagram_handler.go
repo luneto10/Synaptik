@@ -23,7 +23,7 @@ func (h *DiagramHandler) ConvertToSQL(c *gin.Context) {
 		response.Fail(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	sql, err := h.convertToSQL.Execute(c.Request.Context(), req)
+	sql, err := h.convertToSQL.Execute(req)
 	if err != nil {
 		response.DomainError(c, err)
 		return

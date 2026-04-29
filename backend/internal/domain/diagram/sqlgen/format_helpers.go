@@ -1,45 +1,6 @@
 package sqlgen
 
-import (
-	"fmt"
-
-	"github.com/luneto10/synaptik/backend/internal/domain/diagram"
-)
-
-func columnDef(c diagram.DbColumn) string {
-	var mods []string
-	if c.IsPrimaryKey() {
-		mods = append(mods, PrimaryKey())
-	}
-	if !c.IsNullable() && !c.IsPrimaryKey() {
-		mods = append(mods, NotNull())
-	}
-	if c.IsUnique() && !c.IsPrimaryKey() {
-		mods = append(mods, Unique())
-	}
-	return ColumnDef(c.Name(), string(c.Type()), mods...)
-}
-
-func foreignKey(t diagram.DbTable, c diagram.DbColumn, colIndex map[diagram.ColumnID]columnInfo) (string, bool) {
-	info, ok := colIndex[c.References().ColumnID()]
-	if !ok {
-		return "", false
-	}
-	constraint := fmt.Sprintf("%s_%s", t.Name(), c.Name())
-	return AddForeignKey(t.Name(), constraint, c.Name(), info.tableName, info.columnName), true
-}
-
-// Used when building junction table composite-PK columns.
-func modsWithoutPK(c diagram.DbColumn) []string {
-	var mods []string
-	if !c.IsNullable() {
-		mods = append(mods, NotNull())
-	}
-	if c.IsUnique() {
-		mods = append(mods, Unique())
-	}
-	return mods
-}
+import "github.com/luneto10/synaptik/backend/internal/domain/diagram"
 
 func getPrimaryKeyColumns(t diagram.DbTable) []string {
 	var names []string
@@ -51,28 +12,40 @@ func getPrimaryKeyColumns(t diagram.DbTable) []string {
 	return names
 }
 
-func buildTableDDL(t diagram.DbTable, colIndex map[diagram.ColumnID]columnInfo) (colDefs []string, fkStmts []string) {
+// buildTableDDL returns the column definition lines for a CREATE TABLE statement.
+// FK references are emitted inline (e.g. REFERENCES users (id)) rather than as
+// separate ALTER TABLE statements — this is only safe because sortByDependency
+// guarantees referenced tables always precede the tables that depend on them.
+// Circular FK dependencies are rejected upstream, so ALTER TABLE is never needed.
+func buildTableDDL(t diagram.DbTable, colIndex map[diagram.ColumnID]columnInfo) []string {
+	pkCols := getPrimaryKeyColumns(t)
+	compositePK := t.IsJunction() && len(pkCols) > 1
+
+	colDefs := make([]string, 0, len(t.Columns())+1)
 	for _, c := range t.Columns() {
-		colDefs = append(colDefs, columnDef(c))
+		var mods []string
+
+		if c.IsPrimaryKey() && !compositePK {
+			mods = append(mods, PrimaryKey())
+		}
+		// Composite-PK columns need explicit NOT NULL; regular PK implies it.
+		if !c.IsNullable() && (!c.IsPrimaryKey() || compositePK) {
+			mods = append(mods, NotNull())
+		}
+		if c.IsUnique() && !c.IsPrimaryKey() {
+			mods = append(mods, Unique())
+		}
 		if c.References() != nil {
-			if fk, ok := foreignKey(t, c, colIndex); ok {
-				fkStmts = append(fkStmts, fk)
+			if info, ok := colIndex[c.References().ColumnID()]; ok {
+				mods = append(mods, InlineReference(info.tableName, info.columnName))
 			}
 		}
-	}
-	colDefs = applyCompositePK(t, colDefs)
-	return
-}
 
-func applyCompositePK(t diagram.DbTable, colDefs []string) []string {
-	pkCols := getPrimaryKeyColumns(t)
-	if !t.IsJunction() || len(pkCols) <= 1 {
-		return colDefs
+		colDefs = append(colDefs, ColumnDef(c.Name(), string(c.Type()), mods...))
 	}
-	for i, c := range t.Columns() {
-		if c.IsPrimaryKey() {
-			colDefs[i] = ColumnDef(c.Name(), string(c.Type()), modsWithoutPK(c)...)
-		}
+
+	if compositePK {
+		colDefs = append(colDefs, CompositePrimaryKey(pkCols...))
 	}
-	return append(colDefs, CompositePrimaryKey(pkCols...))
+	return colDefs
 }
