@@ -90,6 +90,13 @@ func TestToDomainDiagram_FKReference(t *testing.T) {
 					},
 				},
 			},
+			{
+				ID:   "t2",
+				Name: "users",
+				Columns: []diagramapp.DbColumnRequest{
+					{ID: "c2", Name: "id", Type: "uuid", IsPrimaryKey: true},
+				},
+			},
 		},
 		Relationships: []diagramapp.RelationshipRequest{
 			{ID: "r1", SourceColumnID: "c1", TargetColumnID: "c2", RelationshipType: "one-to-many"},
@@ -186,6 +193,27 @@ func TestToDomainDiagram_InvalidVarcharLength(t *testing.T) {
 	_, _, err := diagramapp.ToDomainDiagram(req)
 	if err == nil {
 		t.Fatal("expected error for invalid varchar length, got nil")
+	}
+}
+
+func TestToDomainDiagram_RelationshipUnknownColumn(t *testing.T) {
+	req := diagramapp.DiagramRequest{
+		Tables: []diagramapp.DbTableRequest{
+			{
+				ID:   "t1",
+				Name: "users",
+				Columns: []diagramapp.DbColumnRequest{
+					{ID: "c1", Name: "id", Type: "uuid", IsPrimaryKey: true},
+				},
+			},
+		},
+		Relationships: []diagramapp.RelationshipRequest{
+			{ID: "r1", SourceColumnID: "c1", TargetColumnID: "ghost", RelationshipType: "one-to-many"},
+		},
+	}
+	_, _, err := diagramapp.ToDomainDiagram(req)
+	if err == nil {
+		t.Fatal("expected error for unknown relationship target column")
 	}
 }
 

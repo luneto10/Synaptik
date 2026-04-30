@@ -1,6 +1,9 @@
 package sqlgen
 
-import "github.com/luneto10/synaptik/backend/internal/domain/diagram"
+import (
+	"github.com/luneto10/synaptik/backend/internal/domain/diagram"
+	"github.com/luneto10/synaptik/backend/internal/domain/diagram/ddlspec"
+)
 
 // GenerateForDialect converts domain tables into DDL for the requested SQL dialect.
 func GenerateForDialect(dialectID diagram.Dialect, tables []diagram.DbTable, rels []diagram.Relationship) (string, error) {
@@ -8,7 +11,7 @@ func GenerateForDialect(dialectID diagram.Dialect, tables []diagram.DbTable, rel
 		return "", nil
 	}
 
-	dialect, err := getDialect(dialectID)
+	dialect, err := ddlspec.DialectFor(dialectID)
 	if err != nil {
 		return "", err
 	}

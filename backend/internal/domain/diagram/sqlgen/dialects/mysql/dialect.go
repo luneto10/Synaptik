@@ -1,32 +1,33 @@
-package sqlgen
+package mysql
 
 import (
 	"fmt"
 
 	"github.com/luneto10/synaptik/backend/internal/domain/apperrors"
 	"github.com/luneto10/synaptik/backend/internal/domain/diagram"
+	"github.com/luneto10/synaptik/backend/internal/domain/diagram/ddlspec"
 )
 
-type mysqlDialect struct{}
+type dialect struct{}
 
 func init() {
-	RegisterDialect(mysqlDialect{})
+	ddlspec.RegisterDialect(dialect{})
 }
 
-func (mysqlDialect) ID() diagram.Dialect {
+func (dialect) ID() diagram.Dialect {
 	return "mysql"
 }
 
-func (mysqlDialect) CreateTable(tableName string, columnDefs []string) string {
-	return CreateTable(tableName, columnDefs)
+func (dialect) CreateTable(tableName string, columnDefs []string) string {
+	return ddlspec.CreateTable(tableName, columnDefs)
 }
 
-func (mysqlDialect) BuildCompositePrimaryKey(columns []string) string {
-	return CompositePrimaryKey(columns...)
+func (dialect) BuildCompositePrimaryKey(columns []string) string {
+	return ddlspec.CompositePrimaryKey(columns...)
 }
 
-func (d mysqlDialect) BuildColumnDefinition(column diagram.DbColumn, ctx columnContext) (string, error) {
-	dataType, err := d.formatType(column)
+func (dialect) BuildColumnDefinition(column diagram.DbColumn, ctx ddlspec.ColumnContext) (string, error) {
+	dataType, err := formatType(column)
 	if err != nil {
 		return "", err
 	}
@@ -41,37 +42,37 @@ func (d mysqlDialect) BuildColumnDefinition(column diagram.DbColumn, ctx columnC
 		}
 		modifiers = append(modifiers, " DEFAULT (UUID())")
 	}
-	if !column.IsNullable() && (!column.IsPrimaryKey() || ctx.compositePrimaryKey) {
-		modifiers = append(modifiers, NotNull())
+	if !column.IsNullable() && (!column.IsPrimaryKey() || ctx.CompositePrimaryKey) {
+		modifiers = append(modifiers, ddlspec.NotNull())
 	}
 	if column.IsUnique() && !column.IsPrimaryKey() {
-		modifiers = append(modifiers, Unique())
+		modifiers = append(modifiers, ddlspec.Unique())
 	}
 	if column.IsAutoIncrement() {
-		if !supportsAutoIncrementType(column.Type()) {
+		if !ddlspec.SupportsAutoIncrementType(column.Type()) {
 			return "", fmt.Errorf("column %q: autoincrement is only supported for int and bigint: %w", column.Name(), apperrors.ErrInvalid)
 		}
 		modifiers = append(modifiers, " AUTO_INCREMENT")
 	}
-	if ctx.reference != nil {
-		modifiers = append(modifiers, InlineReference(ctx.reference.tableName, ctx.reference.columnName))
+	if ctx.Reference != nil {
+		modifiers = append(modifiers, ddlspec.InlineReference(ctx.Reference.TableName, ctx.Reference.ColumnName))
 	}
-	if column.IsPrimaryKey() && !ctx.compositePrimaryKey {
-		modifiers = append(modifiers, PrimaryKey())
+	if column.IsPrimaryKey() && !ctx.CompositePrimaryKey {
+		modifiers = append(modifiers, ddlspec.PrimaryKey())
 	}
 
-	return ColumnDef(column.Name(), dataType, modifiers...), nil
+	return ddlspec.ColumnDef(column.Name(), dataType, modifiers...), nil
 }
 
-func (mysqlDialect) formatType(column diagram.DbColumn) (string, error) {
+func formatType(column diagram.DbColumn) (string, error) {
 	switch column.Type() {
 	case diagram.ColumnTypeUUID:
 		return "char(36)", nil
 	case diagram.ColumnTypeChar:
-		length := positiveOrDefault(column.TypeOptions().Length(), 1)
+		length := ddlspec.PositiveOrDefault(column.TypeOptions().Length(), 1)
 		return fmt.Sprintf("char(%d)", *length), nil
 	case diagram.ColumnTypeVarchar:
-		length := positiveOrDefault(column.TypeOptions().Length(), 255)
+		length := ddlspec.PositiveOrDefault(column.TypeOptions().Length(), 255)
 		return fmt.Sprintf("varchar(%d)", *length), nil
 	case diagram.ColumnTypeText:
 		return "text", nil
@@ -86,7 +87,7 @@ func (mysqlDialect) formatType(column diagram.DbColumn) (string, error) {
 	case diagram.ColumnTypeJSON, diagram.ColumnTypeJSONB:
 		return "json", nil
 	case diagram.ColumnTypeDecimal:
-		precision, scale, err := requirePrecisionScale(column)
+		precision, scale, err := ddlspec.RequirePrecisionScale(column)
 		if err != nil {
 			return "", err
 		}

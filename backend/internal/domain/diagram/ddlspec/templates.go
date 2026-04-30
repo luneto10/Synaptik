@@ -1,4 +1,4 @@
-package sqlgen
+package ddlspec
 
 // SQL format strings — unexported implementation details.
 // Use the statement builder functions (statement.go) instead of these directly.

@@ -22,5 +22,9 @@ func ToDomainDiagram(req DiagramRequest) ([]diagram.DbTable, []diagram.Relations
 		rels = append(rels, rel)
 	}
 
+	if err := diagram.ValidateDiagram(tables, rels); err != nil {
+		return nil, nil, err
+	}
+
 	return tables, rels, nil
 }

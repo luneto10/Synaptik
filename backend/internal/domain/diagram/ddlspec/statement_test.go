@@ -1,10 +1,10 @@
-package sqlgen_test
+package ddlspec_test
 
 import (
 	"strings"
 	"testing"
 
-	"github.com/luneto10/synaptik/backend/internal/domain/diagram/sqlgen"
+	"github.com/luneto10/synaptik/backend/internal/domain/diagram/ddlspec"
 )
 
 func TestColumnDef(t *testing.T) {
@@ -19,7 +19,7 @@ func TestColumnDef(t *testing.T) {
 			name:      "primary key and not null",
 			colName:   "id",
 			dataType:  "uuid",
-			modifiers: []string{sqlgen.PrimaryKey(), sqlgen.NotNull()},
+			modifiers: []string{ddlspec.PrimaryKey(), ddlspec.NotNull()},
 			wantParts: []string{"id", "uuid", "PRIMARY KEY", "NOT NULL"},
 		},
 		{
@@ -32,13 +32,13 @@ func TestColumnDef(t *testing.T) {
 			name:      "not null and unique",
 			colName:   "email",
 			dataType:  "text",
-			modifiers: []string{sqlgen.NotNull(), sqlgen.Unique()},
+			modifiers: []string{ddlspec.NotNull(), ddlspec.Unique()},
 			wantParts: []string{"email", "text", "NOT NULL", "UNIQUE"},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := sqlgen.ColumnDef(tt.colName, tt.dataType, tt.modifiers...)
+			got := ddlspec.ColumnDef(tt.colName, tt.dataType, tt.modifiers...)
 			for _, part := range tt.wantParts {
 				if !strings.Contains(got, part) {
 					t.Errorf("missing %q in output: %q", part, got)
@@ -59,21 +59,21 @@ func TestCreateTable(t *testing.T) {
 			name:      "two columns",
 			tableName: "users",
 			cols: []string{
-				sqlgen.ColumnDef("id", "uuid", sqlgen.PrimaryKey()),
-				sqlgen.ColumnDef("email", "text", sqlgen.NotNull(), sqlgen.Unique()),
+				ddlspec.ColumnDef("id", "uuid", ddlspec.PrimaryKey()),
+				ddlspec.ColumnDef("email", "text", ddlspec.NotNull(), ddlspec.Unique()),
 			},
 			wantParts: []string{"CREATE TABLE users", "id", "email"},
 		},
 		{
 			name:      "single column",
 			tableName: "orders",
-			cols:      []string{sqlgen.ColumnDef("id", "uuid")},
+			cols:      []string{ddlspec.ColumnDef("id", "uuid")},
 			wantParts: []string{"CREATE TABLE orders", "id"},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := sqlgen.CreateTable(tt.tableName, tt.cols)
+			got := ddlspec.CreateTable(tt.tableName, tt.cols)
 			if !strings.HasPrefix(got, "CREATE TABLE "+tt.tableName) {
 				t.Errorf("expected prefix 'CREATE TABLE %s', got: %q", tt.tableName, got)
 			}
@@ -117,7 +117,7 @@ func TestAddForeignKey(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := sqlgen.AddForeignKey(tt.onTable, tt.constraintName, tt.column, tt.referencesTable, tt.referencesCol)
+			got := ddlspec.AddForeignKey(tt.onTable, tt.constraintName, tt.column, tt.referencesTable, tt.referencesCol)
 			for _, part := range tt.wantParts {
 				if !strings.Contains(got, part) {
 					t.Errorf("missing %q in output: %q", part, got)
@@ -146,7 +146,7 @@ func TestCompositePrimaryKey(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := sqlgen.CompositePrimaryKey(tt.columns...)
+			got := ddlspec.CompositePrimaryKey(tt.columns...)
 			if !strings.Contains(got, tt.want) {
 				t.Errorf("got %q, want to contain %q", got, tt.want)
 			}

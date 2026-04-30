@@ -5,6 +5,9 @@ import (
 	"testing"
 
 	"github.com/luneto10/synaptik/backend/internal/domain/diagram"
+	"github.com/luneto10/synaptik/backend/internal/domain/diagram/ddlspec"
+	_ "github.com/luneto10/synaptik/backend/internal/domain/diagram/sqlgen/dialects/mysql"
+	_ "github.com/luneto10/synaptik/backend/internal/domain/diagram/sqlgen/dialects/postgres"
 )
 
 func TestInternalGetPrimaryKeyColumns(t *testing.T) {
@@ -53,7 +56,10 @@ func TestInternalGetPrimaryKeyColumns(t *testing.T) {
 }
 
 func TestInternalBuildTableDDL(t *testing.T) {
-	dialect := postgresDialect{}
+	dialect, err := ddlspec.DialectFor(diagram.DefaultSQLDialect)
+	if err != nil {
+		t.Fatalf("DialectFor: %v", err)
+	}
 
 	t.Run("regular PK: PRIMARY KEY inline, no NOT NULL", func(t *testing.T) {
 		table := diagram.NewDbTable("t1", "users", []diagram.DbColumn{

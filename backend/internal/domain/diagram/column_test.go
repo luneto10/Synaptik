@@ -1,10 +1,42 @@
 package diagram_test
 
 import (
+	"errors"
 	"testing"
 
+	"github.com/luneto10/synaptik/backend/internal/domain/apperrors"
 	"github.com/luneto10/synaptik/backend/internal/domain/diagram"
 )
+
+func TestValidateDecimalPrecisionScale(t *testing.T) {
+	tests := []struct {
+		name      string
+		precision int
+		scale     int
+		wantErr   bool
+	}{
+		{name: "scale exceeds precision", precision: 4, scale: 5, wantErr: true},
+		{name: "precision below min", precision: 0, scale: 0, wantErr: true},
+		{name: "precision above max", precision: 66, scale: 2, wantErr: true},
+		{name: "scale above max", precision: 10, scale: 31, wantErr: true},
+		{name: "valid typical", precision: 10, scale: 2, wantErr: false},
+		{name: "valid max bounds", precision: 65, scale: 30, wantErr: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := diagram.ValidateDecimalPrecisionScale(tt.precision, tt.scale, "col")
+			if tt.wantErr {
+				if err == nil || !errors.Is(err, apperrors.ErrInvalid) {
+					t.Fatalf("want ErrInvalid, got %v", err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
 
 func TestNewDbColumn_Getters(t *testing.T) {
 	ref := diagram.NewColumnReference("t2", "c2")
@@ -80,4 +112,3 @@ func TestNewDbColumn_Flags(t *testing.T) {
 		})
 	}
 }
-

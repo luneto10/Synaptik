@@ -35,6 +35,9 @@ func NewColumnType(raw string) (ColumnType, error) {
 
 type Dialect string
 
+// DefaultSQLDialect is used when a convert request omits dialect.
+const DefaultSQLDialect Dialect = "postgres"
+
 func NewDialect(raw string) (Dialect, error) {
 	normalized := Dialect(strings.TrimSpace(strings.ToLower(raw)))
 

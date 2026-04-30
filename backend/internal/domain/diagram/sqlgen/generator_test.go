@@ -8,6 +8,8 @@ import (
 	"github.com/luneto10/synaptik/backend/internal/domain/apperrors"
 	"github.com/luneto10/synaptik/backend/internal/domain/diagram"
 	"github.com/luneto10/synaptik/backend/internal/domain/diagram/sqlgen"
+	_ "github.com/luneto10/synaptik/backend/internal/domain/diagram/sqlgen/dialects/mysql"
+	_ "github.com/luneto10/synaptik/backend/internal/domain/diagram/sqlgen/dialects/postgres"
 )
 
 func TestGenerate_EmptyInput(t *testing.T) {

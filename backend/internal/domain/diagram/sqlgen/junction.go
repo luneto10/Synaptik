@@ -5,9 +5,10 @@ import (
 
 	"github.com/jinzhu/inflection"
 	"github.com/luneto10/synaptik/backend/internal/domain/diagram"
+	"github.com/luneto10/synaptik/backend/internal/domain/diagram/ddlspec"
 )
 
-func resolveManyToMany(tables []diagram.DbTable, rels []diagram.Relationship, colIndex map[diagram.ColumnID]columnInfo) []diagram.DbTable {
+func resolveManyToMany(tables []diagram.DbTable, rels []diagram.Relationship, colIndex map[diagram.ColumnID]ddlspec.ColumnInfo) []diagram.DbTable {
 	all := append([]diagram.DbTable{}, tables...)
 	processed := make(map[string]bool)
 
@@ -28,8 +29,8 @@ func resolveManyToMany(tables []diagram.DbTable, rels []diagram.Relationship, co
 			continue
 		}
 
-		srcSingular := inflection.Singular(src.tableName)
-		tgtSingular := inflection.Singular(tgt.tableName)
+		srcSingular := inflection.Singular(src.TableName)
+		tgtSingular := inflection.Singular(tgt.TableName)
 
 		a, b := srcSingular, tgtSingular
 		if a > b {
@@ -46,19 +47,19 @@ func resolveManyToMany(tables []diagram.DbTable, rels []diagram.Relationship, co
 		tgtColName := fmt.Sprintf("%s_id", tgtSingular)
 
 		// If table names are same (self-referencing many-to-many), append roles
-		if src.tableName == tgt.tableName {
+		if src.TableName == tgt.TableName {
 			srcColName = "source_id"
 			tgtColName = "target_id"
 		}
 
-		srcRef := diagram.NewColumnReference(diagram.TableID(src.tableID), r.SourceColumnID())
-		tgtRef := diagram.NewColumnReference(diagram.TableID(tgt.tableID), r.TargetColumnID())
+		srcRef := diagram.NewColumnReference(diagram.TableID(src.TableID), r.SourceColumnID())
+		tgtRef := diagram.NewColumnReference(diagram.TableID(tgt.TableID), r.TargetColumnID())
 
 		cols := []diagram.DbColumn{
 			diagram.NewDbColumn(
 				diagram.ColumnID(junctionName+"_"+srcColName),
 				srcColName,
-				diagram.ColumnType(src.columnType),
+				diagram.ColumnType(src.ColumnType),
 				diagram.DbColumnProps{
 					TypeOptions:     diagram.NewColumnTypeOptions(nil, nil, nil),
 					IsPrimaryKey:    true,
@@ -72,7 +73,7 @@ func resolveManyToMany(tables []diagram.DbTable, rels []diagram.Relationship, co
 			diagram.NewDbColumn(
 				diagram.ColumnID(junctionName+"_"+tgtColName),
 				tgtColName,
-				diagram.ColumnType(tgt.columnType),
+				diagram.ColumnType(tgt.ColumnType),
 				diagram.DbColumnProps{
 					TypeOptions:     diagram.NewColumnTypeOptions(nil, nil, nil),
 					IsPrimaryKey:    true,
