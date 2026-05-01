@@ -158,13 +158,13 @@ func (c DbColumn) References() *ColumnReference   { return c.references }
 
 func (c DbColumn) validateReferenceIfPresent(
 	tableIDs map[TableID]struct{},
-	columnIDs map[ColumnID]struct{},
+	tableColumnIDs map[TableID]map[ColumnID]struct{},
 ) error {
 	ref := c.References()
 	if ref == nil {
 		return nil
 	}
-	return ref.ValidateTargetExists(tableIDs, columnIDs, c.Name())
+	return ref.ValidateTargetExists(tableIDs, tableColumnIDs, c.Name())
 }
 
 // ValidateTypeOptions checks optional length / precision / scale for the column's SQL type.
@@ -195,7 +195,7 @@ func (r ColumnReference) ColumnID() ColumnID { return r.columnID }
 // ValidateTargetExists checks that this reference points to a table and column
 func (r ColumnReference) ValidateTargetExists(
 	tableIDs map[TableID]struct{},
-	columnIDs map[ColumnID]struct{},
+	tableColumnIDs map[TableID]map[ColumnID]struct{},
 	referencingColumnName string,
 ) error {
 	if _, ok := tableIDs[r.tableID]; !ok {
@@ -206,10 +206,20 @@ func (r ColumnReference) ValidateTargetExists(
 			apperrors.ErrInvalid,
 		)
 	}
-	if _, ok := columnIDs[r.columnID]; !ok {
+	columns, ok := tableColumnIDs[r.tableID]
+	if !ok {
 		return fmt.Errorf(
-			"column %q: references unknown column %q: %w",
+			"column %q: references unknown table %q: %w",
 			referencingColumnName,
+			r.tableID,
+			apperrors.ErrInvalid,
+		)
+	}
+	if _, ok := columns[r.columnID]; !ok {
+		return fmt.Errorf(
+			"column %q: table %q does not contain referenced column %q: %w",
+			referencingColumnName,
+			r.tableID,
 			r.columnID,
 			apperrors.ErrInvalid,
 		)

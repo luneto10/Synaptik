@@ -25,10 +25,13 @@ func ValidateTable(t DbTable) error {
 // ValidateDiagram checks cross-table invariants: FK targets and relationship endpoints
 // must reference tables and columns present in the diagram.
 func ValidateDiagram(tables []DbTable, rels []Relationship) error {
-	tableIDs, columnIDs := indexDiagramIDs(tables)
+	tableIDs, columnIDs, tableColumnIDs, err := indexDiagramIDs(tables)
+	if err != nil {
+		return err
+	}
 	for _, t := range tables {
 		for _, c := range t.Columns() {
-			if err := c.validateReferenceIfPresent(tableIDs, columnIDs); err != nil {
+			if err := c.validateReferenceIfPresent(tableIDs, tableColumnIDs); err != nil {
 				return err
 			}
 		}
@@ -41,14 +44,28 @@ func ValidateDiagram(tables []DbTable, rels []Relationship) error {
 	return nil
 }
 
-func indexDiagramIDs(tables []DbTable) (map[TableID]struct{}, map[ColumnID]struct{}) {
+func indexDiagramIDs(tables []DbTable) (map[TableID]struct{}, map[ColumnID]struct{}, map[TableID]map[ColumnID]struct{}, error) {
 	tableIDs := make(map[TableID]struct{}, len(tables))
+	tableNames := make(map[string]struct{}, len(tables))
 	columnIDs := make(map[ColumnID]struct{})
+	tableColumnIDs := make(map[TableID]map[ColumnID]struct{}, len(tables))
 	for _, t := range tables {
+		if _, exists := tableIDs[t.ID()]; exists {
+			return nil, nil, nil, fmt.Errorf("duplicate table id %q: %w", t.ID(), apperrors.ErrInvalid)
+		}
+		if _, exists := tableNames[t.Name()]; exists {
+			return nil, nil, nil, fmt.Errorf("duplicate table name %q: %w", t.Name(), apperrors.ErrInvalid)
+		}
 		tableIDs[t.ID()] = struct{}{}
+		tableNames[t.Name()] = struct{}{}
+		tableColumnIDs[t.ID()] = make(map[ColumnID]struct{}, len(t.Columns()))
 		for _, c := range t.Columns() {
+			if _, exists := columnIDs[c.ID()]; exists {
+				return nil, nil, nil, fmt.Errorf("duplicate column id %q: %w", c.ID(), apperrors.ErrInvalid)
+			}
 			columnIDs[c.ID()] = struct{}{}
+			tableColumnIDs[t.ID()][c.ID()] = struct{}{}
 		}
 	}
-	return tableIDs, columnIDs
+	return tableIDs, columnIDs, tableColumnIDs, nil
 }

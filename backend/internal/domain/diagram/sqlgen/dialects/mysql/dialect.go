@@ -31,34 +31,12 @@ func (dialect) BuildColumnDefinition(column diagram.DbColumn, ctx ddlspec.Column
 	if err != nil {
 		return "", err
 	}
-
-	modifiers := make([]string, 0, 5)
-	if column.IsGeneratedUUID() {
-		if column.Type() != diagram.ColumnTypeUUID {
-			return "", fmt.Errorf("column %q: generated uuid is only supported for uuid columns: %w", column.Name(), apperrors.ErrInvalid)
-		}
-		if column.IsAutoIncrement() {
-			return "", fmt.Errorf("column %q: generated uuid cannot be combined with autoincrement: %w", column.Name(), apperrors.ErrInvalid)
-		}
-		modifiers = append(modifiers, " DEFAULT (UUID())")
-	}
-	if !column.IsNullable() && (!column.IsPrimaryKey() || ctx.CompositePrimaryKey) {
-		modifiers = append(modifiers, ddlspec.NotNull())
-	}
-	if column.IsUnique() && !column.IsPrimaryKey() {
-		modifiers = append(modifiers, ddlspec.Unique())
-	}
-	if column.IsAutoIncrement() {
-		if !ddlspec.SupportsAutoIncrementType(column.Type()) {
-			return "", fmt.Errorf("column %q: autoincrement is only supported for int and bigint: %w", column.Name(), apperrors.ErrInvalid)
-		}
-		modifiers = append(modifiers, " AUTO_INCREMENT")
-	}
-	if ctx.Reference != nil {
-		modifiers = append(modifiers, ddlspec.InlineReference(ctx.Reference.TableName, ctx.Reference.ColumnName))
-	}
-	if column.IsPrimaryKey() && !ctx.CompositePrimaryKey {
-		modifiers = append(modifiers, ddlspec.PrimaryKey())
+	modifiers, err := ddlspec.BuildStandardModifiers(column, ctx, ddlspec.ModifierConfig{
+		GeneratedUUIDClause: " DEFAULT (UUID())",
+		AutoIncrementClause: " AUTO_INCREMENT",
+	})
+	if err != nil {
+		return "", err
 	}
 
 	return ddlspec.ColumnDef(column.Name(), dataType, modifiers...), nil

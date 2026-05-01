@@ -25,9 +25,27 @@ const (
 	ColumnTypeFloat     ColumnType = "float"
 )
 
+var allowedColumnTypes = map[ColumnType]struct{}{
+	ColumnTypeUUID:      {},
+	ColumnTypeText:      {},
+	ColumnTypeChar:      {},
+	ColumnTypeVarchar:   {},
+	ColumnTypeInt:       {},
+	ColumnTypeBigint:    {},
+	ColumnTypeBool:      {},
+	ColumnTypeTimestamp: {},
+	ColumnTypeJSON:      {},
+	ColumnTypeJSONB:     {},
+	ColumnTypeDecimal:   {},
+	ColumnTypeFloat:     {},
+}
+
 func NewColumnType(raw string) (ColumnType, error) {
 	normalized := ColumnType(strings.TrimSpace(strings.ToLower(raw)))
-	if normalized == "" {
+	if normalized == "boolean" {
+		normalized = ColumnTypeBool
+	}
+	if _, ok := allowedColumnTypes[normalized]; !ok {
 		return "", fmt.Errorf("invalid column type %q: %w", raw, apperrors.ErrInvalid)
 	}
 	return normalized, nil
@@ -57,9 +75,10 @@ const (
 )
 
 func NewRelationshipType(raw string) (RelationshipType, error) {
-	switch RelationshipType(raw) {
+	normalized := RelationshipType(strings.TrimSpace(strings.ToLower(raw)))
+	switch normalized {
 	case RelationshipOneToOne, RelationshipOneToMany, RelationshipManyToMany:
-		return RelationshipType(raw), nil
+		return normalized, nil
 	}
 	return "", fmt.Errorf("invalid relationship type %q: %w", raw, apperrors.ErrInvalid)
 }
